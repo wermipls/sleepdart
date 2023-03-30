@@ -6,6 +6,7 @@ Z80_t cpu;
 
 /* helpers */
 
+#define MASK_FLAG_XY    ((1<<3) | (1<<5))
 #define MAKE16(L, H)    (L | (H << 8))
 
 void print_regs(Z80_t *cpu)
@@ -60,7 +61,7 @@ static inline bool get_parity(uint8_t value)
     value = value ^ (value >> 4);
     value = value ^ (value >> 2);
     value = value ^ (value >> 1);
-    return value & 1;
+    return !(value & 1);
 }
 
 /* instruction implementations */
@@ -161,6 +162,8 @@ void exx(Z80_t *cpu)
 static inline uint8_t inc8(Z80_t *cpu, uint8_t value)
 {
     value++;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = !(value & 0x0F); // FIXME: not sure about correctness of this
@@ -193,6 +196,8 @@ void inc_rra(Z80_t *cpu, uint16_t addr)
 static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
 {
     value--;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = (value & 0x0F) == 0x0F; // FIXME: not sure about correctness of this
@@ -227,6 +232,8 @@ static inline uint8_t add8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a + value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
     uint8_t operands_same_sign = !((a ^ value) & (1<<7));
@@ -277,6 +284,8 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a + value + cpu->regs.main.flags.c;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
     // FIXME: those flags are DEFINITELY wrong and i cba for now
@@ -328,6 +337,8 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a - value - cpu->regs.main.flags.c;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
     // FIXME: those flags are DEFINITELY wrong and i cba for now
@@ -379,6 +390,8 @@ static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a - value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
     uint8_t operands_same_sign = !((a ^ value) & (1<<7));
@@ -389,7 +402,7 @@ static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
     }
     // FIXME: dunno about correctness of (half) carry or PV
     cpu->regs.main.flags.h = ((a & 0xF0) - (value & 0xF0)) < 0xF0;
-    cpu->regs.main.flags.c = ((uint16_t)a - (uint16_t)value) > 255;
+    cpu->regs.main.flags.c = ((uint16_t)a - (uint16_t)value) > (uint16_t)255;
     cpu->regs.main.flags.n = 1;
     return result;
 }
@@ -459,6 +472,8 @@ static inline void and(Z80_t *cpu, uint8_t value)
 {
     value &= cpu->regs.main.a;
     cpu->regs.main.a = value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 1;
@@ -491,6 +506,8 @@ static inline void xor(Z80_t *cpu, uint8_t value)
 {
     value ^= cpu->regs.main.a;
     cpu->regs.main.a = value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 0;
@@ -523,6 +540,8 @@ static inline void or(Z80_t *cpu, uint8_t value)
 {
     value |= cpu->regs.main.a;
     cpu->regs.main.a = value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 0;
@@ -693,6 +712,27 @@ void ei(Z80_t *cpu)
 }
 
 /* The Real Deal */
+
+void cpu_init(Z80_t *cpu)
+{
+    cpu->cycles = 0;
+
+    cpu->regs.main.af = 0xFFFF;
+    cpu->regs.main.bc = 0xFFFF;
+    cpu->regs.main.de = 0xFFFF;
+    cpu->regs.main.hl = 0xFFFF;
+
+    cpu->regs.alt = cpu->regs.main;
+
+    cpu->regs.sp = 0xFFFF;
+    cpu->regs.i = 0xFF;
+    cpu->regs.r = 0xFF;
+
+    cpu->regs.iff1 = 0;
+    cpu->regs.iff2 = 0;
+    cpu->regs.im = 0;
+    cpu->regs.pc = 0;
+}
 
 void do_ed(Z80_t *cpu)
 {

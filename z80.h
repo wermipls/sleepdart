@@ -13,14 +13,14 @@ struct Z80RegsMain {
             union {
                 uint8_t f;
                 struct { 
-                    bool s  : 1;
-                    bool z  : 1;
-                    bool    : 1; 
-                    bool h  : 1;
-                    bool    : 1;
-                    bool pv : 1;
-                    bool n  : 1;
                     bool c  : 1;
+                    bool n  : 1;
+                    bool pv : 1;
+                    bool y  : 1;
+                    bool h  : 1;
+                    bool x  : 1; 
+                    bool z  : 1;
+                    bool s  : 1;
                 } flags;
             };
             uint8_t a;
@@ -87,4 +87,5 @@ typedef struct Z80 {
 
 extern Z80_t cpu;
 
-int cpu_do_cycles();
+void cpu_init(Z80_t *cpu);
+int cpu_do_cycles(Z80_t *cpu);

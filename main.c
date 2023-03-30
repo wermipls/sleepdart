@@ -4,10 +4,12 @@
 
 int main()
 {
+    printf(".: sleepdart III THE FINAL :.\n");
+
     memory_init();
     memory_load_rom_16k("./rom/48.rom");
 
-    printf(".: sleepdart III THE FINAL :.\n");
+    cpu_init(&cpu);
 
     int cycles = -1;
     while (cycles) {
