@@ -51,3 +51,11 @@ uint8_t memory_read(uint16_t addr, uint8_t *dest)
     *dest = memory_bus[addr];
     return 0; 
 }
+
+/* Returns a byte on the memory bus from a given address.
+ * Mostly meant for debug purposes. For hardware interaction,
+ * use memory_read(). */
+uint8_t memory_bus_peek(uint16_t addr)
+{
+    return memory_bus[addr];
+}
