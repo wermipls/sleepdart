@@ -8,6 +8,8 @@ Z80_t cpu;
 
 #define MASK_FLAG_XY    ((1<<3) | (1<<5))
 #define MAKE16(L, H)    (L | (H << 8))
+#define LOW8(HL)        (HL & 255)
+#define HIGH8(HL)       (HL >> 8)
 
 void print_regs(Z80_t *cpu)
 {
@@ -118,6 +120,23 @@ void ld_i_a(Z80_t *cpu)
     cpu->cycles += 5;
 }
 
+/* LD (nn), a */
+void ld_nna_a(Z80_t *cpu)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    int16_t addr = MAKE16(l, h);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, cpu->regs.main.a);
+    cpu->cycles += 3;
+}
+
 /* 16-Bit Load Group */
 
 /* LD rr, nn */
@@ -133,6 +152,52 @@ void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
     *dest = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
     cpu->cycles += 3;
     cpu->regs.pc++;
+}
+
+/* LD rr, (nn) */
+void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    uint16_t addr = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    l = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    h = cpu_read(cpu, addr+1);
+    cpu->cycles += 3;
+    *dest = MAKE16(l, h);
+}
+
+/* LD (nn), rr */
+void ld_nna_rr(Z80_t *cpu, uint16_t value)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    int16_t addr = MAKE16(l, h);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, LOW8(addr));
+    cpu->cycles += 3;
+    cpu_write(cpu, addr+1, HIGH8(addr));
+    cpu->cycles += 3;
+}
+
+void ld_sp_rr(Z80_t *cpu, uint16_t value)
+{
+    cpu->cycles += 6;
+    cpu->regs.pc++;
+    cpu->regs.sp = value;
 }
 
 /* Exchange, Block Transfer and Search Group */
@@ -154,6 +219,52 @@ void exx(Z80_t *cpu)
 
     cpu->cycles += 4;
     cpu->regs.pc++;
+}
+
+void ex_de_hl(Z80_t *cpu)
+{
+    uint16_t tmp;
+    tmp = cpu->regs.main.hl;
+    cpu->regs.main.hl = cpu->regs.main.de;
+    cpu->regs.main.de = tmp;
+
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+}
+
+/* LDI/LDD */
+void ldx(Z80_t *cpu, int8_t increment)
+{
+    // FIXME: fuck flags
+    cpu->cycles += 4;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 3;
+    cpu_write(cpu, cpu->regs.main.de, value);
+    // FIXME: unaccurate contention timings 
+    cpu->cycles += 5;
+    cpu->regs.main.hl += increment;
+    cpu->regs.main.de += increment;
+    cpu->regs.main.bc--;
+}
+
+/* LDIR/LDDR */
+void ldxr(Z80_t *cpu, int8_t increment)
+{
+    // FIXME: fuck flags
+    cpu->cycles += 4;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 3;
+    cpu_write(cpu, cpu->regs.main.de, value);
+    // FIXME: unaccurate contention timings 
+    cpu->cycles += 5;
+    cpu->regs.main.hl += increment;
+    cpu->regs.main.de += increment;
+    cpu->regs.main.bc--;
+
+    if (cpu->regs.main.bc != 0) {
+        cpu->regs.pc -= 2;
+        cpu->cycles += 5;
+    }
 }
 
 /* 8-Bit Arithmetic Group */
@@ -225,7 +336,6 @@ void dec_rra(Z80_t *cpu, uint16_t addr)
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
 }
-
 
 /* ADD helper */
 static inline uint8_t add8(Z80_t *cpu, uint8_t value)
@@ -383,7 +493,6 @@ void sbc_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     cpu->regs.main.a = sbc8(cpu, value);
 }
-
 
 /* SUB helper */
 static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
@@ -569,6 +678,16 @@ void or_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
 }
 
+/* General-Purpose Arithmetic and CPU Control Groups */
+
+/* IM 0/1/2 */
+void im(Z80_t *cpu, uint8_t im)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->regs.im = im;
+}
+
 /* 16-Bit Arithmetic Group */
 
 void inc_rr(Z80_t *cpu, uint16_t *dest)
@@ -749,11 +868,31 @@ void do_ed(Z80_t *cpu)
     case 0x52: sbc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.de); break;
     case 0x62: sbc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.hl); break;
     case 0x72: sbc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.sp); break;
+    // ld (nn), rr
+    case 0x43: ld_nna_rr(cpu, cpu->regs.main.bc); break;
+    case 0x53: ld_nna_rr(cpu, cpu->regs.main.de); break;
+    case 0x63: ld_nna_rr(cpu, cpu->regs.main.hl); break;
+    case 0x73: ld_nna_rr(cpu, cpu->regs.sp); break;
+    // im 0/1/2
+    case 0x46: im(cpu, 0); break;
+    case 0x56: im(cpu, 1); break;
+    case 0x5E: im(cpu, 2); break;
     // adc hl, rr
     case 0x4A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.bc); break;
     case 0x5A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.de); break;
     case 0x6A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.hl); break;
     case 0x7A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.sp); break;
+    // ld rr, (nn)
+    case 0x4B: ld_rr_nna(cpu, &cpu->regs.main.bc); break;
+    case 0x5B: ld_rr_nna(cpu, &cpu->regs.main.de); break;
+    case 0x6B: ld_rr_nna(cpu, &cpu->regs.main.hl); break;
+    case 0x7B: ld_rr_nna(cpu, &cpu->regs.sp); break;
+
+    // ldx/ldxr
+    case 0xA0: ldx(cpu,  1); break;
+    case 0xA8: ldx(cpu, -1); break;
+    case 0xB0: ldxr(cpu,  1); break;
+    case 0xB8: ldxr(cpu, -1); break;
 
     default:
         cpu->regs.pc--;
@@ -763,11 +902,82 @@ void do_ed(Z80_t *cpu)
     }
 }
 
-int cpu_do_cycles(Z80_t *cpu)
+/* FD/DD are basically "instructions" that tell the CPU 
+ * "use IY/IX instead of HL for the next instruction".
+ * there's some funky behavior associated with that i Do Not wanna emulate rn.
+ * i also don't bother implementing illegal/duplicate opcodes */
+void do_fd(Z80_t *cpu)
 {
-    uint64_t cyc_old = cpu->cycles;
-    //print_regs(cpu);
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t op = cpu_read(cpu, cpu->regs.pc);
 
+    switch (op)
+    {
+    // ld iy, nn
+    case 0x21: ld_rr_nn(cpu, &cpu->regs.iy); break;
+    // inc iy
+    case 0x23: inc_rr(cpu, &cpu->regs.iy); break;
+    // dec iy
+    case 0x2B: dec_rr(cpu, &cpu->regs.iy); break;
+    // add iy, rr
+    case 0x09: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.main.bc); break;
+    case 0x19: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.main.de); break;
+    case 0x29: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.iy); break;
+    case 0x39: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.sp); break;
+
+    // ld (nn), iy
+    case 0x22: ld_nna_rr(cpu, cpu->regs.iy); break;
+    // ld iy, (nn)
+    case 0x2A: ld_rr_nna(cpu, &cpu->regs.iy); break;
+    // ld sp, iy
+    case 0xF9: ld_sp_rr(cpu, cpu->regs.iy); break;
+
+    default:
+        cpu->regs.pc--;
+        cpu->cycles -= 4;
+        print_regs(cpu);
+        dlog(LOG_ERR, "unimplemented opcode FD %02X at %04X", op, cpu->regs.pc);
+    }
+}
+
+void do_dd(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t op = cpu_read(cpu, cpu->regs.pc);
+
+    switch (op)
+    {
+    // ld ix, nn
+    case 0x21: ld_rr_nn(cpu, &cpu->regs.ix); break;
+    // inc ix
+    case 0x23: inc_rr(cpu, &cpu->regs.ix); break;
+    // dec ix
+    case 0x2B: dec_rr(cpu, &cpu->regs.ix); break;
+    // add ix, rr
+    case 0x09: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.main.bc); break;
+    case 0x19: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.main.de); break;
+    case 0x29: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.ix); break;
+    case 0x39: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.sp); break;
+
+    // ld (nn), ix
+    case 0x22: ld_nna_rr(cpu, cpu->regs.ix); break;
+    // ld ix, (nn)
+    case 0x2A: ld_rr_nna(cpu, &cpu->regs.ix); break;
+    // ld sp, ix
+    case 0xF9: ld_sp_rr(cpu, cpu->regs.ix); break;
+
+    default:
+        cpu->regs.pc--;
+        cpu->cycles -= 4;
+        print_regs(cpu);
+        dlog(LOG_ERR, "unimplemented opcode DD %02X at %04X", op, cpu->regs.pc);
+    }
+}
+
+void do_opcode(Z80_t *cpu)
+{
     // oppa gangnam style
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
 
@@ -823,6 +1033,15 @@ int cpu_do_cycles(Z80_t *cpu)
     case 0x19: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.de); break;
     case 0x29: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.hl); break;
     case 0x39: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.sp); break;
+
+    // ld (nn), hl
+    case 0x22: ld_nna_rr(cpu, cpu->regs.main.hl); break;
+    // ld hl, (nn)
+    case 0x2A: ld_rr_nna(cpu, &cpu->regs.main.hl); break;
+    // ld (nn), a
+    case 0x32: ld_nna_a(cpu); break;
+    // ld sp, hl
+    case 0xF9: ld_sp_rr(cpu, cpu->regs.main.hl); break;
 
     // ld b, reg
     case 0x40: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.b); break;
@@ -988,6 +1207,8 @@ int cpu_do_cycles(Z80_t *cpu)
 
     // exx
     case 0xD9: exx(cpu); break;
+    // XD
+    case 0xEB: ex_de_hl(cpu); break;
 
 
     // DI / EI
@@ -998,10 +1219,22 @@ int cpu_do_cycles(Z80_t *cpu)
 
     case 0xED: do_ed(cpu); break;
 
+    // IY/IX prefix
+    case 0xFD: do_fd(cpu); break;
+    case 0xDD: do_dd(cpu); break;
+
     default:
         print_regs(cpu);
         dlog(LOG_ERR, "unimplemented opcode %02X at %04X", op, cpu->regs.pc);
     }
+}
+
+int cpu_do_cycles(Z80_t *cpu)
+{
+    uint64_t cyc_old = cpu->cycles;
+    //print_regs(cpu);
+
+    do_opcode(cpu);
 
     return cpu->cycles - cyc_old;
 }

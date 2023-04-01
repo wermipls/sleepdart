@@ -1,14 +1,26 @@
 #include "memory.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "log.h"
 
 uint8_t memory_bus[0x10000] = {0};
 
-/* Zeroes out the memory. */
+/* Initializes the DRAM to a pseudo-random state it would have on initial power-on. */
 void memory_init()
 {
-    memset(memory_bus, 0, sizeof(memory_bus));
+    uint16_t ram_start = 0x4000;
+    uint16_t ram_size = 0x10000 - ram_start;
+
+    uint8_t *p = &memory_bus[ram_start];
+
+    srand(time(NULL));
+
+    for (uint16_t i = 0; i < ram_size; i++) {
+        *p = rand();
+        p++;
+    }
 }
 
 /* Loads a 16K ROM into the beginning of memory space. 
