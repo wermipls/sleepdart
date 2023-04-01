@@ -830,6 +830,15 @@ void ei(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
+/* DD/FD handler */
+
+void ddfd(Z80_t *cpu, bool is_iy)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->prefix_state = is_iy ? STATE_FD : STATE_DD;
+}
+
 /* The Real Deal */
 
 void cpu_init(Z80_t *cpu)
@@ -906,74 +915,44 @@ void do_ed(Z80_t *cpu)
  * "use IY/IX instead of HL for the next instruction".
  * there's some funky behavior associated with that i Do Not wanna emulate rn.
  * i also don't bother implementing illegal/duplicate opcodes */
-void do_fd(Z80_t *cpu)
+void do_ddfd(Z80_t *cpu, bool is_iy)
 {
-    cpu->cycles += 4;
-    cpu->regs.pc++;
+    uint16_t *ii = is_iy ? &cpu->regs.iy : &cpu->regs.ix;
+
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
 
     switch (op)
     {
     // ld iy, nn
-    case 0x21: ld_rr_nn(cpu, &cpu->regs.iy); break;
+    case 0x21: ld_rr_nn(cpu, ii); break;
     // inc iy
-    case 0x23: inc_rr(cpu, &cpu->regs.iy); break;
+    case 0x23: inc_rr(cpu, ii); break;
     // dec iy
-    case 0x2B: dec_rr(cpu, &cpu->regs.iy); break;
+    case 0x2B: dec_rr(cpu, ii); break;
     // add iy, rr
-    case 0x09: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.main.bc); break;
-    case 0x19: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.main.de); break;
-    case 0x29: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.iy); break;
-    case 0x39: add_rr_rr(cpu, &cpu->regs.iy, cpu->regs.sp); break;
+    case 0x09: add_rr_rr(cpu, ii, cpu->regs.main.bc); break;
+    case 0x19: add_rr_rr(cpu, ii, cpu->regs.main.de); break;
+    case 0x29: add_rr_rr(cpu, ii, cpu->regs.iy); break;
+    case 0x39: add_rr_rr(cpu, ii, cpu->regs.sp); break;
 
     // ld (nn), iy
-    case 0x22: ld_nna_rr(cpu, cpu->regs.iy); break;
+    case 0x22: ld_nna_rr(cpu, *ii); break;
     // ld iy, (nn)
-    case 0x2A: ld_rr_nna(cpu, &cpu->regs.iy); break;
+    case 0x2A: ld_rr_nna(cpu, ii); break;
     // ld sp, iy
-    case 0xF9: ld_sp_rr(cpu, cpu->regs.iy); break;
+    case 0xF9: ld_sp_rr(cpu, *ii); break;
 
     default:
-        cpu->regs.pc--;
-        cpu->cycles -= 4;
         print_regs(cpu);
-        dlog(LOG_ERR, "unimplemented opcode FD %02X at %04X", op, cpu->regs.pc);
+
+        static const char ix_op[] = "DD";
+        static const char iy_op[] = "FD";
+        const char *prefix = is_iy ? iy_op : ix_op; 
+
+        dlog(LOG_ERR, "unimplemented opcode %s %02X at %04X", prefix, op, cpu->regs.pc);
     }
-}
 
-void do_dd(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t op = cpu_read(cpu, cpu->regs.pc);
-
-    switch (op)
-    {
-    // ld ix, nn
-    case 0x21: ld_rr_nn(cpu, &cpu->regs.ix); break;
-    // inc ix
-    case 0x23: inc_rr(cpu, &cpu->regs.ix); break;
-    // dec ix
-    case 0x2B: dec_rr(cpu, &cpu->regs.ix); break;
-    // add ix, rr
-    case 0x09: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.main.bc); break;
-    case 0x19: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.main.de); break;
-    case 0x29: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.ix); break;
-    case 0x39: add_rr_rr(cpu, &cpu->regs.ix, cpu->regs.sp); break;
-
-    // ld (nn), ix
-    case 0x22: ld_nna_rr(cpu, cpu->regs.ix); break;
-    // ld ix, (nn)
-    case 0x2A: ld_rr_nna(cpu, &cpu->regs.ix); break;
-    // ld sp, ix
-    case 0xF9: ld_sp_rr(cpu, cpu->regs.ix); break;
-
-    default:
-        cpu->regs.pc--;
-        cpu->cycles -= 4;
-        print_regs(cpu);
-        dlog(LOG_ERR, "unimplemented opcode DD %02X at %04X", op, cpu->regs.pc);
-    }
+    cpu->prefix_state = STATE_NOPREFIX;
 }
 
 void do_opcode(Z80_t *cpu)
@@ -1210,7 +1189,6 @@ void do_opcode(Z80_t *cpu)
     // XD
     case 0xEB: ex_de_hl(cpu); break;
 
-
     // DI / EI
     case 0xF3: di(cpu); break;
     case 0xFB: ei(cpu); break;
@@ -1220,8 +1198,8 @@ void do_opcode(Z80_t *cpu)
     case 0xED: do_ed(cpu); break;
 
     // IY/IX prefix
-    case 0xFD: do_fd(cpu); break;
-    case 0xDD: do_dd(cpu); break;
+    case 0xDD: ddfd(cpu, false); break;
+    case 0xFD: ddfd(cpu, true); break;
 
     default:
         print_regs(cpu);
@@ -1232,9 +1210,13 @@ void do_opcode(Z80_t *cpu)
 int cpu_do_cycles(Z80_t *cpu)
 {
     uint64_t cyc_old = cpu->cycles;
-    //print_regs(cpu);
 
-    do_opcode(cpu);
+    switch (cpu->prefix_state) 
+    {
+        case STATE_DD: do_ddfd(cpu, false); break;
+        case STATE_FD: do_ddfd(cpu, true); break;
+        default: do_opcode(cpu); break;
+    }
 
     return cpu->cycles - cyc_old;
 }

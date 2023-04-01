@@ -83,6 +83,11 @@ struct Z80Regs {
 typedef struct Z80 {
     struct Z80Regs regs;
     uint64_t cycles;
+    enum PrefixState {
+        STATE_NOPREFIX,
+        STATE_DD,
+        STATE_FD,
+    } prefix_state;
 } Z80_t;
 
 extern Z80_t cpu;
