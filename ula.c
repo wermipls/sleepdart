@@ -27,6 +27,11 @@ RGB24_t colors_basic[] = {
 
 uint8_t border = 0;
 
+void ula_set_border(uint8_t color)
+{
+    border = color & 7;
+}
+
 static inline uint8_t ula_get_screen_byte(uint16_t offset)
 {
     return memory_bus_peek(0x4000 + offset);
@@ -70,11 +75,18 @@ static inline void ula_fill_border_8x1(RGB24_t *buf)
 
 void ula_naive_draw()
 {
+    // hacky border draw
+    RGB24_t *bufptr = ula_buffer;
+    for (int i = 0; i < BUFFER_HEIGHT * BUFFER_WIDTH / 8; i++) {
+        ula_fill_border_8x1(bufptr);
+        bufptr += 8;
+    }
+
     int screen_startx = (BUFFER_WIDTH - 256) / 2;
     int screen_starty = (BUFFER_HEIGHT - 192) / 2;
     int buf_borderwidth = BUFFER_WIDTH - 256;
 
-    RGB24_t *bufptr = &ula_buffer[BUFFER_WIDTH * screen_starty + screen_startx];
+    bufptr = &ula_buffer[BUFFER_WIDTH * screen_starty + screen_startx];
 
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 32; x++) {

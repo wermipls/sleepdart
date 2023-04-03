@@ -1,5 +1,6 @@
 #include "z80.h"
 #include "memory.h"
+#include "io.h"
 #include "log.h"
 
 Z80_t cpu;
@@ -54,7 +55,7 @@ static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
 static inline void cpu_out(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
     // FIXME: placeholder until port i/o gets implemented
-    // cpu->cycles += memory_write(addr, value);
+    cpu->cycles += io_port_write(addr, value);
 }
 
 static inline bool get_parity(uint8_t value)
@@ -99,6 +100,22 @@ void ld_r_n(Z80_t *cpu, uint8_t *dest)
     cpu->regs.pc++;
 }
 
+/* LD r, (nn) */
+void ld_r_nna(Z80_t *cpu, uint8_t *dest)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    *dest = cpu_read(cpu, MAKE16(l, h));
+    cpu->cycles += 3;
+}
+
 /* LD (rr), n */
 void ld_rra_n(Z80_t *cpu, uint16_t addr)
 {
@@ -136,6 +153,58 @@ void ld_nna_a(Z80_t *cpu)
     cpu_write(cpu, addr, cpu->regs.main.a);
     cpu->cycles += 3;
 }
+
+/* LD (rr), r */
+void ld_rra_r(Z80_t *cpu, uint16_t addr, uint8_t value)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+}
+
+/* LD (ii+d), r */
+void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // amstrad gate 
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+}
+
+/* LD r, (ii+d) */
+void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // amstrad gate 
+    cpu->regs.pc++;
+    *dest = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+}
+
+/* LD (ii+d), n */
+void ld_iid_n(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 3; // amstrad gate 
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+}
+
 
 /* 16-Bit Load Group */
 
@@ -187,9 +256,9 @@ void ld_nna_rr(Z80_t *cpu, uint16_t value)
     int16_t addr = MAKE16(l, h);
     cpu->cycles += 3;
     cpu->regs.pc++;
-    cpu_write(cpu, addr, LOW8(addr));
+    cpu_write(cpu, addr, LOW8(value));
     cpu->cycles += 3;
-    cpu_write(cpu, addr+1, HIGH8(addr));
+    cpu_write(cpu, addr+1, HIGH8(value));
     cpu->cycles += 3;
 }
 
@@ -198,6 +267,36 @@ void ld_sp_rr(Z80_t *cpu, uint16_t value)
     cpu->cycles += 6;
     cpu->regs.pc++;
     cpu->regs.sp = value;
+}
+
+void pop(Z80_t *cpu, uint16_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.sp);
+    cpu->cycles += 3;
+    cpu->regs.sp++;
+    uint8_t h = cpu_read(cpu, cpu->regs.sp);
+    cpu->cycles += 3;
+    cpu->regs.sp++;
+    *dest = MAKE16(l, h);
+}
+
+void ret(Z80_t *cpu)
+{
+    pop(cpu, &cpu->regs.pc);
+}
+
+void push(Z80_t *cpu, uint16_t value)
+{
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    cpu->regs.sp--;
+    cpu_write(cpu, cpu->regs.sp, HIGH8(value));
+    cpu->cycles += 3;
+    cpu->regs.sp--;
+    cpu_write(cpu, cpu->regs.sp, LOW8(value));
+    cpu->cycles += 3;
 }
 
 /* Exchange, Block Transfer and Search Group */
@@ -232,11 +331,38 @@ void ex_de_hl(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
+void ex_af(Z80_t *cpu)
+{
+    uint16_t tmp;
+    tmp = cpu->regs.main.af;
+    cpu->regs.main.af = cpu->regs.alt.af;
+    cpu->regs.alt.af = tmp;
+
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+}
+
+void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.sp);
+    cpu->cycles += 3;
+    uint8_t h = cpu_read(cpu, cpu->regs.sp+1);
+    cpu->cycles += 4;
+    cpu_write(cpu, cpu->regs.sp+1, HIGH8(*dest));
+    cpu->cycles += 3;
+    cpu_write(cpu, cpu->regs.sp, LOW8(*dest));
+    cpu->cycles += 5;
+    *dest = MAKE16(l, h);
+}
+
 /* LDI/LDD */
 void ldx(Z80_t *cpu, int8_t increment)
 {
     // FIXME: fuck flags
     cpu->cycles += 4;
+    cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
     cpu_write(cpu, cpu->regs.main.de, value);
@@ -252,6 +378,7 @@ void ldxr(Z80_t *cpu, int8_t increment)
 {
     // FIXME: fuck flags
     cpu->cycles += 4;
+    cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
     cpu_write(cpu, cpu->regs.main.de, value);
@@ -303,6 +430,22 @@ void inc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+/* INC (ii+d) */
+void inc_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    addr += d;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = inc8(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+}
+
 /* DEC helper */
 static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
 {
@@ -330,6 +473,22 @@ void dec_rra(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = dec8(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+}
+
+/* DEC (ii+d) */
+void dec_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    addr += d;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 4;
     value = dec8(cpu, value);
@@ -389,6 +548,20 @@ void add_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.main.a = add8(cpu, value);
 }
 
+/* ADD a, (ii+d) */
+void add_a_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    cpu->regs.main.a = add8(cpu, value);
+}
+
 /* ADC helper */
 static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
 {
@@ -442,6 +615,20 @@ void adc_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.main.a = adc8(cpu, value);
 }
 
+/* ADC a, (ii+d) */
+void adc_a_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    cpu->regs.main.a = adc8(cpu, value);
+}
+
 /* SBC helper */
 static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
 {
@@ -459,7 +646,7 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
         cpu->regs.main.flags.pv = !(!((result ^ value) & (1<<7)));
     }
     cpu->regs.main.flags.h = ((a & 0xF0) - (value & 0xF0)) < 0xF0;
-    cpu->regs.main.flags.c = ((uint16_t)a - (uint16_t)value) > 255;
+    cpu->regs.main.flags.c = a < ((uint16_t)value + cpu->regs.main.flags.c);
     cpu->regs.main.flags.n = 1;
     return result;
 }
@@ -494,6 +681,20 @@ void sbc_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.main.a = sbc8(cpu, value);
 }
 
+/* SBC a, (ii+d) */
+void sbc_a_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    cpu->regs.main.a = sbc8(cpu, value);
+}
+
 /* SUB helper */
 static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
 {
@@ -511,7 +712,7 @@ static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
     }
     // FIXME: dunno about correctness of (half) carry or PV
     cpu->regs.main.flags.h = ((a & 0xF0) - (value & 0xF0)) < 0xF0;
-    cpu->regs.main.flags.c = ((uint16_t)a - (uint16_t)value) > (uint16_t)255;
+    cpu->regs.main.flags.c = a < value;
     cpu->regs.main.flags.n = 1;
     return result;
 }
@@ -546,6 +747,20 @@ void sub_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.main.a = sub8(cpu, value);
 }
 
+/* SUB (ii+d) */
+void sub_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    cpu->regs.main.a = sub8(cpu, value);
+}
+
 /* CP r */
 void cp_r(Z80_t *cpu, uint8_t value)
 {
@@ -573,6 +788,20 @@ void cp_rra(Z80_t *cpu, uint16_t addr)
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
     cpu->regs.pc++;
+    sub8(cpu, value);
+}
+
+/* CP (ii+d) */
+void cp_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
     sub8(cpu, value);
 }
 
@@ -610,6 +839,31 @@ void and_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
 }
 
+/* AND n */
+void and_n(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    and(cpu, value);
+}
+
+/* AND (ii+d) */
+void and_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    and(cpu, value);
+}
+
 /* XOR helper */
 static inline void xor(Z80_t *cpu, uint8_t value)
 {
@@ -642,6 +896,31 @@ void xor_rra(Z80_t *cpu, uint16_t addr)
     xor(cpu, value);
     cpu->cycles += 3;
     cpu->regs.pc++;
+}
+
+/* XOR n */
+void xor_n(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    xor(cpu, value);
+}
+
+/* XOR (ii+d) */
+void xor_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    xor(cpu, value);
 }
 
 /* OR helper */
@@ -678,7 +957,51 @@ void or_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
 }
 
+/* OR n */
+void or_n(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    or(cpu, value);
+}
+
+/* OR (ii+d) */
+void or_iid(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    addr += d;
+    cpu->cycles += 8; // FIXME
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    or(cpu, value);
+}
+
 /* General-Purpose Arithmetic and CPU Control Groups */
+
+/* CCF/SCF */
+void ccf(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->regs.main.flags.h = cpu->regs.main.flags.c;
+    cpu->regs.main.flags.n = 0;
+    cpu->regs.main.flags.c ^= 1;
+}
+
+void scf(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+    cpu->regs.main.flags.c = 1;
+}
 
 /* IM 0/1/2 */
 void im(Z80_t *cpu, uint8_t im)
@@ -687,6 +1010,7 @@ void im(Z80_t *cpu, uint8_t im)
     cpu->regs.pc++;
     cpu->regs.im = im;
 }
+
 
 /* 16-Bit Arithmetic Group */
 
@@ -895,6 +1219,18 @@ void rlc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+void rlc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = rlc(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
 
 void rrc_r(Z80_t *cpu, uint8_t *dest)
 {
@@ -912,6 +1248,18 @@ void rrc_rra(Z80_t *cpu, uint16_t addr)
     value = rrc(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
+}
+
+void rrc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = rrc(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
 }
 
 
@@ -933,6 +1281,18 @@ void rl_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+void rl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = rl(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
 
 void rr_r(Z80_t *cpu, uint8_t *dest)
 {
@@ -950,6 +1310,18 @@ void rr_rra(Z80_t *cpu, uint16_t addr)
     value = rr(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
+}
+
+void rr_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = rr(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
 }
 
 
@@ -971,6 +1343,18 @@ void sla_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+void sla_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = sla(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
 
 void sra_r(Z80_t *cpu, uint8_t *dest)
 {
@@ -988,6 +1372,18 @@ void sra_rra(Z80_t *cpu, uint16_t addr)
     value = sra(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
+}
+
+void sra_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = sra(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
 }
 
 
@@ -1009,6 +1405,18 @@ void sll_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+void sll_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = sll(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
 
 void srl_r(Z80_t *cpu, uint8_t *dest)
 {
@@ -1028,13 +1436,25 @@ void srl_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
+void srl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = srl(cpu, value);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
+
 /* Bit Set, Reset and Test Group */
 
 static inline void bit_(Z80_t *cpu, uint8_t value, uint8_t bit)
 {
     uint8_t mask = (1<<bit);
     value &= mask;
-    cpu->regs.main.a = value;
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
@@ -1085,6 +1505,19 @@ void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 3;
 }
 
+void res_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = res(cpu, value, bit);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
+}
+
+
 static inline uint8_t set(Z80_t *cpu, uint8_t value, uint8_t bit)
 {
     uint8_t mask = (1<<bit);
@@ -1107,6 +1540,18 @@ void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     value = set(cpu, value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
+}
+
+void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 4;
+    value = set(cpu, value, bit);
+    cpu_write(cpu, addr, value);
+    cpu->cycles += 3;
+    if (dest) *dest = value;
 }
 
 
@@ -1136,12 +1581,11 @@ void jp_cc_nn(Z80_t *cpu, bool cc)
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
     if (cc) {
         cpu->regs.pc = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
-    } else {
-        cpu->regs.pc++;
     }
-    cpu->cycles += 3;
 }
 
 void jr_cc_d(Z80_t *cpu, bool cc)
@@ -1157,6 +1601,83 @@ void jr_cc_d(Z80_t *cpu, bool cc)
         cpu->cycles += 5;
     }
 }
+
+void jp_rr(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc = addr;
+}
+
+void djnz_d(Z80_t *cpu)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    int8_t offset = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    cpu->regs.main.b--;
+    if (cpu->regs.main.b) {
+        cpu->regs.pc += offset;
+        cpu->cycles += 5;
+    }
+}
+
+/* Call and Return Group */
+
+void call_cc_nn(Z80_t *cpu, bool cc)
+{
+    // FIXME: placeholder, possibly wrong timings
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    if (cc) {
+        cpu_read(cpu, cpu->regs.pc); // pc+2:1
+        cpu->cycles++;
+        cpu->regs.sp--;
+        cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
+        cpu->cycles += 3;
+        cpu->regs.sp--;
+        cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
+        cpu->cycles += 3;
+        cpu->regs.pc = MAKE16(l, h); // FIXME: figure out a nicer macro for this
+    }
+}
+
+// RET cc (and ONLY cc as timings are different)
+void ret_cc(Z80_t *cpu, bool cc)
+{
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    if (cc) {
+        uint8_t l = cpu_read(cpu, cpu->regs.sp);
+        cpu->cycles += 3;
+        cpu->regs.sp++;
+        uint8_t h = cpu_read(cpu, cpu->regs.sp);
+        cpu->cycles += 3;
+        cpu->regs.sp++;
+        cpu->regs.pc = MAKE16(l, h);
+    }
+}
+
+void rst(Z80_t *cpu, uint8_t offset)
+{
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    cpu->regs.sp--;
+    cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
+    cpu->cycles += 3;
+    cpu->regs.sp--;
+    cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
+    cpu->cycles += 3;
+    cpu->regs.pc = offset;
+}
+
 
 /* Input and Output Group */
 
@@ -1384,6 +1905,76 @@ void do_cb(Z80_t *cpu)
     }
 }
 
+void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
+{
+    // as a side effect of how Z80 works internally, all the instructions
+    // copy their result to a register specified in the last 3 bits
+    uint8_t *regs[] = {
+        &cpu->regs.main.b,
+        &cpu->regs.main.c,
+        &cpu->regs.main.d,
+        &cpu->regs.main.e,
+        &cpu->regs.main.h,
+        &cpu->regs.main.l,
+        NULL, // no write
+        &cpu->regs.main.a,
+    };
+
+    // the offset is always after the CB opcode so I just read it here
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
+    uint16_t addr = *ii + d;
+
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t op = cpu_read(cpu, cpu->regs.pc);
+
+    uint8_t reg = op & 7; // op & 0b111
+    uint8_t *regptr = regs[reg];
+
+    uint8_t op_partial = op >> 3;
+
+    switch (op_partial)
+    {
+        case 0x00: rlc_iid_r(cpu, addr, regptr); break;
+        case 0x01: rrc_iid_r(cpu, addr, regptr); break;
+        case 0x02: rl_iid_r(cpu, addr, regptr); break;
+        case 0x03: rr_iid_r(cpu, addr, regptr); break;
+        case 0x04: sla_iid_r(cpu, addr, regptr); break;
+        case 0x05: sra_iid_r(cpu, addr, regptr); break;
+        case 0x06: sll_iid_r(cpu, addr, regptr); break;
+        case 0x07: srl_iid_r(cpu, addr, regptr); break;
+        // bit
+        case 0x08: bit_rra(cpu, addr, 0); break;
+        case 0x09: bit_rra(cpu, addr, 1); break;
+        case 0x0A: bit_rra(cpu, addr, 2); break;
+        case 0x0B: bit_rra(cpu, addr, 3); break;
+        case 0x0C: bit_rra(cpu, addr, 4); break;
+        case 0x0D: bit_rra(cpu, addr, 5); break;
+        case 0x0E: bit_rra(cpu, addr, 6); break;
+        case 0x0F: bit_rra(cpu, addr, 7); break;
+        // res
+        case 0x10: res_iid_r(cpu, addr, regptr, 0); break;
+        case 0x11: res_iid_r(cpu, addr, regptr, 1); break;
+        case 0x12: res_iid_r(cpu, addr, regptr, 2); break;
+        case 0x13: res_iid_r(cpu, addr, regptr, 3); break;
+        case 0x14: res_iid_r(cpu, addr, regptr, 4); break;
+        case 0x15: res_iid_r(cpu, addr, regptr, 5); break;
+        case 0x16: res_iid_r(cpu, addr, regptr, 6); break;
+        case 0x17: res_iid_r(cpu, addr, regptr, 7); break;
+        // set
+        case 0x18: set_iid_r(cpu, addr, regptr, 0); break;
+        case 0x19: set_iid_r(cpu, addr, regptr, 1); break;
+        case 0x1A: set_iid_r(cpu, addr, regptr, 2); break;
+        case 0x1B: set_iid_r(cpu, addr, regptr, 3); break;
+        case 0x1C: set_iid_r(cpu, addr, regptr, 4); break;
+        case 0x1D: set_iid_r(cpu, addr, regptr, 5); break;
+        case 0x1E: set_iid_r(cpu, addr, regptr, 6); break;
+        case 0x1F: set_iid_r(cpu, addr, regptr, 7); break;
+    }
+}
+
 /* FD/DD are basically "instructions" that tell the CPU 
  * "use IY/IX instead of HL for the next instruction".
  * there's some funky behavior associated with that i Do Not wanna emulate rn.
@@ -1398,28 +1989,70 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
 
     switch (op)
     {
-    // ld iy, nn
+    // ld ii, nn
     case 0x21: ld_rr_nn(cpu, ii); break;
-    // inc iy
+    // inc ii
     case 0x23: inc_rr(cpu, ii); break;
-    // dec iy
+    // dec ii
     case 0x2B: dec_rr(cpu, ii); break;
-    // add iy, rr
+    // add ii, rr
     case 0x09: add_rr_rr(cpu, ii, cpu->regs.main.bc); break;
     case 0x19: add_rr_rr(cpu, ii, cpu->regs.main.de); break;
     case 0x29: add_rr_rr(cpu, ii, cpu->regs.iy); break;
     case 0x39: add_rr_rr(cpu, ii, cpu->regs.sp); break;
 
-    // ld (nn), iy
+    // inc (ii+d)
+    case 0x34: inc_iid(cpu, *ii); break;
+    // dec (ii+d)
+    case 0x35: dec_iid(cpu, *ii); break;
+    // ld (ii+d), n
+    case 0x36: ld_iid_n(cpu, *ii); break;
+
+    // ld (nn), ii
     case 0x22: ld_nna_rr(cpu, *ii); break;
-    // ld iy, (nn)
+    // ld ii, (nn)
     case 0x2A: ld_rr_nna(cpu, ii); break;
-    // ld sp, iy
+
+    // ld (ii+d), r
+    case 0x70: ld_iid_r(cpu, *ii, cpu->regs.main.b); break;
+    case 0x71: ld_iid_r(cpu, *ii, cpu->regs.main.c); break;
+    case 0x72: ld_iid_r(cpu, *ii, cpu->regs.main.d); break;
+    case 0x73: ld_iid_r(cpu, *ii, cpu->regs.main.e); break;
+    case 0x74: ld_iid_r(cpu, *ii, cpu->regs.main.h); break;
+    case 0x75: ld_iid_r(cpu, *ii, cpu->regs.main.l); break;
+    case 0x77: ld_iid_r(cpu, *ii, cpu->regs.main.a); break;
+
+    // ld r, (ii+d)
+    case 0x46: ld_r_iid(cpu, &cpu->regs.main.b, *ii); break;
+    case 0x4E: ld_r_iid(cpu, &cpu->regs.main.c, *ii); break;
+    case 0x56: ld_r_iid(cpu, &cpu->regs.main.d, *ii); break;
+    case 0x5E: ld_r_iid(cpu, &cpu->regs.main.e, *ii); break;
+    case 0x66: ld_r_iid(cpu, &cpu->regs.main.h, *ii); break;
+    case 0x6E: ld_r_iid(cpu, &cpu->regs.main.l, *ii); break;
+    case 0x7E: ld_r_iid(cpu, &cpu->regs.main.a, *ii); break;
+
+    // add/adc/sub/sbc/and/xor/or/cp (ii+d)
+    case 0x86: add_a_iid(cpu, *ii); break;
+    case 0x8E: adc_a_iid(cpu, *ii); break;
+    case 0x96: sub_iid(cpu, *ii); break;
+    case 0x9E: sbc_a_iid(cpu, *ii); break;
+    case 0xA6: and_iid(cpu, *ii); break;
+    case 0xAE: xor_iid(cpu, *ii); break;
+    case 0xB6: or_iid(cpu, *ii); break;
+    case 0xBE: cp_iid(cpu, *ii); break;
+
+    // ld sp, ii
     case 0xF9: ld_sp_rr(cpu, *ii); break;
+
+    // jp ii
+    case 0xE9: jp_rr(cpu, *ii); break;
 
     // IY/IX prefix
     case 0xDD: ddfd(cpu, false); break;
     case 0xFD: ddfd(cpu, true); break;
+
+    // bit instructions
+    case 0xCB: do_ddfd_cb(cpu, ii); break;
 
     default:
         print_regs(cpu);
@@ -1444,6 +2077,15 @@ void do_opcode(Z80_t *cpu)
     case 0x11: ld_rr_nn(cpu, &cpu->regs.main.de); break;
     case 0x21: ld_rr_nn(cpu, &cpu->regs.main.hl); break;
     case 0x31: ld_rr_nn(cpu, &cpu->regs.sp); break;
+
+    // ld (rr), a
+    case 0x02: ld_rra_r(cpu, cpu->regs.main.bc, cpu->regs.main.a); break;
+    case 0x12: ld_rra_r(cpu, cpu->regs.main.de, cpu->regs.main.a); break;
+    // ld a, (rr)
+    case 0x0A: ld_r_rra(cpu, &cpu->regs.main.a, cpu->regs.main.bc); break;
+    case 0x1A: ld_r_rra(cpu, &cpu->regs.main.a, cpu->regs.main.de); break;
+    // ld a, (nn)
+    case 0x3A: ld_r_nna(cpu, &cpu->regs.main.a); break;
 
     // inc rr
     case 0x03: inc_rr(cpu, &cpu->regs.main.bc); break;
@@ -1490,6 +2132,12 @@ void do_opcode(Z80_t *cpu)
     case 0x29: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.hl); break;
     case 0x39: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.sp); break;
 
+    // rra/rla/rrca/rlca
+    case 0x07: rlc_r(cpu, &cpu->regs.main.a); break;
+    case 0x0F: rrc_r(cpu, &cpu->regs.main.a); break;
+    case 0x17: rl_r(cpu, &cpu->regs.main.a); break;
+    case 0x1F: rr_r(cpu, &cpu->regs.main.a); break;
+
     // ld (nn), hl
     case 0x22: ld_nna_rr(cpu, cpu->regs.main.hl); break;
     // ld hl, (nn)
@@ -1498,6 +2146,10 @@ void do_opcode(Z80_t *cpu)
     case 0x32: ld_nna_a(cpu); break;
     // ld sp, hl
     case 0xF9: ld_sp_rr(cpu, cpu->regs.main.hl); break;
+
+    // scf/ccf
+    case 0x37: scf(cpu); break;
+    case 0x3F: ccf(cpu); break;
 
     // ld b, reg
     case 0x40: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.b); break;
@@ -1562,6 +2214,15 @@ void do_opcode(Z80_t *cpu)
     case 0x7D: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.l); break;
     case 0x7E: ld_r_rra(cpu, &cpu->regs.main.a, cpu->regs.main.hl); break;
     case 0x7F: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.a); break;
+
+    // ld (hl), r
+    case 0x70: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.b); break;
+    case 0x71: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.c); break;
+    case 0x72: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.d); break;
+    case 0x73: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.e); break;
+    case 0x74: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.h); break;
+    case 0x75: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.l); break;
+    case 0x77: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.a); break;
 
     // add a
     case 0x80: add_a_r(cpu, cpu->regs.main.b); break;
@@ -1636,6 +2297,20 @@ void do_opcode(Z80_t *cpu)
     case 0xBE: cp_rra(cpu, cpu->regs.main.hl); break;
     case 0xBF: cp_r(cpu, cpu->regs.main.a); break;
 
+    // add/adc/sub/sbc/and/xor/or/cp n
+    case 0xC6: add_a_n(cpu); break;
+    case 0xCE: adc_a_n(cpu); break;
+    case 0xD6: sub_n(cpu); break;
+    case 0xDE: sbc_a_n(cpu); break;
+    case 0xE6: and_n(cpu); break;
+    case 0xEE: xor_n(cpu); break;
+    case 0xF6: or_n(cpu); break;
+    case 0xFE: cp_n(cpu); break;
+
+    // djnz
+    case 0x10: djnz_d(cpu); break;
+    // jr
+    case 0x18: jr_cc_d(cpu, true); break;
     // jr cc, d
     case 0x20: jr_cc_d(cpu, !cpu->regs.main.flags.z); break;
     case 0x28: jr_cc_d(cpu, cpu->regs.main.flags.z); break;
@@ -1652,19 +2327,64 @@ void do_opcode(Z80_t *cpu)
     case 0xFA: jp_cc_nn(cpu, cpu->regs.main.flags.s); break;
     // jp nn
     case 0xC3: jp_nn(cpu); break;
+    // jp hl
+    case 0xE9: jp_rr(cpu, cpu->regs.main.hl); break;
 
-    // add/adc/sub/sbc/and/xor/or/cp n
-    case 0xC6: add_a_n(cpu); break;
-    case 0xD6: sub_n(cpu); break;
-    case 0xFE: cp_n(cpu); break;
+    // call cc, nn
+    case 0xC4: call_cc_nn(cpu, !cpu->regs.main.flags.z); break;
+    case 0xCC: call_cc_nn(cpu, cpu->regs.main.flags.z); break;
+    case 0xD4: call_cc_nn(cpu, !cpu->regs.main.flags.c); break;
+    case 0xDC: call_cc_nn(cpu, cpu->regs.main.flags.c); break;
+    case 0xE4: call_cc_nn(cpu, !cpu->regs.main.flags.pv); break;
+    case 0xEC: call_cc_nn(cpu, cpu->regs.main.flags.pv); break;
+    case 0xF4: call_cc_nn(cpu, !cpu->regs.main.flags.s); break;
+    case 0xFC: call_cc_nn(cpu, cpu->regs.main.flags.s); break;
+    // call nn
+    case 0xCD: call_cc_nn(cpu, true); break;
+    // ret cc
+    case 0xC0: ret_cc(cpu, !cpu->regs.main.flags.z); break;
+    case 0xC8: ret_cc(cpu, cpu->regs.main.flags.z); break;
+    case 0xD0: ret_cc(cpu, !cpu->regs.main.flags.c); break;
+    case 0xD8: ret_cc(cpu, cpu->regs.main.flags.c); break;
+    case 0xE0: ret_cc(cpu, !cpu->regs.main.flags.pv); break;
+    case 0xE8: ret_cc(cpu, cpu->regs.main.flags.pv); break;
+    case 0xF0: ret_cc(cpu, !cpu->regs.main.flags.s); break;
+    case 0xF8: ret_cc(cpu, cpu->regs.main.flags.s); break;
+    // ret (same behavior as imaginary instruction pop pc)
+    case 0xC9: ret(cpu); break;
+
+    // rst
+    case 0xC7: rst(cpu, 0x00); break;
+    case 0xCF: rst(cpu, 0x08); break;
+    case 0xD7: rst(cpu, 0x10); break;
+    case 0xDF: rst(cpu, 0x18); break;
+    case 0xE7: rst(cpu, 0x20); break;
+    case 0xEF: rst(cpu, 0x28); break;
+    case 0xF7: rst(cpu, 0x30); break;
+    case 0xFF: rst(cpu, 0x38); break;
+
+    // pop
+    case 0xC1: pop(cpu, &cpu->regs.main.bc); break;
+    case 0xD1: pop(cpu, &cpu->regs.main.de); break;
+    case 0xE1: pop(cpu, &cpu->regs.main.hl); break;
+    case 0xF1: pop(cpu, &cpu->regs.main.af); break;
+    // push
+    case 0xC5: push(cpu, cpu->regs.main.bc); break;
+    case 0xD5: push(cpu, cpu->regs.main.de); break;
+    case 0xE5: push(cpu, cpu->regs.main.hl); break;
+    case 0xF5: push(cpu, cpu->regs.main.af); break;
 
     // out (n), a
     case 0xD3: out_na_a(cpu); break;
 
+    // ex af
+    case 0x08: ex_af(cpu); break;
     // exx
     case 0xD9: exx(cpu); break;
     // XD
     case 0xEB: ex_de_hl(cpu); break;
+    // ex (sp), hl
+    case 0xE3: ex_spa_rr(cpu, &cpu->regs.main.hl); break;
 
     // DI / EI
     case 0xF3: di(cpu); break;

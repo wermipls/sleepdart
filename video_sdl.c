@@ -72,7 +72,7 @@ int video_sdl_init(const char *title, int width, int height, int scale)
     return 0;
 }
 
-void video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
+int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
 {
     int err = SDL_RenderClear(renderer);
     if (err) sdl_log_error("SDL_RenderClear");
@@ -90,5 +90,20 @@ void video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
     if (err) sdl_log_error("SDL_RenderCopy");
 
     SDL_RenderPresent(renderer);
+
+    int quit = 0;
+
+
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        switch (e.type)
+        {
+        case SDL_QUIT:
+            quit = 1;
+        }
+    }
+
     SDL_Delay(20);
+
+    return quit;
 }

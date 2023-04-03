@@ -34,7 +34,8 @@ int main()
 
             ula_naive_draw();
 
-            video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+            int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+            if (quit) break;
 
             frame++;
         }

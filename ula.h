@@ -18,4 +18,5 @@ typedef struct RGB24
 
 extern RGB24_t ula_buffer[BUFFER_WIDTH*BUFFER_HEIGHT];
 
+void ula_set_border(uint8_t color);
 void ula_naive_draw();
