@@ -1,0 +1,35 @@
+#include "resource.h"
+
+IDR_MENU1 MENU
+BEGIN
+    POPUP "File"
+    BEGIN
+        MENUITEM "Open",                        ID_FILE_OPEN
+        MENUITEM "Save",                        ID_FILE_SAVE
+        MENUITEM SEPARATOR
+        MENUITEM "Quit",                        ID_FILE_QUIT
+    END
+    POPUP "Machine"
+    BEGIN
+        MENUITEM "Reset",                       ID_MACHINE_RESET
+        MENUITEM "Trigger NMI",                 ID_MACHINE_TRIGGERNMI
+    END
+    POPUP "Options"
+    BEGIN
+        MENUITEM "Limit FPS",                   ID_OPTIONS_LIMITFPS
+        MENUITEM SEPARATOR
+        MENUITEM "Fullscreen",                  ID_OPTIONS_FULLSCREEN
+        POPUP "Window scale"
+        BEGIN
+            MENUITEM "1x",                          ID_WINDOWSCALE_1X
+            MENUITEM "2x",                          ID_WINDOWSCALE_2X
+            MENUITEM "3x",                          ID_WINDOWSCALE_3X
+            MENUITEM "4x",                          ID_WINDOWSCALE_4X
+            MENUITEM "5x",                          ID_WINDOWSCALE_5X
+        END
+    END
+    POPUP "Help"
+    BEGIN
+        MENUITEM "About",                       ID_HELP_ABOUT
+    END
+END
