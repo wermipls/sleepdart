@@ -1733,6 +1733,7 @@ void ddfd(Z80_t *cpu, bool is_iy)
 void cpu_init(Z80_t *cpu)
 {
     cpu->cycles = 0;
+    cpu->prefix_state = STATE_NOPREFIX;
 
     cpu->regs.main.af = 0xFFFF;
     cpu->regs.main.bc = 0xFFFF;
