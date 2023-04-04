@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "ula.h"
 #include "video_sdl.h"
+#include "input_sdl.h"
 
 int main()
 {
@@ -19,6 +20,8 @@ int main()
         return 1;
     }
 
+    input_sdl_init();
+
     memory_init();
     memory_load_rom_16k("./rom/48.rom");
 
@@ -33,9 +36,12 @@ int main()
             cpu.cycles -= T_FRAME;
 
             ula_naive_draw();
+            cpu_fire_interrupt(&cpu);
 
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;
+
+            input_sdl_update();
 
             frame++;
         }

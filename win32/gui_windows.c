@@ -91,6 +91,7 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 
 void menu_init(HWND hwnd)
 {
+    // force SDL to resize window to compensate for the menu bar that we just added
     video_sdl_set_scale(video_sdl_get_scale());
 
     windowscale_update_check();

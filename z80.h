@@ -88,9 +88,12 @@ typedef struct Z80 {
         STATE_DD,
         STATE_FD,
     } prefix_state;
+    bool interrupt_pending;
+    bool halt_resume;
 } Z80_t;
 
 extern Z80_t cpu;
 
 void cpu_init(Z80_t *cpu);
+void cpu_fire_interrupt(Z80_t *cpu);
 int cpu_do_cycles(Z80_t *cpu);

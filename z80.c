@@ -3,6 +3,8 @@
 #include "io.h"
 #include "log.h"
 
+#include <stdio.h>
+
 Z80_t cpu;
 
 /* helpers */
@@ -46,10 +48,9 @@ static inline void cpu_write(Z80_t *cpu, uint16_t addr, uint8_t value)
 
 static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
 {
-    // FIXME: placeholder until port i/o gets implemented
-    // uint8_t value;
-    // cpu->cycles += memory_read(addr, &value);
-    return 0xFA;
+    uint8_t value;
+    cpu->cycles += io_port_read(addr, &value);
+    return value;
 }
 
 static inline void cpu_out(Z80_t *cpu, uint16_t addr, uint8_t value)
@@ -544,7 +545,6 @@ void add_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.pc++;
     cpu->regs.main.a = add8(cpu, value);
 }
 
@@ -611,7 +611,6 @@ void adc_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.pc++;
     cpu->regs.main.a = adc8(cpu, value);
 }
 
@@ -677,7 +676,6 @@ void sbc_a_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.pc++;
     cpu->regs.main.a = sbc8(cpu, value);
 }
 
@@ -696,9 +694,8 @@ void sbc_a_iid(Z80_t *cpu, uint16_t addr)
 }
 
 /* SUB helper */
-static inline uint8_t sub8(Z80_t *cpu, uint8_t value)
+static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
 {
-    uint8_t a = cpu->regs.main.a;
     uint8_t result = a - value;
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
@@ -722,7 +719,7 @@ void sub_r(Z80_t *cpu, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, value);
+    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* SUB n */
@@ -733,7 +730,7 @@ void sub_n(Z80_t *cpu)
     uint8_t value = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, value);
+    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* SUB (rr) */
@@ -743,8 +740,7 @@ void sub_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, value);
+    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* SUB (ii+d) */
@@ -758,7 +754,7 @@ void sub_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.main.a = sub8(cpu, value);
+    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* CP r */
@@ -766,7 +762,7 @@ void cp_r(Z80_t *cpu, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    sub8(cpu, value);
+    sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* CP n */
@@ -777,7 +773,7 @@ void cp_n(Z80_t *cpu)
     uint8_t value = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
-    sub8(cpu, value);
+    sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* CP (rr) */
@@ -787,8 +783,7 @@ void cp_rra(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    cpu->regs.pc++;
-    sub8(cpu, value);
+    sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* CP (ii+d) */
@@ -802,7 +797,7 @@ void cp_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    sub8(cpu, value);
+    sub8(cpu, cpu->regs.main.a, value);
 }
 
 /* AND helper */
@@ -983,6 +978,22 @@ void or_iid(Z80_t *cpu, uint16_t addr)
 }
 
 /* General-Purpose Arithmetic and CPU Control Groups */
+
+void cpl(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->regs.main.flags.h = 1;
+    cpu->regs.main.flags.n = 1;
+    cpu->regs.main.a ^= 0xFF;
+}
+
+void neg(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu->regs.main.a = sub8(cpu, 0, cpu->regs.main.a);
+}
 
 /* CCF/SCF */
 void ccf(Z80_t *cpu)
@@ -1695,12 +1706,43 @@ void out_na_a(Z80_t *cpu)
     cpu->cycles += 4;
 }
 
+void in_r_c(Z80_t *cpu, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
+    if (dest) *dest = value; 
+    cpu->cycles += 4;
+} 
+
+void in_a_na(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint16_t addr = MAKE16(l, cpu->regs.main.a);
+    cpu->regs.main.a = cpu_in(cpu, addr);
+    cpu->cycles += 4;
+} 
+
+
 /* CPU Control Group */
 
 void nop(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+}
+
+void halt(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    if (cpu->halt_resume) {
+        cpu->regs.pc++;
+        cpu->halt_resume = false;
+    }
 }
 
 void di(Z80_t *cpu)
@@ -1792,6 +1834,19 @@ void do_ed(Z80_t *cpu)
     case 0xA8: ldx(cpu, -1); break;
     case 0xB0: ldxr(cpu,  1); break;
     case 0xB8: ldxr(cpu, -1); break;
+
+    // in r, (c)
+    case 0x40: in_r_c(cpu, &cpu->regs.main.b); break;
+    case 0x48: in_r_c(cpu, &cpu->regs.main.c); break;
+    case 0x50: in_r_c(cpu, &cpu->regs.main.d); break;
+    case 0x58: in_r_c(cpu, &cpu->regs.main.e); break;
+    case 0x60: in_r_c(cpu, &cpu->regs.main.h); break;
+    case 0x68: in_r_c(cpu, &cpu->regs.main.l); break;
+    case 0x70: in_r_c(cpu, NULL); break;
+    case 0x78: in_r_c(cpu, &cpu->regs.main.a); break;
+
+    // neg
+    case 0x44: neg(cpu); break;
 
     default:
         cpu->regs.pc--;
@@ -2148,6 +2203,8 @@ void do_opcode(Z80_t *cpu)
     // ld sp, hl
     case 0xF9: ld_sp_rr(cpu, cpu->regs.main.hl); break;
 
+    // cpl
+    case 0x2F: cpl(cpu); break;
     // scf/ccf
     case 0x37: scf(cpu); break;
     case 0x3F: ccf(cpu); break;
@@ -2377,6 +2434,8 @@ void do_opcode(Z80_t *cpu)
 
     // out (n), a
     case 0xD3: out_na_a(cpu); break;
+    // in a, (n)
+    case 0xDB: in_a_na(cpu); break;
 
     // ex af
     case 0x08: ex_af(cpu); break;
@@ -2390,6 +2449,8 @@ void do_opcode(Z80_t *cpu)
     // DI / EI
     case 0xF3: di(cpu); break;
     case 0xFB: ei(cpu); break;
+    // halt
+    case 0x76: halt(cpu); break;
 
     case 0x00: nop(cpu); break;
 
@@ -2408,16 +2469,72 @@ void do_opcode(Z80_t *cpu)
     }
 }
 
+void cpu_fire_interrupt(Z80_t *cpu)
+{
+    if (cpu->regs.iff1) {
+        cpu->interrupt_pending = 1;
+    }
+}
+
+static inline bool cpu_can_process_interrupts(Z80_t *cpu)
+{
+    if (cpu->prefix_state == STATE_NOPREFIX)
+        return true;
+    else
+        return false;
+}
+
 int cpu_do_cycles(Z80_t *cpu)
 {
     uint64_t cyc_old = cpu->cycles;
 
-    switch (cpu->prefix_state) 
-    {
-        case STATE_DD: do_ddfd(cpu, false); break;
-        case STATE_FD: do_ddfd(cpu, true); break;
-        default: do_opcode(cpu); break;
+    if (cpu->interrupt_pending && cpu_can_process_interrupts(cpu)) {
+        cpu->interrupt_pending = false;
+        cpu->halt_resume = true;
+        // FIXME: COMPLETELY INACCURATE TIMINGS FOR EVERYTHING
+        switch (cpu->regs.im)
+        {
+        case 0: // IM 0 is irrel on speccy, don't care
+        case 1:
+            cpu->regs.iff1 = 0;
+            cpu->regs.iff2 = 0;
+            cpu->cycles += 5;
+            cpu->regs.sp--;
+            cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
+            cpu->cycles += 3;
+            cpu->regs.sp--;
+            cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
+            cpu->cycles += 3;
+            cpu->regs.pc = 0x38;
+            break;
+        case 2:
+            cpu->regs.iff1 = 0;
+            cpu->regs.iff2 = 0;
+            cpu->regs.sp--;
+            cpu->cycles += 7;
+            cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
+            cpu->regs.sp--;
+            cpu->cycles += 3;
+            cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
+            cpu->cycles += 3;
+            uint16_t addr = MAKE16(0xFF, cpu->regs.i);
+            uint8_t l = cpu_read(cpu, addr);
+            cpu->cycles += 3;
+            uint8_t h = cpu_read(cpu, addr+1);
+            addr = MAKE16(l, h);
+            cpu->regs.pc = addr;
+            cpu->cycles += 3;
+            break;
+        }
+    } else {
+        switch (cpu->prefix_state) 
+        {
+            case STATE_DD: do_ddfd(cpu, false); break;
+            case STATE_FD: do_ddfd(cpu, true); break;
+            default: do_opcode(cpu); break;
+        }
     }
+
 
     return cpu->cycles - cyc_old;
 }
