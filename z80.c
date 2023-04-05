@@ -49,14 +49,14 @@ static inline void cpu_write(Z80_t *cpu, uint16_t addr, uint8_t value)
 static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
 {
     uint8_t value;
-    cpu->cycles += io_port_read(addr, &value);
+    cpu->cycles += io_port_read(addr, &value, cpu->cycles);
     return value;
 }
 
 static inline void cpu_out(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
     // FIXME: placeholder until port i/o gets implemented
-    cpu->cycles += io_port_write(addr, value);
+    cpu->cycles += io_port_write(addr, value, cpu->cycles);
 }
 
 static inline bool get_parity(uint8_t value)
@@ -134,6 +134,22 @@ void ld_rra_n(Z80_t *cpu, uint16_t addr)
 void ld_i_a(Z80_t *cpu)
 {
     cpu->regs.i = cpu->regs.main.a;
+    cpu->regs.pc++;
+    cpu->cycles += 5;
+}
+
+/* ld r, a */
+void ld_R_a(Z80_t *cpu)
+{
+    cpu->regs.r = cpu->regs.main.a;
+    cpu->regs.pc++;
+    cpu->cycles += 5;
+}
+
+/* ld a, R */
+void ld_a_R(Z80_t *cpu)
+{
+    cpu->regs.main.a = cpu->regs.r;
     cpu->regs.pc++;
     cpu->cycles += 5;
 }
@@ -1848,6 +1864,10 @@ void do_ed(Z80_t *cpu)
     // neg
     case 0x44: neg(cpu); break;
 
+    // R register
+    case 0x4F: ld_R_a(cpu); break;
+    case 0x5F: ld_a_R(cpu); break;
+
     default:
         cpu->regs.pc--;
         cpu->cycles -= 4;
@@ -2106,6 +2126,12 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     // IY/IX prefix
     case 0xDD: ddfd(cpu, false); break;
     case 0xFD: ddfd(cpu, true); break;
+
+    // pop/push ii
+    case 0xE1: pop(cpu, ii); break;
+    case 0xE5: push(cpu, *ii); break;
+    // ex (sp), ii
+    case 0xE3: ex_spa_rr(cpu, ii); break;
 
     // bit instructions
     case 0xCB: do_ddfd_cb(cpu, ii); break;
