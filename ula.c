@@ -39,6 +39,22 @@ uint8_t frame = 0;
 struct Write ula_writes[ULA_WRITES_SIZE];
 size_t cur_ula_write_index = 0;
 
+uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
+
+uint8_t ula_get_contention_cycles(uint64_t cycle)
+{
+    if (cycle < T_FIRSTPIXEL) return 0;
+    cycle -= T_FIRSTPIXEL;
+
+    uint16_t line = cycle / T_SCANLINE;
+    if (line > 192) return 0;
+
+    uint16_t linecyc = cycle % T_SCANLINE;
+    if (linecyc > T_SCANLINE) return 0;
+
+    return contention_pattern[linecyc % 8];
+}
+
 void ula_set_border(uint8_t color, uint64_t cycle)
 {
     struct Write w = {.is_write = 1, .cycle = cycle, .value = color & 7};
@@ -108,8 +124,8 @@ static inline int get_cycle_buf_pos(uint64_t cycle)
     int x = (cycle % T_SCANLINE) * 2;
     int y = cycle / T_SCANLINE;
 
-    if (x > T_EIGHTPX * BUFFER_WIDTH / 8) 
-        x = T_EIGHTPX * BUFFER_WIDTH / 8 - 1;
+    if (x > BUFFER_WIDTH) 
+        x = BUFFER_WIDTH;
 
     int result = y * BUFFER_WIDTH + x;
 

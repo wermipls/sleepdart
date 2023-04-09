@@ -37,13 +37,13 @@ void print_regs(Z80_t *cpu)
 static inline uint8_t cpu_read(Z80_t *cpu, uint16_t addr)
 {
     uint8_t value;
-    cpu->cycles += memory_read(addr, &value);
+    cpu->cycles += memory_read(addr, &value, cpu->cycles);
     return value;
 }
 
 static inline void cpu_write(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
-    cpu->cycles += memory_write(addr, value);
+    cpu->cycles += memory_write(addr, value, cpu->cycles);
 }
 
 static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
