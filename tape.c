@@ -172,7 +172,7 @@ int player_init_block_state(TapePlayer_t *p)
     uint8_t flag = block->data[0];
     if (flag == 0) {                    // header
         p->tape_section_len = 8063;
-    } else if (flag == 0xFF) {           // data
+    } else if (flag == 0xFF) {          // data
         p->tape_section_len = 3223;
     }
 
@@ -185,7 +185,7 @@ void render_buffer(TapePlayer_t *p);
 
 TapePlayer_t *tape_player_from_tape(Tape_t *tape)
 {
-    TapePlayer_t *p = tape_player_allocate(4096*128);
+    TapePlayer_t *p = tape_player_allocate(4096);
     if (p == NULL) {
         return NULL;
     }
@@ -232,13 +232,14 @@ static inline int advance_block_section(TapePlayer_t *p)
         p->tape_block_section = TPSTATE_PAUSE;
         break;
     case TPSTATE_PAUSE:
-        p->tape_block++;
-        if (p->tape_block < p->tape->count) {
+        if (p->tape_block + 1 < p->tape->count) {
+            p->tape_block++;
             return player_init_block_state(p);
-        } 
-        // end of tape
-        memset(&p->buffer[p->buffer_pos], 0, p->buffer_size - p->buffer_pos);
-        p->end_of_tape = true;
+        } else {
+            p->tape_block_section = TPSTATE_END;
+        }
+        break;
+    case TPSTATE_END:
         break;
     }
 
@@ -247,11 +248,7 @@ static inline int advance_block_section(TapePlayer_t *p)
 
 int render_buffer_block_section(TapePlayer_t *p) {
     if (p->buffer_pos >= p->buffer_size) {
-        return 0;
-    }
-
-    if (p->end_of_tape) {
-        return 0;
+        return -1;
     }
 
     int pulses = 0;
@@ -268,7 +265,7 @@ int render_buffer_block_section(TapePlayer_t *p) {
     case TPSTATE_PILOT:
         while (p->tape_section_pos < p->tape_section_len) {
             if (p->buffer_pos < p->buffer_size) {
-                int is_low = p->buffer_pos & 1;
+                int is_low = p->tape_section_pos & 1;
                 p->buffer[p->buffer_pos] = is_low ? -pilot_pulselen 
                                                   :  pilot_pulselen;
                 p->tape_section_pos++;
@@ -292,26 +289,30 @@ int render_buffer_block_section(TapePlayer_t *p) {
     case TPSTATE_DATA:
         while (p->tape_section_pos < p->tape_section_len) {
             uint8_t byte = p->tape->blocks[p->tape_block].data[p->tape_section_pos];
-            while (p->tape_bit < 8) {
+            while (1) {
+                if (p->buffer_pos >= p->buffer_size) {
+                    return pulses;
+                }
+
                 int bit = byte & (1<<(7 - p->tape_bit));
                 bit = bit ? datahi_pulselen : datalo_pulselen;
 
                 p->buffer[p->buffer_pos] = bit * p->tape_data_pulse_state;
+                p->buffer_pos++;
+                pulses++;
 
                 if (p->tape_data_pulse_state == 1) {
                     p->tape_bit++;
                     p->tape_data_pulse_state = -1;
+                    if (p->tape_bit >= 8) {
+                        p->tape_bit = 0;
+                        p->tape_section_pos++;
+                        break;
+                    }
                 } else {
                     p->tape_data_pulse_state = 1;
                 }
-                pulses++;
-                p->buffer_pos++;
-                if (p->buffer_pos >= p->buffer_size) {
-                    return pulses;
-                }
             }
-            p->tape_bit = 0;
-            p->tape_section_pos++;
         }
         break;
     case TPSTATE_PAUSE:
@@ -319,6 +320,12 @@ int render_buffer_block_section(TapePlayer_t *p) {
         p->buffer_pos++;
         pulses++;
         break;
+    case TPSTATE_END:
+        while (p->buffer_pos < p->buffer_size) {
+            p->buffer[p->buffer_pos] = 0;
+            p->buffer_pos++;
+        }
+        return pulses;
     }
 
     int err = advance_block_section(p);
@@ -331,12 +338,18 @@ int render_buffer_block_section(TapePlayer_t *p) {
 
 void render_buffer(TapePlayer_t *p)
 {
+    if (p->finished || p->error) return;
+
+    p->buffer_pos = 0;
+
     size_t pulses_total = 0;
     int pulses;
     do {
         pulses = render_buffer_block_section(p);
         pulses_total += pulses;
-    } while (pulses > 0);
+    } while (p->buffer_pos < p->buffer_size && pulses > 0);
+
+    p->buffer_pos = 0;
 
     if (pulses < 0) {
         p->error = true;
@@ -349,27 +362,27 @@ void render_buffer(TapePlayer_t *p)
         cyc += abs(p->buffer[i]);
     }
 
-    p->buffer_pos = 0;
     p->buffer_start_cycle += p->buffer_length_cycles;
     p->buffer_length_cycles = cyc;
-
-    dlog(LOG_INFO, "Rendered a buffer of %d pulses, %d cycles", pulses_total, cyc);
-    if (pulses_total == 0) __asm__("int $3");
 }
 
 void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
 {
     if (cycles == 0 || p->paused || p->finished || p->error) return;
 
+    if (p->buffer_pos >= p->buffer_size) {
+        render_buffer(p);
+    }
+
     p->buffer_pos_cycles += cycles;
     int32_t pulse_len = abs(p->buffer[p->buffer_pos]);
 
-    if (pulse_len == 0) {
-        p->finished = true;
-        return;
-    }
-
     while (p->buffer_pos_cycles >= pulse_len) {
+        if (pulse_len == 0) {
+            p->finished = true;
+            break;
+        }
+
         p->buffer_pos_cycles -= pulse_len;
         p->buffer_pos++;
 
@@ -398,11 +411,10 @@ uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
     if (pulse > 0) {
         return 1;
     } else {
+        if (pulse == 0) {
+            player->finished = true;
+        }
         return 0;
-    }
-
-    if (pulse == 0) {
-        player->finished = true;
     }
 }
 

@@ -20,6 +20,7 @@ enum TPBlockSection {
     TPSTATE_SYNC2,
     TPSTATE_DATA,
     TPSTATE_PAUSE,
+    TPSTATE_END,
 };
 
 /* The tape and tape player structures are intended to be opaque objects,
@@ -59,7 +60,6 @@ typedef struct TapePlayer {
     bool paused;
     bool finished;
     bool error;
-    bool end_of_tape;
 } TapePlayer_t;
 
 /* Initializes a tape from the provided tap file path.
