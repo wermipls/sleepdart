@@ -2,6 +2,9 @@
 #include "ula.h"
 #include "keyboard.h"
 
+TapePlayer_t *io_tape = NULL;
+uint64_t last_tape_read = 0;
+
 uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
 {
     // i/o contention on 48/128k is quite funny, as the pattern depends on:
@@ -58,7 +61,26 @@ uint8_t io_port_read(uint16_t addr, uint8_t *dest, uint64_t cycle)
     uint8_t l = addr & 255;
     if (l == 0xFE) {
         *dest = keyboard_read(addr);
+
+        if (io_tape != NULL) {
+            uint64_t delta;
+            if (cycle < last_tape_read) {
+                delta = 0;
+            } else {
+                delta = cycle - last_tape_read;
+            }
+            last_tape_read = cycle;
+
+            uint8_t tape = tape_player_get_next_sample(io_tape, delta);
+            if (!tape) {
+                *dest &= ~(1<<6);
+            }
+        }
     }
 
     return io_handle_contention(addr, cycle);
+}
+
+void io_set_tape_player(TapePlayer_t *player) {
+    io_tape = player;
 }

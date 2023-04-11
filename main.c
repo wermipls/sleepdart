@@ -5,10 +5,17 @@
 #include "ula.h"
 #include "video_sdl.h"
 #include "input_sdl.h"
+#include "tape.h"
+#include "io.h"
 
-int main()
+int main(int argc, char *argv[])
 {
     printf(".: sleepdart III THE FINAL :.\n");
+
+    if (argc == 0) {
+        printf("¿como estas?");
+        return 0;
+    }
 
     int err = video_sdl_init(
         "third (sixth) iteration of sleepdart, the",
@@ -24,6 +31,17 @@ int main()
 
     memory_init();
     memory_load_rom_16k("./rom/48.rom");
+
+    Tape_t *tape = NULL;
+    TapePlayer_t *player = NULL;
+
+    if (argc > 1) {
+        tape = tape_load_from_tap(argv[1]);
+        player = tape_player_from_tape(tape);
+        tape_player_pause(player, true);
+
+        io_set_tape_player(player);
+    }
 
     cpu_init(&cpu);
 
@@ -43,7 +61,17 @@ int main()
 
             input_sdl_update();
 
+            if (tape && input_sdl_get_key(SDL_SCANCODE_INSERT)) {
+                tape_player_pause(player, false);
+            } 
+
+            tape_player_advance_cycles(player, T_FRAME - last_tape_read);
+            last_tape_read = 0;
+
             frame++;
         }
     }
+
+    tape_player_close(player);
+    tape_free(tape);
 }
