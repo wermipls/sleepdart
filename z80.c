@@ -1227,6 +1227,73 @@ static inline uint8_t srl(Z80_t *cpu, uint8_t value)
     return value;
 }
 
+void rlca(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+
+    uint8_t value = cpu->regs.main.a;
+    value = (value<<1) | (value>>7);
+    cpu->regs.main.flags.c = value & 1;
+    cpu->regs.main.a = value;
+
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+}
+
+void rrca(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+
+    uint8_t value = cpu->regs.main.a;
+    cpu->regs.main.flags.c = value & 1;
+    value = (value>>1) | (value<<7);
+    cpu->regs.main.a = value;
+
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+}
+
+void rla(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+
+    uint8_t value = cpu->regs.main.a;
+    bool c_new = (value>>7);
+    value = (value<<1) | cpu->regs.main.flags.c;
+    cpu->regs.main.flags.c = c_new;
+    cpu->regs.main.a = value;
+
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+}
+
+void rra(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+
+    uint8_t value = cpu->regs.main.a;
+    bool c_new = value & 1;
+    value = (value>>1) | (cpu->regs.main.flags.c<<7);
+    cpu->regs.main.flags.c = c_new;
+    cpu->regs.main.a = value;
+
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+}
+
+
 
 void rlc_r(Z80_t *cpu, uint8_t *dest)
 {
@@ -1739,8 +1806,15 @@ void in_a_na(Z80_t *cpu)
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint16_t addr = MAKE16(l, cpu->regs.main.a);
-    cpu->regs.main.a = cpu_in(cpu, addr);
+    uint8_t value = cpu_in(cpu, addr);
+    cpu->regs.main.a = value;
     cpu->cycles += 4;
+
+    cpu->regs.main.flags.s = value & (1<<7);
+    cpu->regs.main.flags.z = !value;
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.pv = get_parity(value);
+    cpu->regs.main.flags.n = 0;
 } 
 
 
@@ -2215,10 +2289,10 @@ void do_opcode(Z80_t *cpu)
     case 0x39: add_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.sp); break;
 
     // rra/rla/rrca/rlca
-    case 0x07: rlc_r(cpu, &cpu->regs.main.a); break;
-    case 0x0F: rrc_r(cpu, &cpu->regs.main.a); break;
-    case 0x17: rl_r(cpu, &cpu->regs.main.a); break;
-    case 0x1F: rr_r(cpu, &cpu->regs.main.a); break;
+    case 0x07: rlca(cpu); break;
+    case 0x0F: rrca(cpu); break;
+    case 0x17: rla(cpu); break;
+    case 0x1F: rra(cpu); break;
 
     // ld (nn), hl
     case 0x22: ld_nna_rr(cpu, cpu->regs.main.hl); break;
