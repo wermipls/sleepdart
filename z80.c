@@ -2148,7 +2148,7 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     // add ii, rr
     case 0x09: add_rr_rr(cpu, ii, cpu->regs.main.bc); break;
     case 0x19: add_rr_rr(cpu, ii, cpu->regs.main.de); break;
-    case 0x29: add_rr_rr(cpu, ii, cpu->regs.iy); break;
+    case 0x29: add_rr_rr(cpu, ii, *ii); break;
     case 0x39: add_rr_rr(cpu, ii, cpu->regs.sp); break;
 
     // inc (ii+d)
