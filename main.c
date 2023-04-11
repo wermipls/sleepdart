@@ -7,6 +7,7 @@
 #include "input_sdl.h"
 #include "tape.h"
 #include "io.h"
+#include "file.h"
 
 int main(int argc, char *argv[])
 {
@@ -36,11 +37,19 @@ int main(int argc, char *argv[])
     TapePlayer_t *player = NULL;
 
     if (argc > 1) {
-        tape = tape_load_from_tap(argv[1]);
-        player = tape_player_from_tape(tape);
-        tape_player_pause(player, true);
+        enum FileType ft = file_detect_type(argv[1]);
 
-        io_set_tape_player(player);
+        if (ft == FILE_UNKNOWN) {
+            dlog(LOG_ERR, "Unrecognized input file \"%s\"", argv[1]);
+        }
+
+        if (ft == FILE_TAP) {
+            tape = tape_load_from_tap(argv[1]);
+            player = tape_player_from_tape(tape);
+            tape_player_pause(player, true);
+
+            io_set_tape_player(player);
+        }
     }
 
     cpu_init(&cpu);
