@@ -79,7 +79,7 @@ enum FileType file_detect_type(char *path)
         // detect by extension
         size_t len = strlen(ext);
         char ext_lower[len+1];
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             ext_lower[i] = tolower(ext[i]);
         }
 

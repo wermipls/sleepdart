@@ -156,7 +156,7 @@ TapePlayer_t *tape_player_allocate(size_t bufsize)
 
 int player_init_block_state(TapePlayer_t *p)
 {
-    int block_i = p->tape_block;
+    size_t block_i = p->tape_block;
     if (block_i >= p->tape->count) {
         return -1;
     }
@@ -379,7 +379,7 @@ void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
     }
 
     p->buffer_pos_cycles += cycles;
-    int32_t pulse_len = abs(p->buffer[p->buffer_pos]);
+    uint32_t pulse_len = abs(p->buffer[p->buffer_pos]);
 
     while (p->buffer_pos_cycles >= pulse_len) {
         if (pulse_len == 0) {
@@ -401,7 +401,7 @@ void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
 }
 
 uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
-    if (player == NULL) return;
+    if (player == NULL) return 0;
     
     if (player->paused || player->finished || player->error) {
         return 0;
