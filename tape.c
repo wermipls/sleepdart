@@ -205,6 +205,8 @@ TapePlayer_t *tape_player_from_tape(Tape_t *tape)
 }
 
 void tape_player_close(TapePlayer_t *player) {
+    if (player == NULL) return;
+
     free(player->buffer);
     free(player);
 }
@@ -368,6 +370,8 @@ void render_buffer(TapePlayer_t *p)
 
 void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
 {
+    if (p == NULL) return;
+
     if (cycles == 0 || p->paused || p->finished || p->error) return;
 
     if (p->buffer_pos >= p->buffer_size) {
@@ -397,6 +401,8 @@ void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
 }
 
 uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
+    if (player == NULL) return;
+    
     if (player->paused || player->finished || player->error) {
         return 0;
     }
@@ -420,5 +426,7 @@ uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
 
 void tape_player_pause(TapePlayer_t *player, bool paused)
 {
+    if (player == NULL) return;
+
     player->paused = paused;
 }
