@@ -1,10 +1,48 @@
 #include "szx_state.h"
 #include "szx_blocks.h"
-#include "assert.h"
+#include <string.h>
+#include <zlib.h>
 
 #define U32_FROM_CH(a,b,c,d) ((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 
-void szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
+int szx_load_block_rampage(struct SZXBlock *b, Machine_t *m)
+{
+    SZXRAMPage_t *page = (SZXRAMPage_t *)b->data;
+
+    int is_compressed = page->flags & SZX_RF_COMPRESSED;
+
+    uint8_t *dest;
+
+    switch (page->page_no)
+    {
+    case 5:
+        dest = &m->memory.bus[0x4000];
+        break;
+    case 2:
+        dest = &m->memory.bus[0x8000];
+        break;
+    case 0:
+        dest = &m->memory.bus[0xC000];
+        break;
+    default:
+        return 0;
+    }
+
+    size_t size = b->header.size - (sizeof(SZXRAMPage_t) - 1);
+    long unsigned int destlen = 0x4000;
+
+    if (is_compressed) {
+        int err = uncompress(dest, &destlen, page->data, size);
+        if (err) return -1;
+    } else {
+        if (size != 0x4000) return -2;
+        memcpy(dest, page->data, size);
+    }
+
+    return 0;
+}
+
+int szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
 {
     SZXZ80Regs_t *r = (SZXZ80Regs_t *)b->data;
     m->cpu.regs.main.af = r->af;
@@ -29,6 +67,8 @@ void szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
     m->cpu.regs.iff2 = r->iff2;
 
     m->cpu.cycles = r->cycles_start;
+
+    return 0;
 }
 
 int szx_state_load(SZX_t *szx, struct Machine *m)
@@ -41,12 +81,20 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
 
     for (size_t i = 0; i < szx->blocks; i++) {
         struct SZXBlock *block = &szx->block[i];
+        int err = 0;
 
         switch (block->header.id)
         {
         case U32_FROM_CH('Z','8','0','R'):
-            szx_load_block_z80regs(block, m);
+            err = szx_load_block_z80regs(block, m);
             break;
+        case U32_FROM_CH('R','A','M','P'):
+            err = szx_load_block_rampage(block, m);
+            break;
+        }
+
+        if (err) {
+            return -2;
         }
     }
 
