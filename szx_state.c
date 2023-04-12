@@ -66,6 +66,8 @@ int szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
     m->cpu.regs.iff1 = r->iff1;
     m->cpu.regs.iff2 = r->iff2;
 
+    m->cpu.regs.im = r->im;
+
     m->cpu.cycles = r->cycles_start;
 
     return 0;

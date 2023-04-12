@@ -1884,6 +1884,7 @@ void cpu_init(Z80_t *cpu)
 
     cpu->error = 0;
     cpu->halt_resume = 0;
+    cpu->interrupt_pending = false;
 }
 
 void do_ed(Z80_t *cpu)
