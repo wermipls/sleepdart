@@ -1949,25 +1949,25 @@ void do_ed(Z80_t *cpu)
     case 0xB0: ldxr(cpu,  1); break;
     case 0xB8: ldxr(cpu, -1); break;
 
-    // out (c), r
-    case 0x40: out_c_r(cpu, cpu->regs.main.b); break;
-    case 0x48: out_c_r(cpu, cpu->regs.main.c); break;
-    case 0x50: out_c_r(cpu, cpu->regs.main.d); break;
-    case 0x58: out_c_r(cpu, cpu->regs.main.e); break;
-    case 0x60: out_c_r(cpu, cpu->regs.main.h); break;
-    case 0x68: out_c_r(cpu, cpu->regs.main.l); break;
-    case 0x70: out_c_r(cpu, 0); break;
-    case 0x78: out_c_r(cpu, cpu->regs.main.a); break;
-
     // in r, (c)
-    case 0x41: in_r_c(cpu, &cpu->regs.main.b); break;
-    case 0x49: in_r_c(cpu, &cpu->regs.main.c); break;
-    case 0x51: in_r_c(cpu, &cpu->regs.main.d); break;
-    case 0x59: in_r_c(cpu, &cpu->regs.main.e); break;
-    case 0x61: in_r_c(cpu, &cpu->regs.main.h); break;
-    case 0x69: in_r_c(cpu, &cpu->regs.main.l); break;
-    case 0x71: in_r_c(cpu, NULL); break;
-    case 0x79: in_r_c(cpu, &cpu->regs.main.a); break;
+    case 0x40: in_r_c(cpu, &cpu->regs.main.b); break;
+    case 0x48: in_r_c(cpu, &cpu->regs.main.c); break;
+    case 0x50: in_r_c(cpu, &cpu->regs.main.d); break;
+    case 0x58: in_r_c(cpu, &cpu->regs.main.e); break;
+    case 0x60: in_r_c(cpu, &cpu->regs.main.h); break;
+    case 0x68: in_r_c(cpu, &cpu->regs.main.l); break;
+    case 0x70: in_r_c(cpu, NULL); break;
+    case 0x78: in_r_c(cpu, &cpu->regs.main.a); break;
+
+    // out (c), r
+    case 0x41: out_c_r(cpu, cpu->regs.main.b); break;
+    case 0x49: out_c_r(cpu, cpu->regs.main.c); break;
+    case 0x51: out_c_r(cpu, cpu->regs.main.d); break;
+    case 0x59: out_c_r(cpu, cpu->regs.main.e); break;
+    case 0x61: out_c_r(cpu, cpu->regs.main.h); break;
+    case 0x69: out_c_r(cpu, cpu->regs.main.l); break;
+    case 0x71: out_c_r(cpu, 0); break;
+    case 0x79: out_c_r(cpu, cpu->regs.main.a); break;
 
     // neg
     case 0x44: neg(cpu); break;
