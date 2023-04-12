@@ -52,6 +52,12 @@ int main(int argc, char *argv[])
 
             io_set_tape_player(player);
         }
+
+        if (ft == FILE_SZX) {
+            SZX_t *szx = szx_load_file(argv[1]);
+            szx_state_load(szx, &m);
+            szx_free(szx);
+        }
     }
 
     int cycles = -1;

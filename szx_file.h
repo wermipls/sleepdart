@@ -3,25 +3,25 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXSTMID_16K             0
-#define ZXSTMID_48K             1
-#define ZXSTMID_128K            2
-#define ZXSTMID_PLUS2           3
-#define ZXSTMID_PLUS2A          4
-#define ZXSTMID_PLUS3           5
-#define ZXSTMID_PLUS3E          6
-#define ZXSTMID_PENTAGON128     7
-#define ZXSTMID_TC2048          8
-#define ZXSTMID_TC2068          9
-#define ZXSTMID_SCORPION        10
-#define ZXSTMID_SE              11
-#define ZXSTMID_TS2068          12
-#define ZXSTMID_PENTAGON512     13
-#define ZXSTMID_PENTAGON1024    14
-#define ZXSTMID_NTSC48K         15
-#define ZXSTMID_128KE           16
+#define SZX_MID_16K             0
+#define SZX_MID_48K             1
+#define SZX_MID_128K            2
+#define SZX_MID_PLUS2           3
+#define SZX_MID_PLUS2A          4
+#define SZX_MID_PLUS3           5
+#define SZX_MID_PLUS3E          6
+#define SZX_MID_PENTAGON128     7
+#define SZX_MID_TC2048          8
+#define SZX_MID_TC2068          9
+#define SZX_MID_SCORPION        10
+#define SZX_MID_SE              11
+#define SZX_MID_TS2068          12
+#define SZX_MID_PENTAGON512     13
+#define SZX_MID_PENTAGON1024    14
+#define SZX_MID_NTSC48K         15
+#define SZX_MID_128KE           16
 
-#define ZXSTMF_ALTERNATETIMINGS	1
+#define SZX_MF_ALTERNATETIMINGS	1
 
 struct SZXHeader
 {
