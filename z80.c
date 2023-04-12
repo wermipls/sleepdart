@@ -67,6 +67,12 @@ static inline bool get_parity(uint8_t value)
     return !(value & 1);
 }
 
+static inline void inc_refresh(Z80_t *cpu)
+{
+    cpu->regs.r++;
+    cpu->regs.r &= 127;
+}
+
 /* instruction implementations */
 
 /* 8-Bit Load Group */
@@ -1892,6 +1898,7 @@ void do_ed(Z80_t *cpu)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
+    inc_refresh(cpu);
 
     switch (op)
     {
@@ -1972,6 +1979,7 @@ void do_cb(Z80_t *cpu)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
+    inc_refresh(cpu);
 
     uint8_t reg = op & 7; // op & 0b111
     uint8_t op_partial = op >> 3;
@@ -2083,6 +2091,7 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
+    inc_refresh(cpu);
 
     uint8_t reg = op & 7; // op & 0b111
     uint8_t *regptr = regs[reg];
@@ -2140,6 +2149,7 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     uint16_t *ii = is_iy ? &cpu->regs.iy : &cpu->regs.ix;
 
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
+    inc_refresh(cpu);
 
     switch (op)
     {
@@ -2230,6 +2240,7 @@ void do_opcode(Z80_t *cpu)
 {
     // oppa gangnam style
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
+    inc_refresh(cpu);
 
     switch (op)
     {
