@@ -91,7 +91,8 @@ typedef struct Z80 {
         STATE_FD,
     } prefix_state;
     bool interrupt_pending;
-    bool halt_resume;
+    bool halted;
+    bool last_ei;
 
     int error;
     struct Machine *ctx;

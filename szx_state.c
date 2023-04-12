@@ -69,6 +69,8 @@ int szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
     m->cpu.regs.im = r->im;
 
     m->cpu.cycles = r->cycles_start;
+    m->cpu.halted = r->flags & SZX_ZF_HALTED;
+    m->cpu.last_ei = r->flags & SZX_ZF_EILAST;
 
     return 0;
 }

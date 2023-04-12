@@ -62,13 +62,15 @@ int main(int argc, char *argv[])
 
     int frame = 0;
     while (!m.cpu.error) {
+        if (m.cpu.cycles < 32) {
+            cpu_fire_interrupt(&m.cpu);
+        }
         cpu_do_cycles(&m.cpu);
         // FIXME: HACK
         if (m.cpu.cycles > T_FRAME) {
             m.cpu.cycles -= T_FRAME;
 
             ula_naive_draw(&m.memory);
-            cpu_fire_interrupt(&m.cpu);
 
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;

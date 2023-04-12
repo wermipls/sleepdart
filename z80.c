@@ -1794,6 +1794,14 @@ void out_na_a(Z80_t *cpu)
     cpu->cycles += 4;
 }
 
+void out_c_r(Z80_t *cpu, uint8_t value)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu_out(cpu, cpu->regs.main.bc, value);
+    cpu->cycles += 4;
+}
+
 void in_r_c(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
@@ -1834,10 +1842,7 @@ void nop(Z80_t *cpu)
 void halt(Z80_t *cpu)
 {
     cpu->cycles += 4;
-    if (cpu->halt_resume) {
-        cpu->regs.pc++;
-        cpu->halt_resume = false;
-    }
+    cpu->halted = true;
 }
 
 void di(Z80_t *cpu)
@@ -1854,6 +1859,8 @@ void ei(Z80_t *cpu)
     cpu->regs.iff2 = 1;
     cpu->cycles += 4;
     cpu->regs.pc++;
+
+    cpu->last_ei = true;
 }
 
 /* DD/FD handler */
@@ -1889,7 +1896,8 @@ void cpu_init(Z80_t *cpu)
     cpu->regs.pc = 0;
 
     cpu->error = 0;
-    cpu->halt_resume = 0;
+    cpu->halted = 0;
+    cpu->last_ei = 0;
     cpu->interrupt_pending = false;
 }
 
@@ -1935,15 +1943,25 @@ void do_ed(Z80_t *cpu)
     case 0xB0: ldxr(cpu,  1); break;
     case 0xB8: ldxr(cpu, -1); break;
 
+    // out (c), r
+    case 0x40: out_c_r(cpu, cpu->regs.main.b); break;
+    case 0x48: out_c_r(cpu, cpu->regs.main.c); break;
+    case 0x50: out_c_r(cpu, cpu->regs.main.d); break;
+    case 0x58: out_c_r(cpu, cpu->regs.main.e); break;
+    case 0x60: out_c_r(cpu, cpu->regs.main.h); break;
+    case 0x68: out_c_r(cpu, cpu->regs.main.l); break;
+    case 0x70: out_c_r(cpu, 0); break;
+    case 0x78: out_c_r(cpu, cpu->regs.main.a); break;
+
     // in r, (c)
-    case 0x40: in_r_c(cpu, &cpu->regs.main.b); break;
-    case 0x48: in_r_c(cpu, &cpu->regs.main.c); break;
-    case 0x50: in_r_c(cpu, &cpu->regs.main.d); break;
-    case 0x58: in_r_c(cpu, &cpu->regs.main.e); break;
-    case 0x60: in_r_c(cpu, &cpu->regs.main.h); break;
-    case 0x68: in_r_c(cpu, &cpu->regs.main.l); break;
-    case 0x70: in_r_c(cpu, NULL); break;
-    case 0x78: in_r_c(cpu, &cpu->regs.main.a); break;
+    case 0x41: in_r_c(cpu, &cpu->regs.main.b); break;
+    case 0x49: in_r_c(cpu, &cpu->regs.main.c); break;
+    case 0x51: in_r_c(cpu, &cpu->regs.main.d); break;
+    case 0x59: in_r_c(cpu, &cpu->regs.main.e); break;
+    case 0x61: in_r_c(cpu, &cpu->regs.main.h); break;
+    case 0x69: in_r_c(cpu, &cpu->regs.main.l); break;
+    case 0x71: in_r_c(cpu, NULL); break;
+    case 0x79: in_r_c(cpu, &cpu->regs.main.a); break;
 
     // neg
     case 0x44: neg(cpu); break;
@@ -2595,7 +2613,7 @@ void cpu_fire_interrupt(Z80_t *cpu)
 
 static inline bool cpu_can_process_interrupts(Z80_t *cpu)
 {
-    if (cpu->prefix_state == STATE_NOPREFIX)
+    if (cpu->prefix_state == STATE_NOPREFIX && !cpu->last_ei)
         return true;
     else
         return false;
@@ -2607,7 +2625,10 @@ int cpu_do_cycles(Z80_t *cpu)
 
     if (cpu->interrupt_pending && cpu_can_process_interrupts(cpu)) {
         cpu->interrupt_pending = false;
-        cpu->halt_resume = true;
+        if (cpu->halted) {
+            cpu->halted = false;
+            cpu->regs.pc++;
+        }
         // FIXME: COMPLETELY INACCURATE TIMINGS FOR EVERYTHING
         switch (cpu->regs.im)
         {
@@ -2644,6 +2665,7 @@ int cpu_do_cycles(Z80_t *cpu)
             break;
         }
     } else {
+        cpu->last_ei = false;
         switch (cpu->prefix_state) 
         {
             case STATE_DD: do_ddfd(cpu, false); break;
@@ -2652,6 +2674,10 @@ int cpu_do_cycles(Z80_t *cpu)
         }
     }
 
+    if (cpu->halted) {
+        cpu_read(cpu, cpu->regs.pc+1);
+        cpu->cycles += 4;
+    }
 
     return cpu->cycles - cyc_old;
 }
