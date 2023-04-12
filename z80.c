@@ -1881,6 +1881,9 @@ void cpu_init(Z80_t *cpu)
     cpu->regs.iff2 = 0;
     cpu->regs.im = 0;
     cpu->regs.pc = 0;
+
+    cpu->error = 0;
+    cpu->halt_resume = 0;
 }
 
 void do_ed(Z80_t *cpu)
