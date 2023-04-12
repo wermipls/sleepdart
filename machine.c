@@ -23,6 +23,9 @@ int machine_init(Machine_t *machine, enum MachineType type)
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);
 
+    machine->tape_player = NULL;
+    machine->reset_pending = false;
+
     return 0;
 }
 
