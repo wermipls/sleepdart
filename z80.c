@@ -1946,6 +1946,7 @@ void do_ed(Z80_t *cpu)
         cpu->cycles -= 4;
         print_regs(cpu);
         dlog(LOG_ERR, "unimplemented opcode ED %02X at %04X", op, cpu->regs.pc);
+        cpu->error = 1;
     }
 }
 
@@ -2217,6 +2218,7 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
         const char *prefix = is_iy ? iy_op : ix_op; 
 
         dlog(LOG_ERR, "unimplemented opcode %s %02X at %04X", prefix, op, cpu->regs.pc);
+        cpu->error = 1;
     }
 }
 
@@ -2565,6 +2567,7 @@ void do_opcode(Z80_t *cpu)
     default:
         print_regs(cpu);
         dlog(LOG_ERR, "unimplemented opcode %02X at %04X", op, cpu->regs.pc);
+        cpu->error = 1;
     }
 }
 

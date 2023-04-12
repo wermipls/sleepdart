@@ -60,10 +60,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    int cycles = -1;
     int frame = 0;
-    while (cycles) {
-        cycles = cpu_do_cycles(&m.cpu);
+    while (!m.cpu.error) {
+        cpu_do_cycles(&m.cpu);
         // FIXME: HACK
         if (m.cpu.cycles > T_FRAME) {
             m.cpu.cycles -= T_FRAME;

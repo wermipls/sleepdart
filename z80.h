@@ -93,6 +93,7 @@ typedef struct Z80 {
     bool interrupt_pending;
     bool halt_resume;
 
+    int error;
     struct Machine *ctx;
 } Z80_t;
 
