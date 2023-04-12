@@ -2630,7 +2630,6 @@ int cpu_do_cycles(Z80_t *cpu)
     uint64_t cyc_old = cpu->cycles;
 
     if (cpu->interrupt_pending && cpu_can_process_interrupts(cpu)) {
-        cpu->interrupt_pending = false;
         if (cpu->halted) {
             cpu->halted = false;
             cpu->regs.pc++;
@@ -2684,6 +2683,8 @@ int cpu_do_cycles(Z80_t *cpu)
         cpu_read(cpu, cpu->regs.pc+1);
         cpu->cycles += 4;
     }
+
+    cpu->interrupt_pending = false;
 
     return cpu->cycles - cyc_old;
 }
