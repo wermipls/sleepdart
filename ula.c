@@ -1,5 +1,4 @@
 #include "ula.h"
-#include "memory.h"
 
 struct Write
 {
@@ -62,12 +61,12 @@ void ula_set_border(uint8_t color, uint64_t cycle)
     if (cur_ula_write_index < ULA_WRITES_SIZE-1) cur_ula_write_index++;
 }
 
-static inline uint8_t ula_get_screen_byte(uint16_t offset)
+static inline uint8_t ula_get_screen_byte(Memory_t *mem, uint16_t offset)
 {
-    return memory_bus_peek(0x4000 + offset);
+    return mem->bus[0x4000 + offset];
 }
 
-static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
+static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, RGB24_t *buf)
 {
     uint16_t pix_offset = x;
     pix_offset |= (y & 7) << 8;    // bits 0-2
@@ -76,8 +75,8 @@ static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
 
     uint16_t attrib_offset = 0x1800 + (((y >> 3) << 5) | x);
 
-    uint8_t attrib = ula_get_screen_byte(attrib_offset);
-    uint8_t pixel = ula_get_screen_byte(pix_offset);
+    uint8_t attrib = ula_get_screen_byte(mem, attrib_offset);
+    uint8_t pixel = ula_get_screen_byte(mem, pix_offset);
 
     uint8_t bright = attrib & (1<<6);
     RGB24_t *colors = bright ? colors_bright : colors_basic;
@@ -176,7 +175,7 @@ static inline void ula_process_border(RGB24_t *buf)
     cur_ula_write_index = 0;
 }
 
-void ula_naive_draw()
+void ula_naive_draw(Memory_t *mem)
 {
     RGB24_t *bufptr = ula_buffer;
     ula_process_border(bufptr);
@@ -189,7 +188,7 @@ void ula_naive_draw()
 
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 32; x++) {
-            ula_process_screen_8x1(x, y, bufptr);
+            ula_process_screen_8x1(mem, x, y, bufptr);
             bufptr += 8;
         }
         bufptr += buf_borderwidth;

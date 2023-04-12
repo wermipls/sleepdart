@@ -80,6 +80,8 @@ struct Z80Regs {
     uint8_t im;
 };
 
+struct Machine;
+
 typedef struct Z80 {
     struct Z80Regs regs;
     uint64_t cycles;
@@ -90,9 +92,9 @@ typedef struct Z80 {
     } prefix_state;
     bool interrupt_pending;
     bool halt_resume;
-} Z80_t;
 
-extern Z80_t cpu;
+    struct Machine *ctx;
+} Z80_t;
 
 void cpu_init(Z80_t *cpu);
 void cpu_fire_interrupt(Z80_t *cpu);

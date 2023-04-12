@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include "log.h"
-#include "z80.h"
-#include "memory.h"
+#include "machine.h"
 #include "ula.h"
 #include "video_sdl.h"
 #include "input_sdl.h"
 #include "tape.h"
 #include "io.h"
 #include "file.h"
+#include "szx.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,8 +30,10 @@ int main(int argc, char *argv[])
 
     input_sdl_init();
 
-    memory_init();
-    memory_load_rom_16k("./rom/48.rom");
+    Machine_t m;
+
+    machine_init(&m, MACHINE_ZX48K);
+    machine_set_current(&m);
 
     Tape_t *tape = NULL;
     TapePlayer_t *player = NULL;
@@ -52,18 +54,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    cpu_init(&cpu);
-
     int cycles = -1;
     int frame = 0;
     while (cycles) {
-        cycles = cpu_do_cycles(&cpu);
+        cycles = cpu_do_cycles(&m.cpu);
         // FIXME: HACK
-        if (cpu.cycles > T_FRAME) {
-            cpu.cycles -= T_FRAME;
+        if (m.cpu.cycles > T_FRAME) {
+            m.cpu.cycles -= T_FRAME;
 
-            ula_naive_draw();
-            cpu_fire_interrupt(&cpu);
+            ula_naive_draw(&m.memory);
+            cpu_fire_interrupt(&m.cpu);
 
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;
@@ -76,6 +76,11 @@ int main(int argc, char *argv[])
 
             tape_player_advance_cycles(player, T_FRAME - last_tape_read);
             last_tape_read = 0;
+
+            if (m.reset_pending) {
+                cpu_init(&m.cpu);
+                m.reset_pending = false;
+            }
 
             frame++;
         }

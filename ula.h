@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "memory.h"
 
 #define BUFFER_WIDTH 352
 #define BUFFER_HEIGHT 288
@@ -22,4 +23,4 @@ extern RGB24_t ula_buffer[BUFFER_WIDTH*BUFFER_HEIGHT];
 
 uint8_t ula_get_contention_cycles(uint64_t cycle);
 void ula_set_border(uint8_t color, uint64_t cycle);
-void ula_naive_draw();
+void ula_naive_draw(Memory_t *mem);

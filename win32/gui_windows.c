@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include "../sleepdart_info.h"
 #include "../video_sdl.h"
-#include "../z80.h"
+#include "../machine.h"
 
 WNDPROC sdl_wndproc;
 HMENU menu;
@@ -55,7 +55,7 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
                 MB_OK | MB_ICONINFORMATION);
             return TRUE;
         case ID_MACHINE_RESET:
-            cpu_init(&cpu);
+            machine_reset();
             return TRUE;
             break;
         case ID_FILE_QUIT:

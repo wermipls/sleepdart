@@ -1,11 +1,9 @@
 #include "z80.h"
-#include "memory.h"
+#include "machine.h"
 #include "io.h"
 #include "log.h"
 
 #include <stdio.h>
-
-Z80_t cpu;
 
 /* helpers */
 
@@ -16,13 +14,15 @@ Z80_t cpu;
 
 void print_regs(Z80_t *cpu)
 {
+    uint8_t *bus = cpu->ctx->memory.bus;
+
     dlog(LOG_INFO, "cycles: %d", cpu->cycles);
     dlog(LOG_INFO, "  %02X %02X %02X %02X %02X",
-                   memory_bus_peek(cpu->regs.pc-2),
-                   memory_bus_peek(cpu->regs.pc-1),
-                   memory_bus_peek(cpu->regs.pc),
-                   memory_bus_peek(cpu->regs.pc+1),
-                   memory_bus_peek(cpu->regs.pc+2));
+                   memory_bus_peek(bus, cpu->regs.pc-2),
+                   memory_bus_peek(bus, cpu->regs.pc-1),
+                   memory_bus_peek(bus, cpu->regs.pc),
+                   memory_bus_peek(bus, cpu->regs.pc+1),
+                   memory_bus_peek(bus, cpu->regs.pc+2));
     dlog(LOG_INFO, "        ^ PC");
     dlog(LOG_INFO, "  PC  %04X, SP  %04X, IX  %04X, IY  %04X",
                    cpu->regs.pc, cpu->regs.sp, cpu->regs.ix, cpu->regs.iy);
@@ -37,13 +37,13 @@ void print_regs(Z80_t *cpu)
 static inline uint8_t cpu_read(Z80_t *cpu, uint16_t addr)
 {
     uint8_t value;
-    cpu->cycles += memory_read(addr, &value, cpu->cycles);
+    cpu->cycles += memory_read(cpu->ctx->memory.bus, addr, &value, cpu->cycles);
     return value;
 }
 
 static inline void cpu_write(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
-    cpu->cycles += memory_write(addr, value, cpu->cycles);
+    cpu->cycles += memory_write(cpu->ctx->memory.bus, addr, value, cpu->cycles);
 }
 
 static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
@@ -55,7 +55,6 @@ static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
 
 static inline void cpu_out(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
-    // FIXME: placeholder until port i/o gets implemented
     cpu->cycles += io_port_write(addr, value, cpu->cycles);
 }
 
