@@ -382,7 +382,6 @@ void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
 /* LDI/LDD */
 void ldx(Z80_t *cpu, int8_t increment)
 {
-    // FIXME: fuck flags
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
@@ -393,12 +392,15 @@ void ldx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.hl += increment;
     cpu->regs.main.de += increment;
     cpu->regs.main.bc--;
+
+    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
 }
 
 /* LDIR/LDDR */
 void ldxr(Z80_t *cpu, int8_t increment)
 {
-    // FIXME: fuck flags
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
@@ -409,6 +411,10 @@ void ldxr(Z80_t *cpu, int8_t increment)
     cpu->regs.main.hl += increment;
     cpu->regs.main.de += increment;
     cpu->regs.main.bc--;
+
+    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
 
     if (cpu->regs.main.bc != 0) {
         cpu->regs.pc -= 2;
