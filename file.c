@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include "szx.h"
+#include "szx_file.h"
 
 int file_is_regular_file(char *path)
 {
