@@ -995,6 +995,39 @@ void or_iid(Z80_t *cpu, uint16_t addr)
 
 /* General-Purpose Arithmetic and CPU Control Groups */
 
+void daa(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+
+    uint8_t a = cpu->regs.main.a;
+    bool neg = cpu->regs.main.flags.n;
+    uint8_t ah = a >> 4;
+    uint8_t al = a & 0xF;
+    uint8_t diff_lo = cpu->regs.main.flags.h || (al > 9);
+    uint8_t diff_hi = cpu->regs.main.flags.c || (ah > 9)
+                      || (ah > 8 && al > 9);
+    diff_lo *= 0x6;
+    diff_hi *= 0x60;
+    uint8_t diff = diff_lo | diff_hi;
+
+    bool c = cpu->regs.main.flags.c || (ah > (9 - (al > 9)));
+    bool h = (!neg && (al > 9))
+             || (neg && cpu->regs.main.flags.h && (al < 6));
+
+    uint8_t result = neg ? (a - diff) : (a + diff);
+
+    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3); // KONMAI WILL SUE
+    cpu->regs.main.f &= ~fmask;
+    cpu->regs.main.f |= result & fmask;
+    cpu->regs.main.flags.z = !result;
+    cpu->regs.main.flags.c = c;
+    cpu->regs.main.flags.h = h;
+    cpu->regs.main.flags.pv = get_parity(result);
+
+    cpu->regs.main.a = result;
+}
+
 void cpl(Z80_t *cpu)
 {
     cpu->cycles += 4;
@@ -1008,7 +1041,10 @@ void neg(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, 0, cpu->regs.main.a);
+    uint8_t result = sub8(cpu, 0, cpu->regs.main.a);
+    cpu->regs.main.flags.c = !(!cpu->regs.main.a);
+    cpu->regs.main.flags.pv = (cpu->regs.main.a == 0x80);
+    cpu->regs.main.a = result;
 }
 
 /* CCF/SCF */
@@ -1960,6 +1996,13 @@ void do_ed(Z80_t *cpu)
 
     // neg
     case 0x44: neg(cpu); break;
+    case 0x4C: neg(cpu); break;
+    case 0x54: neg(cpu); break;
+    case 0x5C: neg(cpu); break;
+    case 0x64: neg(cpu); break;
+    case 0x6C: neg(cpu); break;
+    case 0x74: neg(cpu); break;
+    case 0x7C: neg(cpu); break;
 
     // R register
     case 0x4F: ld_R_a(cpu); break;
@@ -2332,6 +2375,7 @@ void do_opcode(Z80_t *cpu)
     // ld sp, hl
     case 0xF9: ld_sp_rr(cpu, cpu->regs.main.hl); break;
 
+    case 0x27: daa(cpu); break;
     // cpl
     case 0x2F: cpl(cpu); break;
     // scf/ccf
