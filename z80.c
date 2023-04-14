@@ -68,23 +68,41 @@ static inline bool get_parity(uint8_t value)
     return !(value & 1);
 }
 
-static inline bool flag_overflow_8(int16_t a, int16_t b, int c)
+static inline bool flag_overflow_8(uint8_t a, uint8_t b, bool c, bool sub)
 {
-    a = a + b + c;
-    return a > 127 || a < -128;
+    int16_t as = (int8_t)a;
+    int16_t bs = (int8_t)b;
+    int16_t result = sub ? (as - bs - c) : (as + bs + c);
+    return result > 127 || result < -128;
 }
 
-
-static inline bool flag_overflow_16(int32_t a, int32_t b, int c)
+static inline bool flag_overflow_16(uint16_t a, uint16_t b, bool c, bool sub)
 {
-    a = a + b + c;
-    return a > 32767 || a < -32768;
+    int32_t as = (int16_t)a;
+    int32_t bs = (int16_t)b;
+    int32_t result = sub ? (as - bs - c) : (as + bs + c);
+    return result > 32767 || result < -32768;
 }
 
 static inline void inc_refresh(Z80_t *cpu)
 {
     cpu->regs.r++;
     cpu->regs.r &= 127;
+}
+
+/* SUB helper */
+static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
+{
+    uint8_t result = a - value;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result & MASK_FLAG_XY);
+    cpu->regs.main.flags.s = result & (1<<7);
+    cpu->regs.main.flags.z = !result;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0, true);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
+    cpu->regs.main.flags.c = (a < value);
+    cpu->regs.main.flags.n = 1;
+    return result;
 }
 
 /* instruction implementations */
@@ -451,6 +469,49 @@ void ldxr(Z80_t *cpu, int8_t increment)
     }
 }
 
+/* CPI/CPD */
+void cpx(Z80_t *cpu, int8_t increment)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 8;
+    cpu->regs.main.bc--;
+    cpu->regs.main.hl += increment;
+
+    bool c = cpu->regs.main.flags.c;
+    sub8(cpu, cpu->regs.main.a, value);
+    uint8_t n = cpu->regs.main.a - value - cpu->regs.main.h;
+    cpu->regs.main.flags.y = n & (1<<1);
+    cpu->regs.main.flags.x = n & (1<<3); 
+    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
+    cpu->regs.main.flags.c = c;
+}
+
+/* CPIR/CPDR */
+void cpxr(Z80_t *cpu, int8_t increment)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 8;
+    cpu->regs.main.hl += increment;
+    cpu->regs.main.bc--;
+
+    bool c = cpu->regs.main.flags.c;
+    sub8(cpu, cpu->regs.main.a, value);
+    uint8_t n = cpu->regs.main.a - value - cpu->regs.main.h;
+    cpu->regs.main.flags.y = n & (1<<1);
+    cpu->regs.main.flags.x = n & (1<<3); 
+    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
+    cpu->regs.main.flags.c = c;
+
+    if (cpu->regs.main.bc != 0 && !cpu->regs.main.flags.z) {
+        cpu->regs.pc -= 2;
+        cpu->cycles += 5;
+    }
+}
+
 /* 8-Bit Arithmetic Group */
 
 /* INC helper */
@@ -562,7 +623,7 @@ static inline uint8_t add8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0);
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0, false);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value) > 255;
     cpu->regs.main.flags.n = 0;
@@ -621,7 +682,7 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c);
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value + 
                               cpu->regs.main.flags.c) > 255;
@@ -681,7 +742,7 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    cpu->regs.main.flags.pv = flag_overflow_8(a, -value, -cpu->regs.main.flags.c);
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c, true);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = a < ((uint16_t)value + cpu->regs.main.flags.c);
     cpu->regs.main.flags.n = 1;
@@ -729,21 +790,6 @@ void sbc_a_iid(Z80_t *cpu, uint16_t addr)
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
     cpu->regs.main.a = sbc8(cpu, value);
-}
-
-/* SUB helper */
-static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
-{
-    uint8_t result = a - value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (result & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = result & (1<<7);
-    cpu->regs.main.flags.z = !result;
-    cpu->regs.main.flags.pv = flag_overflow_8(a, -value, 0);
-    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
-    cpu->regs.main.flags.c = a < value;
-    cpu->regs.main.flags.n = 1;
-    return result;
 }
 
 /* SUB r */
@@ -1122,9 +1168,9 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest + value + cpu->regs.main.flags.c;
     cpu->regs.main.flags.s = result & (1<<15);
-    cpu->regs.main.flags.z = !(result & 0xFF);
+    cpu->regs.main.flags.z = !(result & 0xFFFF);
     cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
-    cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c);
+    cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
     *dest = (uint16_t)result;
@@ -1136,9 +1182,9 @@ void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest - value - cpu->regs.main.flags.c;
     cpu->regs.main.flags.s = result & (1<<15);
-    cpu->regs.main.flags.z = !(result & 0xFF);
+    cpu->regs.main.flags.z = !(result & 0xFFFF);
     cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
-    cpu->regs.main.flags.pv = flag_overflow_16(*dest, -value, -cpu->regs.main.flags.c);
+    cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, true);
     cpu->regs.main.flags.n = 1;
     cpu->regs.main.flags.c = *dest < ((uint32_t)value + cpu->regs.main.flags.c);
     *dest = (uint16_t)result;
@@ -1655,7 +1701,6 @@ static inline void bit_(Z80_t *cpu, uint8_t value, uint8_t bit)
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 1;
     cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.c = 0;
     cpu->regs.main.flags.n = 0;
 }
 
@@ -2049,6 +2094,11 @@ void do_ed(Z80_t *cpu)
     case 0xA8: ldx(cpu, -1); break;
     case 0xB0: ldxr(cpu,  1); break;
     case 0xB8: ldxr(cpu, -1); break;
+    // cpx/cpxr
+    case 0xA1: cpx(cpu,  1); break;
+    case 0xA9: cpx(cpu, -1); break;
+    case 0xB1: cpxr(cpu,  1); break;
+    case 0xB9: cpxr(cpu, -1); break;
 
     // in r, (c)
     case 0x40: in_r_c(cpu, &cpu->regs.main.b); break;
