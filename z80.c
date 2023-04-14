@@ -67,6 +67,19 @@ static inline bool get_parity(uint8_t value)
     return !(value & 1);
 }
 
+static inline bool flag_overflow_8(int16_t a, int16_t b, int c)
+{
+    a = a + b + c;
+    return a > 127 || a < -128;
+}
+
+
+static inline bool flag_overflow_16(int32_t a, int32_t b, int c)
+{
+    a = a + b + c;
+    return a > 32767 || a < -32768;
+}
+
 static inline void inc_refresh(Z80_t *cpu)
 {
     cpu->regs.r++;
@@ -533,14 +546,8 @@ static inline uint8_t add8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    uint8_t operands_same_sign = !((a ^ value) & (1<<7));
-    if (operands_same_sign) {
-        cpu->regs.main.flags.pv = !(!((result ^ value) & (1<<7)));
-    } else {
-        cpu->regs.main.flags.pv = 0;
-    }
-    // FIXME: dunno about correctness of (half) carry or PV
-    cpu->regs.main.flags.h = ((a & 0x0F) + (value & 0x0F)) > 0x0F;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value) > 255;
     cpu->regs.main.flags.n = 0;
     return result;
@@ -598,14 +605,8 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    // FIXME: those flags are DEFINITELY wrong and i cba for now
-    uint8_t operands_same_sign = !((a ^ value) & (1<<7));
-    if (operands_same_sign) {
-        cpu->regs.main.flags.pv = !(!((result ^ value) & (1<<7)));
-    } else {
-        cpu->regs.main.flags.pv = 0;
-    }
-    cpu->regs.main.flags.h = ((a & 0x0F) + (value & 0x0F)) > 0x0F;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value + 
                               cpu->regs.main.flags.c) > 255;
     cpu->regs.main.flags.n = 0;
@@ -664,14 +665,8 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    // FIXME: those flags are DEFINITELY wrong and i cba for now
-    uint8_t operands_same_sign = !((a ^ value) & (1<<7));
-    if (operands_same_sign) {
-        cpu->regs.main.flags.pv = 0;
-    } else {
-        cpu->regs.main.flags.pv = !(!((result ^ value) & (1<<7)));
-    }
-    cpu->regs.main.flags.h = ((a & 0xF0) - (value & 0xF0)) < 0xF0;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, -value, -cpu->regs.main.flags.c);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = a < ((uint16_t)value + cpu->regs.main.flags.c);
     cpu->regs.main.flags.n = 1;
     return result;
@@ -728,14 +723,8 @@ static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
     cpu->regs.main.f |= (result & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
-    uint8_t operands_same_sign = !((a ^ value) & (1<<7));
-    if (operands_same_sign) {
-        cpu->regs.main.flags.pv = 0;
-    } else {
-        cpu->regs.main.flags.pv = !(!((result ^ value) & (1<<7)));
-    }
-    // FIXME: dunno about correctness of (half) carry or PV
-    cpu->regs.main.flags.h = ((a & 0xF0) - (value & 0xF0)) < 0xF0;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, -value, 0);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = a < value;
     cpu->regs.main.flags.n = 1;
     return result;
@@ -1069,10 +1058,10 @@ void dec_rr(Z80_t *cpu, uint16_t *dest)
 void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest + value;
-    *dest = (uint16_t)result;
-    cpu->regs.main.flags.h = 0; // FIXME: placeholder, should be carry from bit 11
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
+    *dest = (uint16_t)result;
     cpu->cycles += 11;
     cpu->regs.pc++;
 }
@@ -1080,13 +1069,13 @@ void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest + value + cpu->regs.main.flags.c;
-    *dest = (uint16_t)result;
     cpu->regs.main.flags.s = result & (1<<15);
     cpu->regs.main.flags.z = !(result & 0xFF);
-    cpu->regs.main.flags.h = 0; // FIXME: placeholder, should be carry from bit 11
-    cpu->regs.main.flags.pv = 0; // FIXME: placeholder, should be set if overflow
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
+    cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c);
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
+    *dest = (uint16_t)result;
     cpu->cycles += 11;
     cpu->regs.pc++;
 }
@@ -1094,13 +1083,13 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest - value - cpu->regs.main.flags.c;
-    *dest = (uint16_t)result;
     cpu->regs.main.flags.s = result & (1<<15);
     cpu->regs.main.flags.z = !(result & 0xFF);
-    cpu->regs.main.flags.h = 0; // FIXME: placeholder, should be carry from bit 11
-    cpu->regs.main.flags.pv = 0; // FIXME: placeholder, should be set if overflow
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
+    cpu->regs.main.flags.pv = flag_overflow_16(*dest, -value, -cpu->regs.main.flags.c);
     cpu->regs.main.flags.n = 1;
-    cpu->regs.main.flags.c = result & (1<<31); // hmm thats kinda stupid
+    cpu->regs.main.flags.c = *dest < ((uint32_t)value + cpu->regs.main.flags.c);
+    *dest = (uint16_t)result;
     cpu->cycles += 11;
     cpu->regs.pc++;
 }
