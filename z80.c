@@ -498,7 +498,7 @@ static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = (value & 0x0F) == 0x0F; // FIXME: not sure about correctness of this
     cpu->regs.main.flags.pv = value == 0x7F;
-    cpu->regs.main.flags.n = 0;
+    cpu->regs.main.flags.n = 1;
     return value;
 }
 
@@ -2381,6 +2381,23 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     case 0xBC: cp_r(cpu, *ih); break;
     case 0xBD: cp_r(cpu, *il); break;
     case 0xBF: cp_r(cpu, cpu->regs.main.a); break;
+
+    // inc r
+    case 0x04: inc_r(cpu, &cpu->regs.main.b); break;
+    case 0x0C: inc_r(cpu, &cpu->regs.main.c); break;
+    case 0x14: inc_r(cpu, &cpu->regs.main.d); break;
+    case 0x1C: inc_r(cpu, &cpu->regs.main.e); break;
+    case 0x24: inc_r(cpu, ih); break;
+    case 0x2C: inc_r(cpu, il); break;
+    case 0x3C: inc_r(cpu, &cpu->regs.main.a); break;
+    // dec r
+    case 0x05: dec_r(cpu, &cpu->regs.main.b); break;
+    case 0x0D: dec_r(cpu, &cpu->regs.main.c); break;
+    case 0x15: dec_r(cpu, &cpu->regs.main.d); break;
+    case 0x1D: dec_r(cpu, &cpu->regs.main.e); break;
+    case 0x25: dec_r(cpu, ih); break;
+    case 0x2D: dec_r(cpu, il); break;
+    case 0x3D: dec_r(cpu, &cpu->regs.main.a); break;
 
     // ld sp, ii
     case 0xF9: ld_sp_rr(cpu, *ii); break;
