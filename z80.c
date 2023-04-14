@@ -149,28 +149,31 @@ void ld_rra_n(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
 }
 
-/* LD I, A */
-void ld_i_a(Z80_t *cpu)
+/* ld i, a */
+void ld_i_a(Z80_t *cpu, uint8_t *dest)
 {
-    cpu->regs.i = cpu->regs.main.a;
+    *dest = cpu->regs.main.a;
     cpu->regs.pc++;
     cpu->cycles += 5;
 }
 
-/* ld r, a */
-void ld_R_a(Z80_t *cpu)
+/* ld a, i */
+void ld_a_i(Z80_t *cpu, uint8_t value)
 {
-    cpu->regs.r = cpu->regs.main.a;
     cpu->regs.pc++;
     cpu->cycles += 5;
-}
 
-/* ld a, R */
-void ld_a_R(Z80_t *cpu)
-{
-    cpu->regs.main.a = cpu->regs.r;
-    cpu->regs.pc++;
-    cpu->cycles += 5;
+    value = cpu->regs.r;
+
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
+    cpu->regs.main.flags.s = value & (1<<7);
+    cpu->regs.main.flags.z = !value;
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.pv = cpu->regs.iff2;
+    cpu->regs.main.flags.n = 0;
+
+    cpu->regs.main.a = value;
 }
 
 /* LD (nn), a */
@@ -320,6 +323,18 @@ void pop(Z80_t *cpu, uint16_t *dest)
 
 void ret(Z80_t *cpu)
 {
+    pop(cpu, &cpu->regs.pc);
+}
+
+void retn(Z80_t *cpu)
+{
+    pop(cpu, &cpu->regs.pc);
+    cpu->regs.iff1 = cpu->regs.iff2;
+}
+
+void reti(Z80_t *cpu)
+{
+    // don't care about correct behavior since it's irrelevant on speccy
     pop(cpu, &cpu->regs.pc);
 }
 
@@ -1990,8 +2005,6 @@ void do_ed(Z80_t *cpu)
 
     switch (op)
     {
-    case 0x47: ld_i_a(cpu); break;
-
     // sbc hl, rr
     case 0x42: sbc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.bc); break;
     case 0x52: sbc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.de); break;
@@ -2002,10 +2015,24 @@ void do_ed(Z80_t *cpu)
     case 0x53: ld_nna_rr(cpu, cpu->regs.main.de); break;
     case 0x63: ld_nna_rr(cpu, cpu->regs.main.hl); break;
     case 0x73: ld_nna_rr(cpu, cpu->regs.sp); break;
+    // retn/reti
+    case 0x45: retn(cpu); break;
+    case 0x4D: reti(cpu); break;
+    case 0x55: retn(cpu); break;
+    case 0x5D: retn(cpu); break;
+    case 0x65: retn(cpu); break;
+    case 0x6D: retn(cpu); break;
+    case 0x75: retn(cpu); break;
+    case 0x7D: retn(cpu); break;
     // im 0/1/2
     case 0x46: im(cpu, 0); break;
+    case 0x4E: im(cpu, 0); break;
     case 0x56: im(cpu, 1); break;
     case 0x5E: im(cpu, 2); break;
+    case 0x66: im(cpu, 0); break;
+    case 0x6E: im(cpu, 0); break;
+    case 0x76: im(cpu, 1); break;
+    case 0x7E: im(cpu, 2); break;
     // adc hl, rr
     case 0x4A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.bc); break;
     case 0x5A: adc_rr_rr(cpu, &cpu->regs.main.hl, cpu->regs.main.de); break;
@@ -2053,20 +2080,29 @@ void do_ed(Z80_t *cpu)
     case 0x74: neg(cpu); break;
     case 0x7C: neg(cpu); break;
 
-    // R register
-    case 0x4F: ld_R_a(cpu); break;
-    case 0x5F: ld_a_R(cpu); break;
+    // ir registers
+    case 0x47: ld_i_a(cpu, &cpu->regs.i); break;
+    case 0x4F: ld_i_a(cpu, &cpu->regs.r); break;
+    case 0x57: ld_a_i(cpu, cpu->regs.i); break;
+    case 0x5F: ld_a_i(cpu, cpu->regs.r); break;
 
     // rld/rrd
     case 0x67: rrd(cpu); break;
     case 0x6F: rld(cpu); break;
 
     default:
-        cpu->regs.pc--;
-        cpu->cycles -= 4;
-        print_regs(cpu);
-        dlog(LOG_ERR, "unimplemented opcode ED %02X at %04X", op, cpu->regs.pc);
-        cpu->error = 1;
+        // FIXME: HACK WHILE NOT ALL OPS ARE IMPLEMENTED
+        if (op < 0x40 
+        || (op >= 0xA0 && (op & 4))
+        || (op >= 0x80)) {
+            nop(cpu);
+        } else {
+            cpu->regs.pc--;
+            cpu->cycles -= 4;
+            print_regs(cpu);
+            dlog(LOG_ERR, "unimplemented opcode ED %02X at %04X", op, cpu->regs.pc);
+            cpu->error = 1;
+        }
     }
 }
 
@@ -2398,6 +2434,72 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     case 0x25: dec_r(cpu, ih); break;
     case 0x2D: dec_r(cpu, il); break;
     case 0x3D: dec_r(cpu, &cpu->regs.main.a); break;
+
+    // ld b, r
+    case 0x40: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.b); break;
+    case 0x41: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.c); break;
+    case 0x42: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.d); break;
+    case 0x43: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.e); break;
+    case 0x44: ld_r_r(cpu, &cpu->regs.main.b, *ih); break;
+    case 0x45: ld_r_r(cpu, &cpu->regs.main.b, *il); break;
+    case 0x47: ld_r_r(cpu, &cpu->regs.main.b, cpu->regs.main.a); break;
+    // ld c, r
+    case 0x48: ld_r_r(cpu, &cpu->regs.main.c, cpu->regs.main.b); break;
+    case 0x49: ld_r_r(cpu, &cpu->regs.main.c, cpu->regs.main.c); break;
+    case 0x4A: ld_r_r(cpu, &cpu->regs.main.c, cpu->regs.main.d); break;
+    case 0x4B: ld_r_r(cpu, &cpu->regs.main.c, cpu->regs.main.e); break;
+    case 0x4C: ld_r_r(cpu, &cpu->regs.main.c, *ih); break;
+    case 0x4D: ld_r_r(cpu, &cpu->regs.main.c, *il); break;
+    case 0x4F: ld_r_r(cpu, &cpu->regs.main.c, cpu->regs.main.a); break;
+    // ld d, r
+    case 0x50: ld_r_r(cpu, &cpu->regs.main.d, cpu->regs.main.b); break;
+    case 0x51: ld_r_r(cpu, &cpu->regs.main.d, cpu->regs.main.c); break;
+    case 0x52: ld_r_r(cpu, &cpu->regs.main.d, cpu->regs.main.d); break;
+    case 0x53: ld_r_r(cpu, &cpu->regs.main.d, cpu->regs.main.e); break;
+    case 0x54: ld_r_r(cpu, &cpu->regs.main.d, *ih); break;
+    case 0x55: ld_r_r(cpu, &cpu->regs.main.d, *il); break;
+    case 0x57: ld_r_r(cpu, &cpu->regs.main.d, cpu->regs.main.a); break;
+    // ld e, r
+    case 0x58: ld_r_r(cpu, &cpu->regs.main.e, cpu->regs.main.b); break;
+    case 0x59: ld_r_r(cpu, &cpu->regs.main.e, cpu->regs.main.c); break;
+    case 0x5A: ld_r_r(cpu, &cpu->regs.main.e, cpu->regs.main.d); break;
+    case 0x5B: ld_r_r(cpu, &cpu->regs.main.e, cpu->regs.main.e); break;
+    case 0x5C: ld_r_r(cpu, &cpu->regs.main.e, *ih); break;
+    case 0x5D: ld_r_r(cpu, &cpu->regs.main.e, *il); break;
+    case 0x5F: ld_r_r(cpu, &cpu->regs.main.e, cpu->regs.main.a); break;
+    // ld ih, r
+    case 0x60: ld_r_r(cpu, ih, cpu->regs.main.b); break;
+    case 0x61: ld_r_r(cpu, ih, cpu->regs.main.c); break;
+    case 0x62: ld_r_r(cpu, ih, cpu->regs.main.d); break;
+    case 0x63: ld_r_r(cpu, ih, cpu->regs.main.e); break;
+    case 0x64: ld_r_r(cpu, ih, *ih); break;
+    case 0x65: ld_r_r(cpu, ih, *il); break;
+    case 0x67: ld_r_r(cpu, ih, cpu->regs.main.a); break;
+    // ld il, r
+    case 0x68: ld_r_r(cpu, il, cpu->regs.main.b); break;
+    case 0x69: ld_r_r(cpu, il, cpu->regs.main.c); break;
+    case 0x6A: ld_r_r(cpu, il, cpu->regs.main.d); break;
+    case 0x6B: ld_r_r(cpu, il, cpu->regs.main.e); break;
+    case 0x6C: ld_r_r(cpu, il, *ih); break;
+    case 0x6D: ld_r_r(cpu, il, *il); break;
+    case 0x6F: ld_r_r(cpu, il, cpu->regs.main.a); break;
+    // ld a, r
+    case 0x78: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.b); break;
+    case 0x79: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.c); break;
+    case 0x7A: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.d); break;
+    case 0x7B: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.e); break;
+    case 0x7C: ld_r_r(cpu, &cpu->regs.main.a, *ih); break;
+    case 0x7D: ld_r_r(cpu, &cpu->regs.main.a, *il); break;
+    case 0x7F: ld_r_r(cpu, &cpu->regs.main.a, cpu->regs.main.a); break;
+
+    // ld r, n
+    case 0x06: ld_r_n(cpu, &cpu->regs.main.b); break;
+    case 0x0E: ld_r_n(cpu, &cpu->regs.main.c); break;
+    case 0x16: ld_r_n(cpu, &cpu->regs.main.d); break;
+    case 0x1E: ld_r_n(cpu, &cpu->regs.main.e); break;
+    case 0x26: ld_r_n(cpu, ih); break;
+    case 0x2E: ld_r_n(cpu, il); break;
+    case 0x3E: ld_r_n(cpu, &cpu->regs.main.a); break;
 
     // ld sp, ii
     case 0xF9: ld_sp_rr(cpu, *ii); break;
