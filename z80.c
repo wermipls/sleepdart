@@ -86,8 +86,8 @@ static inline bool flag_overflow_16(uint16_t a, uint16_t b, bool c, bool sub)
 
 static inline void inc_refresh(Z80_t *cpu)
 {
-    cpu->regs.r++;
-    cpu->regs.r &= 127;
+    uint8_t r = (cpu->regs.r + 1) & 127;
+    cpu->regs.r = (cpu->regs.r & (1<<7)) | r;
 }
 
 /* SUB helper */
@@ -180,8 +180,6 @@ void ld_a_i(Z80_t *cpu, uint8_t value)
 {
     cpu->regs.pc++;
     cpu->cycles += 5;
-
-    value = cpu->regs.r;
 
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
