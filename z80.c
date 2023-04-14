@@ -2,6 +2,7 @@
 #include "machine.h"
 #include "io.h"
 #include "log.h"
+#include <assert.h>
 
 #include <stdio.h>
 
@@ -1578,6 +1579,54 @@ void srl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
     if (dest) *dest = value;
 }
 
+void rld(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 7; // amstrad gate
+
+    uint8_t a = value >> 4;
+    value = value << 4 | (cpu->regs.main.a & 0xF);
+    a |= cpu->regs.main.a & 0xF0;
+    cpu->regs.main.a = a;
+
+    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3);
+    cpu->regs.main.f &= ~fmask;
+    cpu->regs.main.f |= a & fmask;
+    cpu->regs.main.flags.z = !a;
+    cpu->regs.main.flags.pv = get_parity(a);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+
+    cpu_write(cpu, cpu->regs.main.hl, value);
+    cpu->cycles += 3;
+}
+
+void rrd(Z80_t *cpu)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 7; // amstrad gate
+
+    uint8_t a = value & 0xF;
+    value = value >> 4 | ((cpu->regs.main.a & 0xF) << 4);
+    a |= cpu->regs.main.a & 0xF0;
+    cpu->regs.main.a = a;
+
+    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3);
+    cpu->regs.main.f &= ~fmask;
+    cpu->regs.main.f |= a & fmask;
+    cpu->regs.main.flags.z = !a;
+    cpu->regs.main.flags.pv = get_parity(a);
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.n = 0;
+
+    cpu_write(cpu, cpu->regs.main.hl, value);
+    cpu->cycles += 3;
+}
+
 
 /* Bit Set, Reset and Test Group */
 
@@ -2008,6 +2057,10 @@ void do_ed(Z80_t *cpu)
     case 0x4F: ld_R_a(cpu); break;
     case 0x5F: ld_a_R(cpu); break;
 
+    // rld/rrd
+    case 0x67: rrd(cpu); break;
+    case 0x6F: rld(cpu); break;
+
     default:
         cpu->regs.pc--;
         cpu->cycles -= 4;
@@ -2203,6 +2256,8 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     cpu->prefix_state = STATE_NOPREFIX;
 
     uint16_t *ii = is_iy ? &cpu->regs.iy : &cpu->regs.ix;
+    uint8_t *il = (uint8_t *)ii;
+    uint8_t *ih = il+1;
 
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
     inc_refresh(cpu);
@@ -2260,6 +2315,72 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     case 0xAE: xor_iid(cpu, *ii); break;
     case 0xB6: or_iid(cpu, *ii); break;
     case 0xBE: cp_iid(cpu, *ii); break;
+
+    // non (ii+d) alo
+    // add a
+    case 0x80: add_a_r(cpu, cpu->regs.main.b); break;
+    case 0x81: add_a_r(cpu, cpu->regs.main.c); break;
+    case 0x82: add_a_r(cpu, cpu->regs.main.d); break;
+    case 0x83: add_a_r(cpu, cpu->regs.main.e); break;
+    case 0x84: add_a_r(cpu, *ih); break;
+    case 0x85: add_a_r(cpu, *il); break;
+    case 0x87: add_a_r(cpu, cpu->regs.main.a); break;
+    // adc a
+    case 0x88: adc_a_r(cpu, cpu->regs.main.b); break;
+    case 0x89: adc_a_r(cpu, cpu->regs.main.c); break;
+    case 0x8A: adc_a_r(cpu, cpu->regs.main.d); break;
+    case 0x8B: adc_a_r(cpu, cpu->regs.main.e); break;
+    case 0x8C: adc_a_r(cpu, *ih); break;
+    case 0x8D: adc_a_r(cpu, *il); break;
+    case 0x8F: adc_a_r(cpu, cpu->regs.main.a); break;
+    // sub
+    case 0x90: sub_r(cpu, cpu->regs.main.b); break;
+    case 0x91: sub_r(cpu, cpu->regs.main.c); break;
+    case 0x92: sub_r(cpu, cpu->regs.main.d); break;
+    case 0x93: sub_r(cpu, cpu->regs.main.e); break;
+    case 0x94: sub_r(cpu, *ih); break;
+    case 0x95: sub_r(cpu, *il); break;
+    case 0x97: sub_r(cpu, cpu->regs.main.a); break;
+    // sbc a
+    case 0x98: sbc_a_r(cpu, cpu->regs.main.b); break;
+    case 0x99: sbc_a_r(cpu, cpu->regs.main.c); break;
+    case 0x9A: sbc_a_r(cpu, cpu->regs.main.d); break;
+    case 0x9B: sbc_a_r(cpu, cpu->regs.main.e); break;
+    case 0x9C: sbc_a_r(cpu, *ih); break;
+    case 0x9D: sbc_a_r(cpu, *il); break;
+    case 0x9F: sbc_a_r(cpu, cpu->regs.main.a); break;
+    // and
+    case 0xA0: and_r(cpu, cpu->regs.main.b); break;
+    case 0xA1: and_r(cpu, cpu->regs.main.c); break;
+    case 0xA2: and_r(cpu, cpu->regs.main.d); break;
+    case 0xA3: and_r(cpu, cpu->regs.main.e); break;
+    case 0xA4: and_r(cpu, *ih); break;
+    case 0xA5: and_r(cpu, *il); break;
+    case 0xA7: and_r(cpu, cpu->regs.main.a); break;
+    // xor
+    case 0xA8: xor_r(cpu, cpu->regs.main.b); break;
+    case 0xA9: xor_r(cpu, cpu->regs.main.c); break;
+    case 0xAA: xor_r(cpu, cpu->regs.main.d); break;
+    case 0xAB: xor_r(cpu, cpu->regs.main.e); break;
+    case 0xAC: xor_r(cpu, *ih); break;
+    case 0xAD: xor_r(cpu, *il); break;
+    case 0xAF: xor_r(cpu, cpu->regs.main.a); break;
+    // or
+    case 0xB0: or_r(cpu, cpu->regs.main.b); break;
+    case 0xB1: or_r(cpu, cpu->regs.main.c); break;
+    case 0xB2: or_r(cpu, cpu->regs.main.d); break;
+    case 0xB3: or_r(cpu, cpu->regs.main.e); break;
+    case 0xB4: or_r(cpu, *ih); break;
+    case 0xB5: or_r(cpu, *il); break;
+    case 0xB7: or_r(cpu, cpu->regs.main.a); break;
+    // cp
+    case 0xB8: cp_r(cpu, cpu->regs.main.b); break;
+    case 0xB9: cp_r(cpu, cpu->regs.main.c); break;
+    case 0xBA: cp_r(cpu, cpu->regs.main.d); break;
+    case 0xBB: cp_r(cpu, cpu->regs.main.e); break;
+    case 0xBC: cp_r(cpu, *ih); break;
+    case 0xBD: cp_r(cpu, *il); break;
+    case 0xBF: cp_r(cpu, cpu->regs.main.a); break;
 
     // ld sp, ii
     case 0xF9: ld_sp_rr(cpu, *ii); break;
