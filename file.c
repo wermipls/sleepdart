@@ -5,6 +5,18 @@
 #include <sys/stat.h>
 #include "szx_file.h"
 
+int64_t file_get_size(const char *path)
+{
+    if (path == NULL) return -1;
+
+    struct stat s;
+    if (stat(path, &s)) {
+        return -2;
+    }
+
+    return s.st_size;
+}
+
 int file_is_regular_file(char *path)
 {
     if (path == NULL) return -1;

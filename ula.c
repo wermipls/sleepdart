@@ -40,6 +40,25 @@ size_t cur_ula_write_index = 0;
 
 uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
 
+void ula_set_palette(Palette_t *palette)
+{
+    if (palette->colors != 16) {
+        return;
+    }
+
+    for (size_t i = 0; i < 8; i++) {
+        colors_basic[i].r = palette->color[i].r;
+        colors_basic[i].g = palette->color[i].g;
+        colors_basic[i].b = palette->color[i].b;
+    }
+
+    for (size_t i = 0; i < 8; i++) {
+        colors_bright[i].r = palette->color[i+8].r;
+        colors_bright[i].g = palette->color[i+8].g;
+        colors_bright[i].b = palette->color[i+8].b;
+    }
+}
+
 uint8_t ula_get_contention_cycles(uint64_t cycle)
 {
     if (cycle < T_FIRSTPIXEL) return 0;

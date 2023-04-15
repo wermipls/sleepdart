@@ -8,6 +8,7 @@
 #include "io.h"
 #include "file.h"
 #include "szx.h"
+#include "palette.h"
 
 int main(int argc, char *argv[])
 {
@@ -58,6 +59,12 @@ int main(int argc, char *argv[])
             szx_state_load(szx, &m);
             szx_free(szx);
         }
+    }
+
+    Palette_t *palette = palette_load("./palettes/default.raw");
+    if (palette) {
+        ula_set_palette(palette);
+        palette_free(palette);
     }
 
     int frame = 0;
