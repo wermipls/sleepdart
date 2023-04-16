@@ -9,6 +9,7 @@
 #include "file.h"
 #include "szx.h"
 #include "palette.h"
+#include "argparser.h"
 
 int main(int argc, char *argv[])
 {
@@ -19,14 +20,29 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    ArgParser_t *parser = argparser_create();
+    argparser_add_arg(parser, "file", 0, 0, 0);
+    argparser_add_arg(parser, "--scale", 's', ARG_INT, 0);
+    argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0);
+
+    if (argparser_parse(parser, argc, argv)) {
+        return -1;
+    }
+
+    int *scale = argparser_get(parser, "scale");
+
     int err = video_sdl_init(
         "third (sixth) iteration of sleepdart, the",
         BUFFER_WIDTH, BUFFER_HEIGHT, 
-        3); // scale
+        scale ? *scale : 3);
 
     if (err) {
         dlog(LOG_ERR, "Failed to initialize video backend!");
         return 1;
+    }
+
+    if (argparser_get(parser, "fullscreen")) {
+        video_sdl_toggle_window_mode();
     }
 
     input_sdl_init();
@@ -38,16 +54,17 @@ int main(int argc, char *argv[])
 
     Tape_t *tape = NULL;
     TapePlayer_t *player = NULL;
+    char *file = argparser_get(parser, "file");
 
-    if (argc > 1) {
-        enum FileType ft = file_detect_type(argv[1]);
+    if (file) {
+        enum FileType ft = file_detect_type(file);
 
         if (ft == FILE_UNKNOWN) {
-            dlog(LOG_ERR, "Unrecognized input file \"%s\"", argv[1]);
+            dlog(LOG_ERR, "Unrecognized input file \"%s\"", file);
         }
 
         if (ft == FILE_TAP) {
-            tape = tape_load_from_tap(argv[1]);
+            tape = tape_load_from_tap(file);
             player = tape_player_from_tape(tape);
             tape_player_pause(player, true);
 
@@ -55,7 +72,7 @@ int main(int argc, char *argv[])
         }
 
         if (ft == FILE_SZX) {
-            SZX_t *szx = szx_load_file(argv[1]);
+            SZX_t *szx = szx_load_file(file);
             szx_state_load(szx, &m);
             szx_free(szx);
         }
@@ -102,4 +119,6 @@ int main(int argc, char *argv[])
 
     tape_player_close(player);
     tape_free(tape);
+
+    argparser_free(parser);
 }
