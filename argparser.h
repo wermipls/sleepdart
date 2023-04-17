@@ -19,6 +19,7 @@ struct Argument
     char name_short;
     enum ArgumentType type;
     bool optional;
+    bool positional;
     const char *help;
     void *result;
     ArgCallback_t callback;
@@ -27,12 +28,13 @@ struct Argument
 typedef struct ArgParser {
     struct Argument *args;
     int positional_no;
+    int positional_req;
 } ArgParser_t;
 
 ArgParser_t *argparser_create();
 void argparser_free(ArgParser_t *parser);
 void argparser_add_arg(
     ArgParser_t *parser, const char *name, char name_short,
-    enum ArgumentType type, const char *help);
+    enum ArgumentType type, bool force_optional, const char *help);
 int argparser_parse(ArgParser_t *parser, int argc, char *argv[]);
 void *argparser_get(ArgParser_t *parser, const char *arg);

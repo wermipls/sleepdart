@@ -21,9 +21,9 @@ int main(int argc, char *argv[])
     }
 
     ArgParser_t *parser = argparser_create();
-    argparser_add_arg(parser, "file", 0, 0, 0);
-    argparser_add_arg(parser, "--scale", 's', ARG_INT, 0);
-    argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0);
+    argparser_add_arg(parser, "file", 0, 0, true, 0);
+    argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, 0);
+    argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, 0);
 
     if (argparser_parse(parser, argc, argv)) {
         return -1;

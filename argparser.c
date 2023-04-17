@@ -63,7 +63,7 @@ int args_get_index_by_char(ArgParser_t *parser, const char name)
 int args_get_index_positional(ArgParser_t *parser, int start_i)
 {
     for (size_t i = start_i; i < vector_len(parser->args); i++) {
-        if (parser->args[i].optional == false) {
+        if (parser->args[i].positional == true) {
             return i;
         }
     }
@@ -115,7 +115,7 @@ void *arg_parse_parameter(struct Argument *arg, char *param)
 
 void argparser_add_arg(
     ArgParser_t *parser, const char *name, char name_short,
-    enum ArgumentType type, const char *help)
+    enum ArgumentType type, bool force_optional, const char *help)
 {
     if (!name && name_short == 0) {
         dlog(LOG_ERRSILENT, "%s: Argument name cannot be empty", __func__);
@@ -167,7 +167,18 @@ void argparser_add_arg(
     }
 
     if (!arg.optional) {
+        arg.positional = true;
+    }
+
+    arg.optional |= force_optional;
+
+    if (arg.positional) {
+        if (!arg.optional && parser->positional_no != parser->positional_req) {
+            dlog(LOG_ERRSILENT, "%s: Positional non-optional argument defined after other optional positional args", __func__);
+            return;
+        }
         parser->positional_no += 1;
+        parser->positional_req += !arg.optional;
     }
 
     vector_add(parser->args, arg);
@@ -225,9 +236,9 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
         }
     }
 
-    if (positional_handled != parser->positional_no) {
+    if (positional_handled < parser->positional_req) {
         dlog(LOG_ERRSILENT, "Expected %d positional arguments, got %d",
-                      parser->positional_no, positional_handled);
+                      parser->positional_req, positional_handled);
         return -3;
     }
 
