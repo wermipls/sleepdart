@@ -11,6 +11,7 @@ enum ArgumentType
     ARG_INT,
     ARG_FLOAT,
     ARG_STORE_TRUE,
+    ARG_HELP,
 };
 
 struct Argument
@@ -29,9 +30,10 @@ typedef struct ArgParser {
     struct Argument *args;
     int positional_no;
     int positional_req;
+    const char *name;
 } ArgParser_t;
 
-ArgParser_t *argparser_create();
+ArgParser_t *argparser_create(const char *name);
 void argparser_free(ArgParser_t *parser);
 void argparser_add_arg(
     ArgParser_t *parser, const char *name, char name_short,

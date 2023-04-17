@@ -1,10 +1,16 @@
 #include "argparser.h"
 #include <inttypes.h>
+#include <stdio.h>
+#include <ctype.h>
 #include "vector.h"
 #include "log.h"
 
-ArgParser_t *argparser_create()
+ArgParser_t *argparser_create(const char *name)
 {
+    if (name == NULL) {
+        return NULL;
+    }
+
     ArgParser_t *parser = calloc(sizeof(ArgParser_t), 1);
     if (parser == NULL) {
         return NULL;
@@ -15,6 +21,10 @@ ArgParser_t *argparser_create()
         free(parser);
         return NULL;
     }
+
+    parser->name = name;
+
+    argparser_add_arg(parser, "--help", 'h', ARG_HELP, 0, "prints this help message");
 
     return parser;
 }
@@ -73,7 +83,7 @@ int args_get_index_positional(ArgParser_t *parser, int start_i)
 
 bool arg_requires_parameter(struct Argument *arg)
 {
-    if (arg->type == ARG_STORE_TRUE) {
+    if (arg->type == ARG_STORE_TRUE || arg->type == ARG_HELP) {
         return false;
     } else {
         return true;
@@ -111,6 +121,91 @@ void *arg_parse_parameter(struct Argument *arg, char *param)
     }
 
     return NULL;
+}
+
+void argparser_print_help(ArgParser_t *parser)
+{
+    // FIXME:
+    // - does not account for terminal width
+    // - does not account for long help msgs
+    // - does not account for long arg names
+    // - extremely redundant code
+
+    fprintf(stderr, "usage: %s ", parser->name);
+    for (size_t i = 0; i < vector_len(parser->args); i++) {
+        struct Argument *arg = &parser->args[i];
+        if (arg->positional) {
+            continue;
+        } else if (arg->optional) {
+            char param[sizeof(arg->name)];
+            if (arg_requires_parameter(arg)) {
+                memcpy(param, arg->name, sizeof(param));
+                char *p = param;
+                while (*p) {
+                    *p = toupper(*p);
+                    p++;
+                }
+            } else {
+                param[0] = 0;
+            }
+            char separator = arg_requires_parameter(arg) ? ' ' : 0;
+            if (arg->name_short) {
+                fprintf(stderr, "[-%c%c%s] ", arg->name_short, separator, param);
+            } else {
+                fprintf(stderr, "[--%s%c%s] ", arg->name, separator, param);
+            }
+        }
+    }
+
+    for (size_t i = 0; i < vector_len(parser->args); i++) {
+        struct Argument *arg = &parser->args[i];
+        if (arg->positional) {
+            fprintf(stderr, "%s ", arg->name);
+        }
+    }
+
+    fprintf(stderr, "\n\npositional arguments:\n");
+    for (size_t i = 0; i < vector_len(parser->args); i++) {
+        struct Argument *arg = &parser->args[i];
+        if (arg->positional) {
+            char buf[100];
+            snprintf(buf, sizeof(buf), "  %s", arg->name);
+            const char *help = arg->help ? arg->help : "";
+            fprintf(stderr, "%-40s%s\n", buf, help);
+        }
+    }
+
+    fprintf(stderr, "\noptions:\n");
+    for (size_t i = 0; i < vector_len(parser->args); i++) {
+        struct Argument *arg = &parser->args[i];
+        if (arg->positional) {
+            continue;
+        } else if (arg->optional) {
+            char param[sizeof(arg->name)];
+            if (arg_requires_parameter(arg)) {
+                param[0] = ' ';
+                memcpy(param+1, arg->name, sizeof(param)-2);
+                param[sizeof(param)-1] = 0;
+                char *p = param;
+                while (*p) {
+                    *p = toupper(*p);
+                    p++;
+                }
+            } else {
+                param[0] = 0;
+            }
+            char buf[100];
+            if (arg->name_short) {
+                snprintf(buf, sizeof(buf), "  -%c%s, --%s%s ",
+                                           arg->name_short, param,
+                                           arg->name, param);
+            } else {
+                snprintf(buf, sizeof(buf), "  --%s%s ", arg->name, param);
+            }
+            const char *help = arg->help ? arg->help : "";
+            fprintf(stderr, "%-40s%s\n", buf, help);
+        }
+    }
 }
 
 void argparser_add_arg(
@@ -208,6 +303,12 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
 
         if (arg_idx >= 0) {
             struct Argument *arg = &parser->args[arg_idx];
+
+            if (arg->type == ARG_HELP) {
+                argparser_print_help(parser);
+                return 1;
+            }
+
             i++;
             bool need_param = arg_requires_parameter(arg);
             if (need_param && i >= argc) {

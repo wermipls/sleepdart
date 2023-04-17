@@ -10,6 +10,7 @@
 #include "szx.h"
 #include "palette.h"
 #include "argparser.h"
+#include "sleepdart_info.h"
 
 int main(int argc, char *argv[])
 {
@@ -20,10 +21,10 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    ArgParser_t *parser = argparser_create();
-    argparser_add_arg(parser, "file", 0, 0, true, 0);
-    argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, 0);
-    argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, 0);
+    ArgParser_t *parser = argparser_create(SLEEPDART_NAME);
+    argparser_add_arg(parser, "file", 0, 0, true, "tape or snapshot file to be loaded");
+    argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");
+    argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, "run in fullscreen mode");
 
     if (argparser_parse(parser, argc, argv)) {
         return -1;
