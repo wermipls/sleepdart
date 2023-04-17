@@ -3,7 +3,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <SDL2/SDL_filesystem.h>
 #include "szx_file.h"
+
+static char basedir[4096] = { 0 };
 
 int64_t file_get_size(const char *path)
 {
@@ -81,6 +84,44 @@ char *file_get_extension(char *path)
     if (p >= last) return NULL;
 
     return p + 1;
+}
+
+const char *file_get_basedir()
+{
+    if (basedir[0]) {
+        return basedir;
+    }
+
+    char *dir = SDL_GetBasePath();
+    if (!dir) {
+        return NULL;
+    }
+    strncpy(basedir, dir, sizeof(basedir)-1);
+    SDL_free(dir);
+    basedir[sizeof(basedir)-1] = 0;
+
+    return basedir;
+}
+
+int file_path_append(char *dst, const char *a, const char *b, size_t len)
+{
+    if (!dst || !a || !b || !len) {
+        return -1;
+    }
+
+    // FIXME: should use PathAppend on win32, probably?
+    snprintf(dst, len, "%s%s", a, b);
+
+#ifdef _WIN32
+    char *p = dst;
+    while (*p != 0) {
+        if (*p == '/') {
+            *p = '\\';
+        }
+        p++;
+    }
+#endif
+    return 0;
 }
 
 enum FileType file_detect_type(char *path)

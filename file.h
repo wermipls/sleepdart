@@ -10,4 +10,6 @@ enum FileType {
 };
 
 int64_t file_get_size(const char *path);
+const char *file_get_basedir();
+int file_path_append(char *dst, const char *a, const char *b, size_t len);
 enum FileType file_detect_type(char *path);

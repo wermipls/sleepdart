@@ -78,7 +78,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    Palette_t *palette = palette_load("./palettes/default.raw");
+    char path[2048];
+    file_path_append(path, file_get_basedir(), "palettes/default.raw", sizeof(path));
+    Palette_t *palette = palette_load(path);
     if (palette) {
         ula_set_palette(palette);
         palette_free(palette);

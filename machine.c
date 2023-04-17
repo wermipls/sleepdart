@@ -1,4 +1,5 @@
 #include "machine.h"
+#include "file.h"
 
 Machine_t *current_machine = NULL;
 
@@ -18,7 +19,10 @@ int machine_init(Machine_t *machine, enum MachineType type)
     }
 
     memory_init(&machine->memory);
-    memory_load_rom_16k(&machine->memory, "./rom/48.rom");
+
+    char path[2048];
+    file_path_append(path, file_get_basedir(), "rom/48.rom", sizeof(path));
+    memory_load_rom_16k(&machine->memory, path);
 
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);
