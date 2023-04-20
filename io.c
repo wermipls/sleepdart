@@ -52,6 +52,14 @@ uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
         ula_set_border(value, ctx->cpu.cycles);
     }
 
+    if (addr == 0xFFFD) {
+        ay_write_address(&ctx->ay, value);
+    }
+
+    if (addr == 0xBFFD) {
+        ay_write_data(&ctx->ay, value);
+    }
+
     return io_handle_contention(addr, ctx->cpu.cycles);
 }
 

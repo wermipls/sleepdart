@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-FILES="*.c"
+FILES="*.c ayumi/ayumi.c"
 FLAGS="-std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter --static -lz `sdl2-config --libs --static-libs`"
 FLAGS_DEBUG="-ggdb"
 FLAGS_RELEASE="-O2"
