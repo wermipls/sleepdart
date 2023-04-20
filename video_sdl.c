@@ -81,20 +81,22 @@ void sdl_set_window_title_fps()
 
 void sdl_synchronize_fps()
 {
-    if (!limit_fps) return;
-
     // precision of 1ms. this can be a little inaccurate but doesn't matter for now
-    static uint64_t ticks = 0; 
-    static uint64_t ticks_old = 0;
+    static uint64_t ticks_next = 0;
     static const int ticks_frame = 20; // 50 FPS
-    ticks = SDL_GetTicks64();
+    uint64_t ticks = SDL_GetTicks64();
 
-    int delay = ticks_frame - (ticks - ticks_old);
-    if (delay > 1) {
+    if (!limit_fps || (ticks_next < ticks - ticks_frame)) {
+        ticks_next = ticks;
+        return;
+    }
+
+    if (ticks_next > ticks) {
+        int delay = ticks_next - ticks;
         SDL_Delay(delay);
     }
 
-    ticks_old = SDL_GetTicks64();
+    ticks_next += ticks_frame;
 }
 
 void sdl_log_error(const char msg[])
