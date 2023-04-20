@@ -18,3 +18,7 @@
 #define ID_WINDOWSCALE_3X               40017
 #define ID_WINDOWSCALE_4X               40018
 #define ID_WINDOWSCALE_5X               40019
+#define ID_PALETTE_DEFAULT              40020
+
+#define ID_PALETTE_BASE                 41000
+#define ID_PALETTE_BASE_END             41099

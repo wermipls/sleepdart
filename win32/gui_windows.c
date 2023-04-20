@@ -4,6 +4,8 @@
 #include "../sleepdart_info.h"
 #include "../video_sdl.h"
 #include "../machine.h"
+#include "../palette.h"
+#include "../file.h"
 
 WNDPROC sdl_wndproc;
 HMENU menu;
@@ -35,6 +37,56 @@ void on_file_quit()
     SDL_Event e;
     e.type = SDL_QUIT;
     SDL_PushEvent(&e);
+}
+
+void menu_palette_update_check()
+{
+    size_t palette = palette_get_index();
+    for (size_t i = ID_PALETTE_BASE; i <= ID_PALETTE_BASE_END; i++) {
+        CheckMenuItem(menu, i, MF_BYCOMMAND | MF_UNCHECKED);
+    }
+
+    CheckMenuItem(menu, palette + ID_PALETTE_BASE, MF_BYCOMMAND | MF_CHECKED);
+}
+
+void menu_palette_init()
+{
+    char **list = palette_list_get();
+    if (list == NULL) {
+        return;
+    }
+
+    size_t i = 0;
+    while (list[i] != NULL && i <= ID_PALETTE_BASE_END-ID_PALETTE_BASE) {
+        char *path = list[i];
+        char *ext = file_get_extension(path);
+        char path_noext[256];
+        if (ext) {
+            size_t len = ext - path;
+            len = len > sizeof(path_noext) ? sizeof(path_noext) : len;
+            strncpy(path_noext, path, len-1);
+            path_noext[len-1] = 0;
+            path = path_noext;
+        }
+
+        MENUITEMINFOA item;
+        item.cbSize = sizeof(item);
+        item.fMask = MIIM_STRING | MIIM_ID;
+        item.wID = ID_PALETTE_BASE + i;
+        item.dwTypeData = path;
+
+        InsertMenuItemA(menu, ID_PALETTE_DEFAULT, false, &item);
+        i++;
+    }
+
+    MENUITEMINFOA item;
+    item.cbSize = sizeof(item);
+    item.fMask = MIIM_FTYPE;
+    item.fType = MFT_SEPARATOR;
+
+    InsertMenuItemA(menu, ID_PALETTE_DEFAULT, false, &item);
+
+    menu_palette_update_check();
 }
 
 LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
@@ -72,6 +124,11 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             fullscreen_update_check();
             return TRUE;
             break;
+        case ID_PALETTE_DEFAULT:
+            palette_set_default();
+            menu_palette_update_check();
+            return TRUE;
+            break;
 
         case ID_WINDOWSCALE_1X:
         case ID_WINDOWSCALE_2X:
@@ -84,6 +141,13 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             return TRUE;
             break;
         }
+
+        WORD id = LOWORD(wparam);
+        if (id >= ID_PALETTE_BASE && id <= ID_PALETTE_BASE_END) {
+            palette_set_by_index(id-ID_PALETTE_BASE);
+            menu_palette_update_check();
+            return TRUE;
+        }
     }
 
     return CallWindowProc(sdl_wndproc, hwnd, umsg, wparam, lparam);
@@ -93,6 +157,8 @@ void menu_init(HWND hwnd)
 {
     // force SDL to resize window to compensate for the menu bar that we just added
     video_sdl_set_scale(video_sdl_get_scale());
+
+    menu_palette_init();
 
     windowscale_update_check();
     limit_fps_update_check();

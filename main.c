@@ -30,6 +30,9 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    palette_list_init();
+    palette_set_default();
+
     int *scale = argparser_get(parser, "scale");
 
     int err = video_sdl_init(
@@ -79,14 +82,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    char path[2048];
-    file_path_append(path, file_get_basedir(), "palettes/default.raw", sizeof(path));
-    Palette_t *palette = palette_load(path);
-    if (palette) {
-        ula_set_palette(palette);
-        palette_free(palette);
-    }
-
     int frame = 0;
     while (!m.cpu.error) {
         if (m.cpu.cycles < 32) {
@@ -96,6 +91,14 @@ int main(int argc, char *argv[])
         // FIXME: HACK
         if (m.cpu.cycles > T_FRAME) {
             m.cpu.cycles -= T_FRAME;
+
+            if (palette_has_changed()) {
+                Palette_t *pal = palette_load_current();
+                if (pal) {
+                    ula_set_palette(pal);
+                    palette_free(pal);
+                }
+            }
 
             ula_naive_draw(&m.memory);
 
@@ -122,6 +125,8 @@ int main(int argc, char *argv[])
 
     tape_player_close(player);
     tape_free(tape);
+
+    palette_list_free();
 
     argparser_free(parser);
 }

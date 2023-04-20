@@ -2,6 +2,11 @@
 #include "file.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+char **palette_list = NULL;
+size_t palette_current = 0;
+bool palette_changed = false;
 
 Palette_t *palette_load(const char *path)
 {
@@ -78,6 +83,30 @@ Palette_t *palette_load(const char *path)
     return result;
 }
 
+Palette_t *palette_load_current()
+{
+    if (palette_list == NULL) {
+        return NULL;
+    }
+
+    char path[2048];
+    int err = file_path_append(path, file_get_basedir(), "palettes", sizeof(path));
+    if (err) {
+        return NULL;
+    }
+    err = file_path_append(path, path, palette_list[palette_current], sizeof(path));
+    if (err) {
+        return NULL;
+    }
+
+    Palette_t *p = palette_load(path);
+    if (p == NULL) {
+        return NULL;
+    }
+
+    return p;
+}
+
 void palette_free(Palette_t *palette)
 {
     if (palette) {
@@ -86,4 +115,59 @@ void palette_free(Palette_t *palette)
         }
         free(palette);
     }
+}
+
+void palette_list_init()
+{
+    char path[2048];
+    int err = file_path_append(path, file_get_basedir(), "palettes", sizeof(path));
+    if (err) {
+        return;
+    }
+    palette_list = file_list_directory_files(path);
+}
+
+void palette_list_free()
+{
+    if (palette_list) {
+        file_free_list(palette_list);
+        palette_list = NULL;
+    }
+}
+
+char **palette_list_get()
+{
+    return palette_list;
+}
+
+void palette_set_by_index(size_t index)
+{
+    palette_current = index;
+    palette_changed = true;
+}
+
+void palette_set_default()
+{
+    if (palette_list == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; palette_list[i] != NULL; i++) {
+        int result = strcmp("default.raw", palette_list[i]);
+        if (result == 0) {
+            palette_current = i;
+            palette_changed = true;
+        }
+    }
+}
+
+size_t palette_get_index()
+{
+    return palette_current;
+}
+
+bool palette_has_changed()
+{
+    return palette_changed;
+    palette_changed = false;
 }

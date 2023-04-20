@@ -27,6 +27,10 @@ BEGIN
             MENUITEM "4x",                          ID_WINDOWSCALE_4X
             MENUITEM "5x",                          ID_WINDOWSCALE_5X
         END
+        POPUP "Palette"
+        BEGIN
+            MENUITEM "Reset default",           ID_PALETTE_DEFAULT
+        END
     END
     POPUP "Help"
     BEGIN
