@@ -1,9 +1,10 @@
 #include "io.h"
 #include "ula.h"
 #include "keyboard.h"
+#include "machine.h"
 
-TapePlayer_t *io_tape = NULL;
 uint64_t last_tape_read = 0;
+uint64_t last_tape_read_frame = 0;
 
 uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
 {
@@ -45,42 +46,39 @@ uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
 
 /* Performs a port write.
  * Returns the amount of extra cycles stalled due to ULA contention. */
-uint8_t io_port_write(uint16_t addr, uint8_t value, uint64_t cycle)
+uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
     if (!(addr & 1)) {
-        ula_set_border(value, cycle);
+        ula_set_border(value, ctx->cpu.cycles);
     }
 
-    return io_handle_contention(addr, cycle);
+    return io_handle_contention(addr, ctx->cpu.cycles);
 }
 
 /* Performs a port read. 
  * Returns the amount of extra cycles stalled due to ULA contention. */
-uint8_t io_port_read(uint16_t addr, uint8_t *dest, uint64_t cycle)
+uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 {
     uint8_t l = addr & 255;
     if (l == 0xFE) {
         *dest = keyboard_read(addr);
 
-        if (io_tape != NULL) {
+        if (ctx->tape_player != NULL) {
             uint64_t delta;
-            if (cycle < last_tape_read) {
-                delta = 0;
-            } else {
-                delta = cycle - last_tape_read;
-            }
-            last_tape_read = cycle;
 
-            uint8_t tape = tape_player_get_next_sample(io_tape, delta);
+            delta = (ctx->frames - last_tape_read_frame) * ctx->timing.t_frame;
+            delta += ctx->cpu.cycles;
+            delta -= last_tape_read;
+
+            last_tape_read = ctx->cpu.cycles;
+            last_tape_read_frame = ctx->frames;
+
+            uint8_t tape = tape_player_get_next_sample(ctx->tape_player, delta);
             if (!tape) {
                 *dest &= ~(1<<6);
             }
         }
     }
 
-    return io_handle_contention(addr, cycle);
-}
-
-void io_set_tape_player(TapePlayer_t *player) {
-    io_tape = player;
+    return io_handle_contention(addr, ctx->cpu.cycles);
 }

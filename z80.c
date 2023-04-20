@@ -38,25 +38,25 @@ void print_regs(Z80_t *cpu)
 static inline uint8_t cpu_read(Z80_t *cpu, uint16_t addr)
 {
     uint8_t value;
-    cpu->cycles += memory_read(cpu->ctx->memory.bus, addr, &value, cpu->cycles);
+    cpu->cycles += memory_read(cpu->ctx, addr, &value);
     return value;
 }
 
 static inline void cpu_write(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
-    cpu->cycles += memory_write(cpu->ctx->memory.bus, addr, value, cpu->cycles);
+    cpu->cycles += memory_write(cpu->ctx, addr, value);
 }
 
 static inline uint8_t cpu_in(Z80_t *cpu, uint16_t addr)
 {
     uint8_t value;
-    cpu->cycles += io_port_read(addr, &value, cpu->cycles);
+    cpu->cycles += io_port_read(cpu->ctx, addr, &value);
     return value;
 }
 
 static inline void cpu_out(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
-    cpu->cycles += io_port_write(addr, value, cpu->cycles);
+    cpu->cycles += io_port_write(cpu->ctx, addr, value);
 }
 
 static inline bool get_parity(uint8_t value)

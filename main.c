@@ -71,8 +71,7 @@ int main(int argc, char *argv[])
             tape = tape_load_from_tap(file);
             player = tape_player_from_tape(tape);
             tape_player_pause(player, true);
-
-            io_set_tape_player(player);
+            m.tape_player = player;
         }
 
         if (ft == FTYPE_SZX) {
@@ -82,15 +81,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    int frame = 0;
     while (!m.cpu.error) {
-        if (m.cpu.cycles < 32) {
+        if (m.cpu.cycles < m.timing.t_int_hold) {
             cpu_fire_interrupt(&m.cpu);
         }
         cpu_do_cycles(&m.cpu);
-        // FIXME: HACK
-        if (m.cpu.cycles > T_FRAME) {
-            m.cpu.cycles -= T_FRAME;
+
+        if (m.cpu.cycles >= m.timing.t_frame) {
+            m.cpu.cycles -= m.timing.t_frame;
+            m.frames++;
 
             if (palette_has_changed()) {
                 Palette_t *pal = palette_load_current();
@@ -100,26 +99,22 @@ int main(int argc, char *argv[])
                 }
             }
 
-            ula_naive_draw(&m.memory);
+            ula_naive_draw(&m);
 
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;
 
             input_sdl_update();
 
-            if (tape && input_sdl_get_key(SDL_SCANCODE_INSERT)) {
+            if (player && input_sdl_get_key(SDL_SCANCODE_INSERT)) {
                 tape_player_pause(player, false);
-            } 
-
-            tape_player_advance_cycles(player, T_FRAME - last_tape_read);
-            last_tape_read = 0;
+            }
 
             if (m.reset_pending) {
                 cpu_init(&m.cpu);
                 m.reset_pending = false;
             }
 
-            frame++;
         }
     }
 

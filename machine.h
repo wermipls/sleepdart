@@ -3,19 +3,35 @@
 #include "z80.h"
 #include "tape.h"
 #include "memory.h"
+#include "ula.h"
 
 enum MachineType
 {
     MACHINE_ZX48K,
 };
 
+struct MachineTiming
+{
+    uint64_t clock_hz;
+
+    unsigned int t_firstpx;
+    unsigned int t_scanline;
+    unsigned int t_screen;
+    unsigned int t_frame;
+    unsigned int t_eightpx;
+    unsigned int t_int_hold;
+};
+
 typedef struct Machine {
     enum MachineType type;
+    struct MachineTiming timing;
+
     Z80_t cpu;
     Memory_t memory;
 
     TapePlayer_t *tape_player;
 
+    uint64_t frames;
     bool reset_pending;
 } Machine_t;
 

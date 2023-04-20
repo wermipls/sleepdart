@@ -5,6 +5,7 @@
 #include <time.h>
 #include "log.h"
 #include "ula.h"
+#include "machine.h"
 
 /* Initializes the DRAM to a pseudo-random state it would have on initial power-on. */
 void memory_init(Memory_t *mem)
@@ -39,18 +40,18 @@ int memory_load_rom_16k(Memory_t *mem, char path[])
 
 /* Performs a memory bus write. 
  * Returns the amount of extra cycles stalled due to ULA memory contention. */
-uint8_t memory_write(uint8_t *bus, uint16_t addr, uint8_t value, uint64_t cycle)
+uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
     if (addr < 0x4000) { 
         // 0x0000 - 0x3FFF -> ROM 
         // no-op for now
     } else if (addr < 0x8000) {
         // 0x4000 - 0x7FFF -> RAM (contended memory)
-        bus[addr] = value; // ostrożnie!
-        return ula_get_contention_cycles(cycle);
+        ctx->memory.bus[addr] = value; // ostrożnie!
+        return ula_get_contention_cycles(ctx->cpu.cycles);
     } else {
         // 0x8000 - 0xFFFF -> RAM
-        bus[addr] = value;
+        ctx->memory.bus[addr] = value;
     }
 
     return 0;
@@ -58,11 +59,11 @@ uint8_t memory_write(uint8_t *bus, uint16_t addr, uint8_t value, uint64_t cycle)
 
 /* Performs a memory bus read. 
  * Returns the amount of extra cycles stalled due to ULA memory contention. */
-uint8_t memory_read(uint8_t *bus, uint16_t addr, uint8_t *dest, uint64_t cycle)
+uint8_t memory_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 {
-    *dest = bus[addr];
+    *dest = ctx->memory.bus[addr];
     if (addr >= 0x4000 && addr < 0x8000) {
-        return ula_get_contention_cycles(cycle);
+        return ula_get_contention_cycles(ctx->cpu.cycles);
     }
     return 0; 
 }

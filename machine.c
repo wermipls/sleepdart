@@ -3,6 +3,17 @@
 
 Machine_t *current_machine = NULL;
 
+const struct MachineTiming machine_timing_zx48k = {
+    .clock_hz = 3500000,
+
+    .t_firstpx = 14336,
+    .t_scanline = 224,
+    .t_screen = 128,
+    .t_frame = 224 * 312,
+    .t_eightpx = 4,
+    .t_int_hold = 32,
+};
+
 void machine_set_current(Machine_t *machine)
 {
     current_machine = machine;
@@ -18,6 +29,8 @@ int machine_init(Machine_t *machine, enum MachineType type)
         return -2;
     }
 
+    machine->timing = machine_timing_zx48k;
+
     memory_init(&machine->memory);
 
     char path[2048];
@@ -28,7 +41,11 @@ int machine_init(Machine_t *machine, enum MachineType type)
     cpu_init(&machine->cpu);
 
     machine->tape_player = NULL;
+    machine->frames = 0;
     machine->reset_pending = false;
+
+    // FIXME: hack
+    ula_init(machine);
 
     return 0;
 }

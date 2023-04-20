@@ -1,4 +1,5 @@
 #include "ula.h"
+#include "machine.h"
 
 struct Write
 {
@@ -40,6 +41,20 @@ size_t cur_ula_write_index = 0;
 
 uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
 
+struct MachineTiming timing;
+Memory_t *mem;
+uint64_t first_border_cycle;
+
+void ula_init(struct Machine *ctx)
+{
+    timing = ctx->timing;
+    mem = &ctx->memory;
+
+    first_border_cycle = timing.t_firstpx 
+                       - timing.t_scanline * (BUFFER_HEIGHT - 192) / 2 
+                       - timing.t_eightpx * (BUFFER_WIDTH - 256) / 8 / 2; 
+}
+
 void ula_set_palette(Palette_t *palette)
 {
     if (palette->colors != 16) {
@@ -61,14 +76,14 @@ void ula_set_palette(Palette_t *palette)
 
 uint8_t ula_get_contention_cycles(uint64_t cycle)
 {
-    if (cycle < T_FIRSTPIXEL) return 0;
-    cycle -= T_FIRSTPIXEL;
+    if (cycle < timing.t_firstpx) return 0;
+    cycle -= timing.t_firstpx;
 
-    uint16_t line = cycle / T_SCANLINE;
+    uint16_t line = cycle / timing.t_scanline;
     if (line > 192) return 0;
 
-    uint16_t linecyc = cycle % T_SCANLINE;
-    if (linecyc > T_SCREEN) return 0;
+    uint16_t linecyc = cycle % timing.t_scanline;
+    if (linecyc > timing.t_screen) return 0;
 
     return contention_pattern[linecyc % 8];
 }
@@ -128,10 +143,6 @@ static inline void ula_fill_border_8x1(RGB24_t *buf)
     }
 }
 
-const uint64_t first_border_cycle = T_FIRSTPIXEL 
-                             - T_SCANLINE * (BUFFER_HEIGHT - 192) / 2 
-                             - T_EIGHTPX * (BUFFER_WIDTH - 256) / 8 / 2; 
-
 static inline int get_cycle_buf_pos(uint64_t cycle)
 {
     if (cycle < first_border_cycle) 
@@ -139,8 +150,8 @@ static inline int get_cycle_buf_pos(uint64_t cycle)
 
     cycle -= first_border_cycle;
 
-    int x = (cycle % T_SCANLINE) * 2;
-    int y = cycle / T_SCANLINE;
+    int x = (cycle % timing.t_scanline) * 2;
+    int y = cycle / timing.t_scanline;
 
     if (x > BUFFER_WIDTH) 
         x = BUFFER_WIDTH;
@@ -194,7 +205,7 @@ static inline void ula_process_border(RGB24_t *buf)
     cur_ula_write_index = 0;
 }
 
-void ula_naive_draw(Memory_t *mem)
+void ula_naive_draw()
 {
     RGB24_t *bufptr = ula_buffer;
     ula_process_border(bufptr);
