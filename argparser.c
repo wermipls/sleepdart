@@ -90,6 +90,56 @@ bool arg_requires_parameter(struct Argument *arg)
     }
 }
 
+int *arg_parse_int(char *param)
+{
+    char *end;
+    long value = strtol(param, &end, 0);
+    if (end == param || (*end != 0 && *end != ' ')) {
+        dlog(LOG_ERRSILENT, "Failed to parse parameter \"%s\" as an integer", param);
+        return NULL;
+    }
+
+    if (errno == ERANGE) {
+        dlog(LOG_ERRSILENT, "Parameter \"%s\" is out of range", param);
+        return NULL;
+    }
+
+    int *i = malloc(sizeof(i));
+    if (!i) {
+        dlog(LOG_ERRSILENT, "%s: malloc fail", __func__);
+        return NULL;
+    }
+
+    // FIXME: long -> int cast
+    // long and int are both same size on gcc x86_64-w64-mingw32 but yea...
+    *i = value;
+    return i;
+}
+
+float *arg_parse_float(char *param)
+{
+    char *end;
+    float value = strtof(param, &end);
+    if (end == param || (*end != 0 && *end != ' ')) {
+        dlog(LOG_ERRSILENT, "Failed to parse parameter \"%s\" as a floating point value", param);
+        return NULL;
+    }
+
+    if (errno == ERANGE) {
+        dlog(LOG_ERRSILENT, "Parameter \"%s\" is out of range", param);
+        return NULL;
+    }
+
+    float *i = malloc(sizeof(i));
+    if (!i) {
+        dlog(LOG_ERRSILENT, "%s: malloc fail", __func__);
+        return NULL;
+    }
+
+    *i = value;
+    return i;
+}
+
 void *arg_parse_parameter(struct Argument *arg, char *param)
 {
     switch (arg->type) 
@@ -101,16 +151,10 @@ void *arg_parse_parameter(struct Argument *arg, char *param)
         memcpy(s, param, len);
         s[len-1] = 0;
         return s;
-    case ARG_INT: ;
-        int *i = malloc(sizeof(int));
-        if (!i) break;
-        *i = atoi(param);
-        return i;
+    case ARG_INT:
+        return arg_parse_int(param);
     case ARG_FLOAT: ;
-        float *f = malloc(sizeof(float));
-        if (!f) break;
-        *f = atof(param);
-        return f;
+        return arg_parse_float(param);
     case ARG_STORE_TRUE: ;
         bool *st = malloc(sizeof(bool));
         if (!st) break;
@@ -321,6 +365,10 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
             } else {
                 arg->result = arg_parse_parameter(arg, 0);
                 i--;
+            }
+
+            if (arg->result == NULL) {
+                return -4;
             }
             continue;
         }
