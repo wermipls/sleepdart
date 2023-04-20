@@ -101,7 +101,7 @@ void sdl_synchronize_fps()
 
 void sdl_log_error(const char msg[])
 {
-    dlog(LOG_ERR, "%s: %s\n", msg, SDL_GetError());
+    dlog(LOG_ERR, "%s: %s", msg, SDL_GetError());
 }
 
 int video_sdl_init(const char *title, int width, int height, int scale)
