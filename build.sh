@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 FILES="*.c"
 FLAGS="-std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter --static -lz `sdl2-config --libs --static-libs`"
 FLAGS_DEBUG="-ggdb"
@@ -27,7 +29,9 @@ else
     FLAGS="$FLAGS $FLAGS_RELEASE"
 fi
 
+set +e
 DESCRIBE=`git describe --dirty --always`
+set -e
 if [[ $? -eq 0 ]]; then
     FLAGS="$FLAGS -DGIT_DESCRIBE=\"$DESCRIBE\""
 fi
