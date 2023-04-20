@@ -60,11 +60,11 @@ int main(int argc, char *argv[])
     if (file) {
         enum FileType ft = file_detect_type(file);
 
-        if (ft == FILE_UNKNOWN) {
+        if (ft == FTYPE_UNKNOWN) {
             dlog(LOG_ERR, "Unrecognized input file \"%s\"", file);
         }
 
-        if (ft == FILE_TAP) {
+        if (ft == FTYPE_TAP) {
             tape = tape_load_from_tap(file);
             player = tape_player_from_tape(tape);
             tape_player_pause(player, true);
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
             io_set_tape_player(player);
         }
 
-        if (ft == FILE_SZX) {
+        if (ft == FTYPE_SZX) {
             SZX_t *szx = szx_load_file(file);
             szx_state_load(szx, &m);
             szx_free(szx);

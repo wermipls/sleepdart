@@ -4,7 +4,9 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <SDL2/SDL_filesystem.h>
+#include <dirent.h>
 #include "szx_file.h"
+#include "vector.h"
 
 static char basedir[4096] = { 0 };
 
@@ -109,19 +111,89 @@ int file_path_append(char *dst, const char *a, const char *b, size_t len)
         return -1;
     }
 
+    const char *p = a;
+    bool has_dir_separator = false;
+    while (*p) {
+        p++;
+    }
+    if (p > a) {
+        p--;
+        has_dir_separator = file_is_directory_separator(*p);
+    }
+
     // FIXME: should use PathAppend on win32, probably?
-    snprintf(dst, len, "%s%s", a, b);
+    if (has_dir_separator) {
+        snprintf(dst, len, "%s%s", a, b);
+    } else {
+        snprintf(dst, len, "%s/%s", a, b);
+    }
 
 #ifdef _WIN32
-    char *p = dst;
-    while (*p != 0) {
-        if (*p == '/') {
-            *p = '\\';
+    char *dp = dst;
+    while (*dp != 0) {
+        if (*dp == '/') {
+            *dp = '\\';
         }
-        p++;
+        dp++;
     }
 #endif
     return 0;
+}
+
+void file_free_list(char *list[])
+{
+    if (list == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < vector_len(list); i++) {
+        if (list[i] != NULL) {
+            free(list[i]);
+        }
+    }
+
+    vector_free(list);
+}
+
+char **file_list_directory_files(char *path)
+{
+    DIR* dir = opendir(path);
+    if (dir == NULL) {
+        return NULL;
+    }
+
+    char **files = vector_create();
+    if (files == NULL) {
+        return NULL;
+    }
+
+    struct dirent *e;
+    while ((e = readdir(dir)) != NULL) {
+        char buf[4096];
+        int err = file_path_append(buf, path, e->d_name, sizeof(buf));
+        if (err) {
+            file_free_list(files);
+            return NULL;
+        }
+        if (!file_is_regular_file(buf)) {
+            continue;
+        }
+
+        size_t len = strlen(e->d_name);
+        char *p = malloc(len+1);
+        if (p == NULL) {
+            file_free_list(files);
+            return NULL;
+        }
+        strncpy(p, e->d_name, len);
+        p[len] = 0;
+        vector_add(files, p);
+    }
+
+    vector_add(files, NULL);
+
+    closedir(dir);
+    return files;
 }
 
 enum FileType file_detect_type(char *path)
@@ -138,13 +210,13 @@ enum FileType file_detect_type(char *path)
 
         // .tap files aren't reliably possible to detect by binary data alone
         if (strncmp(ext_lower, "tap", 3) == 0) {
-            return FILE_TAP;
+            return FTYPE_TAP;
         }
     }
 
     if (szx_is_valid_file(path)) {
-        return FILE_SZX;
+        return FTYPE_SZX;
     }
 
-    return FILE_UNKNOWN;
+    return FTYPE_UNKNOWN;
 }
