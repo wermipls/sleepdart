@@ -85,11 +85,26 @@ int main(int argc, char *argv[])
     ay_init(&m.ay, &m, 44100, 1750000);
     audio_sdl_init(44100);
 
+    bool inside_tape_routine = false;
+
     while (!m.cpu.error) {
         if (m.cpu.cycles < m.timing.t_int_hold) {
             cpu_fire_interrupt(&m.cpu);
         }
         cpu_do_cycles(&m.cpu);
+
+        if (m.cpu.regs.pc == 0x0556) {
+            inside_tape_routine = true;
+            video_sdl_set_fps_limit(false);
+            tape_player_pause(m.tape_player, false);
+        }
+
+        if (inside_tape_routine 
+        && (m.cpu.regs.pc < 0x0556 || m.cpu.regs.pc >= 0x0605)) {
+                inside_tape_routine = false;
+                video_sdl_set_fps_limit(true);
+                tape_player_pause(m.tape_player, true);
+        }
 
         if (m.cpu.cycles >= m.timing.t_frame) {
             m.cpu.cycles -= m.timing.t_frame;
