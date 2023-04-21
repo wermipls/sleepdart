@@ -168,6 +168,9 @@ size_t palette_get_index()
 
 bool palette_has_changed()
 {
-    return palette_changed;
-    palette_changed = false;
+    if (palette_changed) {
+        palette_changed = false;
+        return true;
+    }
+    return false;
 }
