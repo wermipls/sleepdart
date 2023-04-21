@@ -545,11 +545,6 @@ void inx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.flags.c = k > 255;
     cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
     cpu->regs.main.flags.n = value & (1<<7);
-
-    if (cpu->regs.main.b != 0) {
-        cpu->regs.pc -= 2;
-        cpu->cycles += 5;
-    }
 }
 
 /* INIR/INDR */
