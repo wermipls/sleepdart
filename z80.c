@@ -8,7 +8,16 @@
 
 /* helpers */
 
-#define MASK_FLAG_XY    ((1<<3) | (1<<5))
+#define SF  (1<<7)
+#define ZF  (1<<6)
+#define XF  (1<<5)
+#define HF  (1<<4)
+#define YF  (1<<3)
+#define PF  (1<<2)
+#define NF  (1<<1)
+#define CF  (1<<0)
+
+#define MASK_FLAG_XY    (XF | YF)
 #define MAKE16(L, H)    (L | (H << 8))
 #define LOW8(HL)        (HL & 255)
 #define HIGH8(HL)       (HL >> 8)
@@ -1077,7 +1086,7 @@ void daa(Z80_t *cpu)
 
     uint8_t result = neg ? (a - diff) : (a + diff);
 
-    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3); // KONMAI WILL SUE
+    const uint8_t fmask = XF | SF | YF;
     cpu->regs.main.f &= ~fmask;
     cpu->regs.main.f |= result & fmask;
     cpu->regs.main.flags.z = !result;
@@ -1650,7 +1659,7 @@ void rld(Z80_t *cpu)
     a |= cpu->regs.main.a & 0xF0;
     cpu->regs.main.a = a;
 
-    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3);
+    const uint8_t fmask = XF | SF | YF;
     cpu->regs.main.f &= ~fmask;
     cpu->regs.main.f |= a & fmask;
     cpu->regs.main.flags.z = !a;
@@ -1674,7 +1683,7 @@ void rrd(Z80_t *cpu)
     a |= cpu->regs.main.a & 0xF0;
     cpu->regs.main.a = a;
 
-    const uint8_t fmask = (1<<5) | (1<<7) | (1<<3);
+    const uint8_t fmask = XF | SF | YF;
     cpu->regs.main.f &= ~fmask;
     cpu->regs.main.f |= a & fmask;
     cpu->regs.main.flags.z = !a;
@@ -2142,7 +2151,7 @@ void do_ed(Z80_t *cpu)
         // FIXME: HACK WHILE NOT ALL OPS ARE IMPLEMENTED
         if (op < 0x40 
         || (op >= 0xA0 && (op & 4))
-        || (op >= 0x80)) {
+        || (op >= 0x80 && op < 0xA0)) {
             nop(cpu);
         } else {
             cpu->regs.pc--;
