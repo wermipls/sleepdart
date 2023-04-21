@@ -105,6 +105,8 @@ int main(int argc, char *argv[])
 
             ula_naive_draw(&m);
 
+            input_sdl_copy_old_state();
+
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;
 
@@ -113,8 +115,8 @@ int main(int argc, char *argv[])
 
             input_sdl_update();
 
-            if (player && input_sdl_get_key(SDL_SCANCODE_INSERT)) {
-                tape_player_pause(player, false);
+            if (player && input_sdl_get_key_pressed(SDL_SCANCODE_INSERT)) {
+                tape_player_pause(player, !player->paused);
             }
 
             if (m.reset_pending) {
