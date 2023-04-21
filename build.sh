@@ -4,7 +4,7 @@ set -e
 FILES="*.c ayumi/ayumi.c"
 FLAGS="-std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter --static -lz `sdl2-config --libs --static-libs`"
 FLAGS_DEBUG="-ggdb"
-FLAGS_RELEASE="-O2"
+FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
 WIN32_FILES="win32/*.c win32/*.o"
 WIN32_FLAGS="-DPLATFORM_WIN32"
 
