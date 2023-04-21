@@ -24,4 +24,5 @@ int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock);
 void ay_deinit(AY_t *ay);
 void ay_write_address(AY_t *ay, uint8_t value);
 void ay_write_data(AY_t *ay, uint8_t value);
+uint8_t ay_read_data(AY_t *ay);
 void ay_process_frame(AY_t *ay);

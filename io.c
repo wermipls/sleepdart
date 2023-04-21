@@ -88,5 +88,9 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
         }
     }
 
+    if (addr == 0xFFFD || addr == 0xBFFD) {
+        *dest = ay_read_data(&ctx->ay); 
+    }
+
     return io_handle_contention(addr, ctx->cpu.cycles);
 }
