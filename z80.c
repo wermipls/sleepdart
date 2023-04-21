@@ -1995,6 +1995,12 @@ void in_r_c(Z80_t *cpu, uint8_t *dest)
     uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
     if (dest) *dest = value; 
     cpu->cycles += 4;
+
+    cpu->regs.main.flags.s = value & (1<<7);
+    cpu->regs.main.flags.z = !value;
+    cpu->regs.main.flags.h = 0;
+    cpu->regs.main.flags.pv = get_parity(value);
+    cpu->regs.main.flags.n = 0;
 } 
 
 void in_a_na(Z80_t *cpu)
@@ -2008,12 +2014,6 @@ void in_a_na(Z80_t *cpu)
     uint8_t value = cpu_in(cpu, addr);
     cpu->regs.main.a = value;
     cpu->cycles += 4;
-
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
 } 
 
 
