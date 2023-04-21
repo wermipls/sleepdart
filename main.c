@@ -4,7 +4,7 @@
 #include "ula.h"
 #include "video_sdl.h"
 #include "input_sdl.h"
-#include "sound_sdl.h"
+#include "audio_sdl.h"
 #include "tape.h"
 #include "io.h"
 #include "file.h"
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     }
 
     ay_init(&m.ay, &m, 44100, 1750000);
-    sound_sdl_init(44100);
+    audio_sdl_init(44100);
 
     while (!m.cpu.error) {
         if (m.cpu.cycles < m.timing.t_int_hold) {
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
             if (quit) break;
 
             ay_process_frame(&m.ay);
-            sound_sdl_queue(m.ay.buf, m.ay.buf_len * sizeof(float));
+            audio_sdl_queue(m.ay.buf, m.ay.buf_len * sizeof(float));
 
             input_sdl_update();
 

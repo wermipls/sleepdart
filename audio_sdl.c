@@ -1,9 +1,10 @@
+#include "audio_sdl.h"
 #include <SDL2/SDL.h>
 
 static SDL_AudioDeviceID device;
 static SDL_AudioSpec device_spec;
 
-void sound_sdl_init(int sample_rate)
+void audio_sdl_init(int sample_rate)
 {
     SDL_Init(SDL_INIT_AUDIO);
 
@@ -18,7 +19,7 @@ void sound_sdl_init(int sample_rate)
     SDL_PauseAudioDevice(device, 0);
 }
 
-void sound_sdl_queue(float *buf, size_t bytes)
+void audio_sdl_queue(float *buf, size_t bytes)
 {
     uint32_t queue = SDL_GetQueuedAudioSize(device);
     // data too old (uncapped fps? a/v desync?), drop it
