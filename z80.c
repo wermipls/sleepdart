@@ -131,7 +131,6 @@ void ld_r_r(Z80_t *cpu, uint8_t *dest, uint8_t value)
 /* LD r, (rr) */
 void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     *dest = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -141,7 +140,6 @@ void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
 /* LD r, n */
 void ld_r_n(Z80_t *cpu, uint8_t *dest)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     *dest = cpu_read(cpu, cpu->regs.pc);
@@ -152,7 +150,6 @@ void ld_r_n(Z80_t *cpu, uint8_t *dest)
 /* LD r, (nn) */
 void ld_r_nna(Z80_t *cpu, uint8_t *dest)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -168,7 +165,6 @@ void ld_r_nna(Z80_t *cpu, uint8_t *dest)
 /* LD (rr), n */
 void ld_rra_n(Z80_t *cpu, uint16_t addr)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.pc);
@@ -183,14 +179,18 @@ void ld_i_a(Z80_t *cpu, uint8_t *dest)
 {
     *dest = cpu->regs.main.a;
     cpu->regs.pc++;
-    cpu->cycles += 5;
+    cpu->cycles += 4;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
 }
 
 /* ld a, i */
 void ld_a_i(Z80_t *cpu, uint8_t value)
 {
     cpu->regs.pc++;
-    cpu->cycles += 5;
+    cpu->cycles += 4;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
 
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
@@ -206,7 +206,6 @@ void ld_a_i(Z80_t *cpu, uint8_t value)
 /* LD (nn), a */
 void ld_nna_a(Z80_t *cpu)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -277,14 +276,13 @@ void ld_iid_n(Z80_t *cpu, uint16_t addr)
 /* LD rr, nn */
 void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
-    *dest = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
+    *dest = MAKE16(l, h);
     cpu->cycles += 3;
     cpu->regs.pc++;
 }
@@ -292,14 +290,13 @@ void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
 /* LD rr, (nn) */
 void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
-    uint16_t addr = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
+    uint16_t addr = MAKE16(l, h);
     cpu->cycles += 3;
     cpu->regs.pc++;
     l = cpu_read(cpu, addr);
@@ -312,7 +309,6 @@ void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
 /* LD (nn), rr */
 void ld_nna_rr(Z80_t *cpu, uint16_t value)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -443,8 +439,14 @@ void ldx(Z80_t *cpu, int8_t increment)
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
     cpu_write(cpu, cpu->regs.main.de, value);
-    // FIXME: unaccurate contention timings 
-    cpu->cycles += 5;
+    cpu->cycles += 3;
+
+    // de:1 x2
+    cpu_read(cpu, cpu->regs.main.de);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.main.de);
+    cpu->cycles += 1;
+
     cpu->regs.main.hl += increment;
     cpu->regs.main.de += increment;
     cpu->regs.main.bc--;
@@ -461,7 +463,17 @@ void ldxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.bc != 0) {
         cpu->regs.pc -= 2;
-        cpu->cycles += 5;
+        // de:1 x5
+        cpu_read(cpu, cpu->regs.main.de);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.de);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.de);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.de);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.de);
+        cpu->cycles += 1;
     }
 }
 
@@ -471,9 +483,21 @@ void cpx(Z80_t *cpu, int8_t increment)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
-    cpu->cycles += 8;
+    cpu->cycles += 3;
     cpu->regs.main.bc--;
     cpu->regs.main.hl += increment;
+
+    // hl:1 x5
+    cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.main.hl);
+    cpu->cycles += 1;
 
     bool c = cpu->regs.main.flags.c;
     sub8(cpu, cpu->regs.main.a, value);
@@ -491,7 +515,17 @@ void cpxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.bc != 0 && !cpu->regs.main.flags.z) {
         cpu->regs.pc -= 2;
-        cpu->cycles += 5;
+        // hl:1 x5
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
     }
 }
 
@@ -500,11 +534,12 @@ void outx(Z80_t *cpu, int8_t increment)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
     cpu_out(cpu, cpu->regs.main.bc, value);
-    // FIXME: inaccurate timings?
-    cpu->cycles += 5;
+    cpu->cycles += 4;
     cpu->regs.main.hl += increment;
 
     cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
@@ -522,21 +557,33 @@ void otxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.b != 0) {
         cpu->regs.pc -= 2;
-        cpu->cycles += 5;
+        // bc:1 x5
+        cpu_read(cpu, cpu->regs.main.bc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.bc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.bc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.bc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.bc);
+        cpu->cycles += 1;
     }
 }
 
 /* INI/IND */
 void inx(Z80_t *cpu, int8_t increment)
 {
-    cpu->cycles += 5;
+    cpu->cycles += 4;
     cpu->regs.pc++;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
+
     cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
 
     uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
     cpu->cycles += 4;
     cpu_write(cpu, cpu->regs.main.hl, value);
-    // FIXME: inaccurate timings?
     cpu->cycles += 3;
     cpu->regs.main.hl += increment;
 
@@ -554,7 +601,17 @@ void inxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.b != 0) {
         cpu->regs.pc -= 2;
-        cpu->cycles += 5;
+        // hl:1 x5
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.main.hl);
+        cpu->cycles += 1;
     }
 }
 
@@ -568,7 +625,7 @@ static inline uint8_t inc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = !(value & 0x0F); // FIXME: not sure about correctness of this
+    cpu->regs.main.flags.h = !(value & 0x0F);
     cpu->regs.main.flags.pv = value == 0x80;
     cpu->regs.main.flags.n = 0;
     return value;
@@ -588,7 +645,9 @@ void inc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = inc8(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -600,11 +659,26 @@ void inc_iid(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     addr += d;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+n:1
+    cpu->cycles += 1;
     value = inc8(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -618,7 +692,7 @@ static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = (value & 0x0F) == 0x0F; // FIXME: not sure about correctness of this
+    cpu->regs.main.flags.h = (value & 0x0F) == 0x0F;
     cpu->regs.main.flags.pv = value == 0x7F;
     cpu->regs.main.flags.n = 1;
     return value;
@@ -638,7 +712,9 @@ void dec_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = dec8(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -650,11 +726,26 @@ void dec_iid(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     addr += d;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+n:1
+    cpu->cycles += 1;
     value = dec8(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -712,7 +803,20 @@ void add_a_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -772,7 +876,20 @@ void adc_a_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -831,7 +948,20 @@ void sbc_a_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -874,7 +1004,20 @@ void sub_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -917,7 +1060,20 @@ void cp_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -950,7 +1106,6 @@ void and_r(Z80_t *cpu, uint8_t value)
 /* AND (rr) */
 void and_rra(Z80_t *cpu, uint16_t addr)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     uint8_t value = cpu_read(cpu, addr);
     and(cpu, value);
@@ -976,7 +1131,20 @@ void and_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -1009,7 +1177,6 @@ void xor_r(Z80_t *cpu, uint8_t value)
 /* XOR (rr) */
 void xor_rra(Z80_t *cpu, uint16_t addr)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     uint8_t value = cpu_read(cpu, addr);
     xor(cpu, value);
@@ -1035,7 +1202,20 @@ void xor_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -1068,7 +1248,6 @@ void or_r(Z80_t *cpu, uint8_t value)
 /* OR (rr) */
 void or_rra(Z80_t *cpu, uint16_t addr)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     uint8_t value = cpu_read(cpu, addr);
     or(cpu, value);
@@ -1094,7 +1273,20 @@ void or_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
-    cpu->cycles += 8; // FIXME
+    cpu->cycles += 3;
+
+    // pc+2:1 x5
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
@@ -1762,7 +1954,9 @@ void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     bit_(cpu, value, bit);
 }
 
@@ -1846,20 +2040,18 @@ void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 // FIXME: probably should remove this because its virtually the same as cc_nn :?
 void jp_nn(Z80_t *cpu)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
-    cpu->regs.pc = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
+    cpu->regs.pc = MAKE16(l, h);
     cpu->cycles += 3;
 }
 
 void jp_cc_nn(Z80_t *cpu, bool cc)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -1869,22 +2061,31 @@ void jp_cc_nn(Z80_t *cpu, bool cc)
     cpu->cycles += 3;
     cpu->regs.pc++;
     if (cc) {
-        cpu->regs.pc = MAKE16(l, h); // FIXME: figure out a nicer macro for this 
+        cpu->regs.pc = MAKE16(l, h);
     }
 }
 
 void jr_cc_d(Z80_t *cpu, bool cc)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     int8_t offset = (int8_t)cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
-    cpu->regs.pc++;
     if (cc) {
         cpu->regs.pc += offset;
-        cpu->cycles += 5;
+        // pc+1:1 x5
+        cpu_read(cpu, cpu->regs.pc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.pc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.pc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.pc);
+        cpu->cycles += 1;
+        cpu_read(cpu, cpu->regs.pc);
+        cpu->cycles += 1;
     }
+    cpu->regs.pc++;
 }
 
 void jp_rr(Z80_t *cpu, uint16_t addr)
@@ -1895,8 +2096,9 @@ void jp_rr(Z80_t *cpu, uint16_t addr)
 
 void djnz_d(Z80_t *cpu)
 {
-    // FIXME: placeholder, possibly wrong timings
-    cpu->cycles += 5;
+    cpu->cycles += 4;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
     cpu->regs.pc++;
     int8_t offset = (int8_t)cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
@@ -1912,7 +2114,6 @@ void djnz_d(Z80_t *cpu)
 
 void call_cc_nn(Z80_t *cpu, bool cc)
 {
-    // FIXME: placeholder, possibly wrong timings
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -1930,7 +2131,7 @@ void call_cc_nn(Z80_t *cpu, bool cc)
         cpu->regs.sp--;
         cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
         cpu->cycles += 3;
-        cpu->regs.pc = MAKE16(l, h); // FIXME: figure out a nicer macro for this
+        cpu->regs.pc = MAKE16(l, h);
     }
 }
 
@@ -1969,7 +2170,6 @@ void rst(Z80_t *cpu, uint8_t offset)
 /* OUT (n), a */
 void out_na_a(Z80_t *cpu)
 {
-    // FIXME: no clue how timings or anything for this shite work
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
@@ -2339,6 +2539,7 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     uint16_t addr = *ii + d;
 
+    // FIXME: WTF are those timings??? everything is comically wrong
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
