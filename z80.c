@@ -114,6 +114,8 @@ static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
     return result;
 }
 
+static inline uint8_t dec8(Z80_t *cpu, uint8_t value);
+
 /* instruction implementations */
 
 /* 8-Bit Load Group */
@@ -455,20 +457,7 @@ void ldx(Z80_t *cpu, int8_t increment)
 /* LDIR/LDDR */
 void ldxr(Z80_t *cpu, int8_t increment)
 {
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
-    cpu->cycles += 3;
-    cpu_write(cpu, cpu->regs.main.de, value);
-    // FIXME: unaccurate contention timings 
-    cpu->cycles += 5;
-    cpu->regs.main.hl += increment;
-    cpu->regs.main.de += increment;
-    cpu->regs.main.bc--;
-
-    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.n = 0;
+    ldx(cpu, increment);
 
     if (cpu->regs.main.bc != 0) {
         cpu->regs.pc -= 2;
@@ -498,22 +487,77 @@ void cpx(Z80_t *cpu, int8_t increment)
 /* CPIR/CPDR */
 void cpxr(Z80_t *cpu, int8_t increment)
 {
+    cpx(cpu, increment);
+
+    if (cpu->regs.main.bc != 0 && !cpu->regs.main.flags.z) {
+        cpu->regs.pc -= 2;
+        cpu->cycles += 5;
+    }
+}
+
+/* OUTI/OUTD */
+void outx(Z80_t *cpu, int8_t increment)
+{
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
-    cpu->cycles += 8;
+    cpu->cycles += 3;
+    cpu_out(cpu, cpu->regs.main.bc, value);
+    // FIXME: inaccurate timings?
+    cpu->cycles += 5;
     cpu->regs.main.hl += increment;
-    cpu->regs.main.bc--;
 
-    bool c = cpu->regs.main.flags.c;
-    sub8(cpu, cpu->regs.main.a, value);
-    uint8_t n = cpu->regs.main.a - value - cpu->regs.main.h;
-    cpu->regs.main.flags.y = n & (1<<1);
-    cpu->regs.main.flags.x = n & (1<<3); 
-    cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
-    cpu->regs.main.flags.c = c;
+    cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
+    uint16_t k = cpu->regs.main.l + value;
+    cpu->regs.main.flags.h = k > 255;
+    cpu->regs.main.flags.c = k > 255;
+    cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
+    cpu->regs.main.flags.n = value & (1<<7);
+}
 
-    if (cpu->regs.main.bc != 0 && !cpu->regs.main.flags.z) {
+/* OTIR/OTDR */
+void otxr(Z80_t *cpu, int8_t increment)
+{
+    outx(cpu, increment);
+
+    if (cpu->regs.main.b != 0) {
+        cpu->regs.pc -= 2;
+        cpu->cycles += 5;
+    }
+}
+
+/* INI/IND */
+void inx(Z80_t *cpu, int8_t increment)
+{
+    cpu->cycles += 5;
+    cpu->regs.pc++;
+    cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
+
+    uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
+    cpu->cycles += 4;
+    cpu_write(cpu, cpu->regs.main.hl, value);
+    // FIXME: inaccurate timings?
+    cpu->cycles += 3;
+    cpu->regs.main.hl += increment;
+
+    uint16_t k = ((cpu->regs.main.c + increment) & 255) + value;
+    cpu->regs.main.flags.h = k > 255;
+    cpu->regs.main.flags.c = k > 255;
+    cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
+    cpu->regs.main.flags.n = value & (1<<7);
+
+    if (cpu->regs.main.b != 0) {
+        cpu->regs.pc -= 2;
+        cpu->cycles += 5;
+    }
+}
+
+/* INIR/INDR */
+void inxr(Z80_t *cpu, int8_t increment)
+{
+    inx(cpu, increment);
+
+    if (cpu->regs.main.b != 0) {
         cpu->regs.pc -= 2;
         cpu->cycles += 5;
     }
@@ -2106,6 +2150,16 @@ void do_ed(Z80_t *cpu)
     case 0xA9: cpx(cpu, -1); break;
     case 0xB1: cpxr(cpu,  1); break;
     case 0xB9: cpxr(cpu, -1); break;
+    // inx/inxr
+    case 0xA2: inx(cpu,  1); break;
+    case 0xAA: inx(cpu, -1); break;
+    case 0xB2: inxr(cpu,  1); break;
+    case 0xBA: inxr(cpu, -1); break;
+    // cpx/cpxr
+    case 0xA3: outx(cpu,  1); break;
+    case 0xAB: outx(cpu, -1); break;
+    case 0xB3: otxr(cpu,  1); break;
+    case 0xBB: otxr(cpu, -1); break;
 
     // in r, (c)
     case 0x40: in_r_c(cpu, &cpu->regs.main.b); break;
