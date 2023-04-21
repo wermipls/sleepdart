@@ -185,16 +185,25 @@ int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
     void *pixels;
     int pitch; 
 
-    err = SDL_LockTexture(texture, NULL, &pixels, &pitch);
-    if (err) sdl_log_error("SDL_LockTexture");
+    static uint64_t ticks_last = 0;
+    uint64_t ticks = SDL_GetTicks64();
+    if (ticks - ticks_last >= 10) {
+        // i think it's fairly safe to assume no one truly needs
+        // the mf window to update more often than every 100hz
+        // with uncapped fps lol
+        ticks_last = ticks;
 
-    memcpy(pixels, pixeldata, 3*buffer_height*buffer_width);
-    SDL_UnlockTexture(texture);
+        err = SDL_LockTexture(texture, NULL, &pixels, &pitch);
+        if (err) sdl_log_error("SDL_LockTexture");
 
-    err = SDL_RenderCopy(renderer, texture, NULL, NULL);
-    if (err) sdl_log_error("SDL_RenderCopy");
+        memcpy(pixels, pixeldata, 3*buffer_height*buffer_width);
+        SDL_UnlockTexture(texture);
 
-    SDL_RenderPresent(renderer);
+        err = SDL_RenderCopy(renderer, texture, NULL, NULL);
+        if (err) sdl_log_error("SDL_RenderCopy");
+
+        SDL_RenderPresent(renderer);
+    }
 
     int quit = 0;
 
