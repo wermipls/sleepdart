@@ -9,18 +9,7 @@ struct WriteBorder
 
 RGB24_t ula_buffer[BUFFER_LEN];
 
-RGB24_t colors_bright[] = {
-    {.r = 0x00, .g = 0x00, .b = 0x00}, // black
-    {.r = 0x00, .g = 0x00, .b = 0xFF}, // blue
-    {.r = 0xFF, .g = 0x00, .b = 0x00}, // red
-    {.r = 0xFF, .g = 0x00, .b = 0xFF}, // magenta
-    {.r = 0x00, .g = 0xFF, .b = 0x00}, // green
-    {.r = 0x00, .g = 0xFF, .b = 0xFF}, // cyan
-    {.r = 0xFF, .g = 0xFF, .b = 0x00}, // yellow
-    {.r = 0xFF, .g = 0xFF, .b = 0xFF}, // white
-};
-
-RGB24_t colors_basic[] = {
+RGB24_t colors[] = {
     {.r = 0x00, .g = 0x00, .b = 0x00}, // black
     {.r = 0x00, .g = 0x00, .b = 0xD8}, // blue
     {.r = 0xD8, .g = 0x00, .b = 0x00}, // red
@@ -29,6 +18,15 @@ RGB24_t colors_basic[] = {
     {.r = 0x00, .g = 0xD8, .b = 0xD8}, // cyan
     {.r = 0xD8, .g = 0xD8, .b = 0x00}, // yellow
     {.r = 0xD8, .g = 0xD8, .b = 0xD8}, // white
+    // bright
+    {.r = 0x00, .g = 0x00, .b = 0x00}, // black
+    {.r = 0x00, .g = 0x00, .b = 0xFF}, // blue
+    {.r = 0xFF, .g = 0x00, .b = 0x00}, // red
+    {.r = 0xFF, .g = 0x00, .b = 0xFF}, // magenta
+    {.r = 0x00, .g = 0xFF, .b = 0x00}, // green
+    {.r = 0x00, .g = 0xFF, .b = 0xFF}, // cyan
+    {.r = 0xFF, .g = 0xFF, .b = 0x00}, // yellow
+    {.r = 0xFF, .g = 0xFF, .b = 0xFF}, // white
 };
 
 uint8_t border = 0;
@@ -68,16 +66,10 @@ void ula_set_palette(Palette_t *palette)
         return;
     }
 
-    for (size_t i = 0; i < 8; i++) {
-        colors_basic[i].r = palette->color[i].r;
-        colors_basic[i].g = palette->color[i].g;
-        colors_basic[i].b = palette->color[i].b;
-    }
-
-    for (size_t i = 0; i < 8; i++) {
-        colors_bright[i].r = palette->color[i+8].r;
-        colors_bright[i].g = palette->color[i+8].g;
-        colors_bright[i].b = palette->color[i+8].b;
+    for (size_t i = 0; i < 16; i++) {
+        colors[i].r = palette->color[i].r;
+        colors[i].g = palette->color[i].g;
+        colors[i].b = palette->color[i].b;
     }
 }
 
@@ -119,21 +111,20 @@ static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, R
     uint8_t attrib = ula_get_screen_byte(mem, attrib_offset);
     uint8_t pixel = ula_get_screen_byte(mem, pix_offset);
 
-    uint8_t bright = attrib & (1<<6);
-    RGB24_t *colors = bright ? colors_bright : colors_basic;
+    int bright = (attrib>>6) & 1;
 
-    uint8_t flash = attrib & (1<<7);
+    int flash = attrib & (1<<7);
     RGB24_t ink, paper;
     if (flash && ((frame % 32) > 16)) {
-        ink = colors[(attrib >> 3) & 7];
-        paper = colors[attrib & 7];
+        ink = colors[bright*8 + ((attrib >> 3) & 7)];
+        paper = colors[bright*8 + (attrib & 7)];
     } else {
-        ink = colors[attrib & 7];
-        paper = colors[(attrib >> 3) & 7];
+        ink = colors[bright*8 + (attrib & 7)];
+        paper = colors[bright*8 + ((attrib >> 3) & 7)];
     }
 
     buf += 7;
-    for (uint8_t i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++) {
         uint8_t p = (pixel >> i) & 1;
         *buf = p ? ink : paper;
         buf--;
@@ -142,7 +133,7 @@ static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, R
 
 static inline void ula_fill_border_8x1(RGB24_t *buf)
 {
-    RGB24_t color = colors_basic[border];
+    RGB24_t color = colors[border];
 
     for (uint8_t i = 0; i < 8; i++) {
         *buf = color;
