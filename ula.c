@@ -1,11 +1,10 @@
 #include "ula.h"
 #include "machine.h"
 
-struct Write
+struct WriteBorder
 {
-    uint8_t is_write;
-    uint8_t value;
-    uint64_t cycle;
+    int cycle;
+    int value;
 };
 
 RGB24_t ula_buffer[BUFFER_LEN];
@@ -36,8 +35,8 @@ uint8_t border = 0;
 uint8_t frame = 0;
 
 #define ULA_WRITES_SIZE 20000
-struct Write ula_writes[ULA_WRITES_SIZE];
-size_t cur_ula_write_index = 0;
+struct WriteBorder writes_border[ULA_WRITES_SIZE];
+size_t border_write_index = 0;
 
 uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
 
@@ -53,6 +52,14 @@ void ula_init(struct Machine *ctx)
     first_border_cycle = timing.t_firstpx 
                        - timing.t_scanline * (BUFFER_HEIGHT - 192) / 2 
                        - timing.t_eightpx * (BUFFER_WIDTH - 256) / 8 / 2; 
+
+    for (size_t i = 0; i < ULA_WRITES_SIZE; i++) {
+        writes_border[i] = (struct WriteBorder){ .cycle = -1 };
+    }
+
+    for (size_t i = 0; i < BUFFER_LEN; i++) {
+        ula_buffer[i] = (RGB24_t){ .r = 0, .g = 0, .b = 0 };
+    }
 }
 
 void ula_set_palette(Palette_t *palette)
@@ -90,9 +97,9 @@ uint8_t ula_get_contention_cycles(uint64_t cycle)
 
 void ula_set_border(uint8_t color, uint64_t cycle)
 {
-    struct Write w = {.is_write = 1, .cycle = cycle, .value = color & 7};
-    ula_writes[cur_ula_write_index] = w;
-    if (cur_ula_write_index < ULA_WRITES_SIZE-1) cur_ula_write_index++;
+    struct WriteBorder w = {.cycle = cycle, .value = color & 7};
+    writes_border[border_write_index] = w;
+    if (border_write_index < ULA_WRITES_SIZE-2) border_write_index++;
 }
 
 static inline uint8_t ula_get_screen_byte(Memory_t *mem, uint16_t offset)
@@ -168,10 +175,10 @@ static inline void ula_process_border(RGB24_t *buf)
 {
     int last_buf_pos = 0;
     size_t write_i;
-    struct Write w = {.is_write = 0};
-    for (write_i = 0; write_i < ULA_WRITES_SIZE; write_i++) {
-        w = ula_writes[write_i];
-        if (!w.is_write) break;
+    struct WriteBorder w = {.cycle = -1};
+    for (write_i = 0; write_i < ULA_WRITES_SIZE-1; write_i++) {
+        w = writes_border[write_i];
+        if (w.cycle < 0) break;
         int pos = get_cycle_buf_pos(w.cycle);
         switch (pos)
         {
@@ -199,10 +206,10 @@ static inline void ula_process_border(RGB24_t *buf)
     }
 
     for (size_t i = 0; i < write_i+1; i++) {
-        ula_writes[i].is_write = 0;
+        writes_border[i].cycle = -1;
     }
 
-    cur_ula_write_index = 0;
+    border_write_index = 0;
 }
 
 void ula_naive_draw()
