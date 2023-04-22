@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            ula_naive_draw(&m);
+            ula_draw_frame(&m);
 
             input_sdl_copy_old_state();
 

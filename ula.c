@@ -7,6 +7,13 @@ struct WriteBorder
     int value;
 };
 
+struct WriteScreen
+{
+    int cycle;
+    int value;
+    int address;
+};
+
 RGB24_t ula_buffer[BUFFER_LEN];
 
 RGB24_t colors[] = {
@@ -35,12 +42,29 @@ uint8_t frame = 0;
 #define ULA_WRITES_SIZE 20000
 struct WriteBorder writes_border[ULA_WRITES_SIZE];
 size_t border_write_index = 0;
+struct WriteScreen writes_screen[ULA_WRITES_SIZE];
+size_t screen_write_index = 0;
+
+uint8_t screen_dirty[0x1B00];
 
 uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
 
 struct MachineTiming timing;
 Memory_t *mem;
 uint64_t first_border_cycle;
+
+void ula_reset_screen_dirty()
+{
+    for (size_t i = 0; i < ULA_WRITES_SIZE; i++) {
+        writes_screen[i].cycle = -1;
+    }
+
+    screen_write_index = 0;
+
+    for (int i = 0; i < sizeof(screen_dirty); i++) {
+        screen_dirty[i] = mem->bus[0x4000 + i];
+    }
+}
 
 void ula_init(struct Machine *ctx)
 {
@@ -58,6 +82,8 @@ void ula_init(struct Machine *ctx)
     for (size_t i = 0; i < BUFFER_LEN; i++) {
         ula_buffer[i] = (RGB24_t){ .r = 0, .g = 0, .b = 0 };
     }
+
+    ula_reset_screen_dirty();
 }
 
 void ula_set_palette(Palette_t *palette)
@@ -94,13 +120,32 @@ void ula_set_border(uint8_t color, uint64_t cycle)
     if (border_write_index < ULA_WRITES_SIZE-2) border_write_index++;
 }
 
-static inline uint8_t ula_get_screen_byte(Memory_t *mem, uint16_t offset)
+void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr)
 {
-    return mem->bus[0x4000 + offset];
+    struct WriteScreen w = {.cycle = cycle, .value = value, .address = addr-0x4000};
+    writes_screen[screen_write_index] = w;
+    if (screen_write_index < ULA_WRITES_SIZE-2) screen_write_index++;
+}
+
+static inline uint8_t ula_get_screen_byte(uint16_t offset)
+{
+    return screen_dirty[offset];
 }
 
 static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, RGB24_t *buf)
 {
+    int cycle = timing.t_firstpx + y * timing.t_scanline + x * timing.t_eightpx;
+    struct WriteScreen w = writes_screen[screen_write_index];
+
+    while (w.cycle >= 0) {
+        if (cycle < w.cycle) {
+            break;
+        }
+        screen_dirty[w.address] = w.value;
+        screen_write_index++;
+        w = writes_screen[screen_write_index];
+    }
+
     uint16_t pix_offset = x;
     pix_offset |= (y & 7) << 8;    // bits 0-2
     pix_offset |= (y & 0x38) << 2; // bits 3-5
@@ -108,8 +153,8 @@ static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, R
 
     uint16_t attrib_offset = 0x1800 + (((y >> 3) << 5) | x);
 
-    uint8_t attrib = ula_get_screen_byte(mem, attrib_offset);
-    uint8_t pixel = ula_get_screen_byte(mem, pix_offset);
+    uint8_t attrib = ula_get_screen_byte(attrib_offset);
+    uint8_t pixel = ula_get_screen_byte(pix_offset);
 
     int bright = (attrib>>6) & 1;
 
@@ -203,7 +248,7 @@ static inline void ula_process_border(RGB24_t *buf)
     border_write_index = 0;
 }
 
-void ula_naive_draw()
+void ula_draw_frame()
 {
     RGB24_t *bufptr = ula_buffer;
     ula_process_border(bufptr);
@@ -213,6 +258,7 @@ void ula_naive_draw()
     int buf_borderwidth = BUFFER_WIDTH - 256;
 
     bufptr = &ula_buffer[BUFFER_WIDTH * screen_starty + screen_startx];
+    screen_write_index = 0;
 
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 32; x++) {
@@ -221,6 +267,8 @@ void ula_naive_draw()
         }
         bufptr += buf_borderwidth;
     }
+
+    ula_reset_screen_dirty();
 
     frame++;
 }

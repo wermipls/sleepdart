@@ -45,6 +45,11 @@ uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
     if (addr < 0x4000) { 
         // 0x0000 - 0x3FFF -> ROM 
         // no-op for now
+    } else if (addr < 0x5B00) {
+        ctx->memory.bus[addr] = value;
+        int contention = ula_get_contention_cycles(ctx->cpu.cycles);
+        ula_write_screen(ctx->cpu.cycles + contention, value, addr);
+        return contention;
     } else if (addr < 0x8000) {
         // 0x4000 - 0x7FFF -> RAM (contended memory)
         ctx->memory.bus[addr] = value; // ostrożnie!
