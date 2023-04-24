@@ -23,9 +23,7 @@ void audio_sdl_queue(float *buf, size_t bytes)
 {
     uint32_t queue = SDL_GetQueuedAudioSize(device);
     // data too old (uncapped fps? a/v desync?), drop it
-    if (queue > device_spec.size*2) {
-        SDL_ClearQueuedAudio(device);
+    if (queue < device_spec.size*2 + bytes) {
+        SDL_QueueAudio(device, buf, bytes);
     }
-
-    SDL_QueueAudio(device, buf, bytes);
 }
