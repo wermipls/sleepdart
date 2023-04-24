@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
     machine_init(&m, MACHINE_ZX48K);
     machine_set_current(&m);
 
+    video_sdl_set_fps((double)m.timing.clock_hz / (double)m.timing.t_frame);
+
     Tape_t *tape = NULL;
     TapePlayer_t *player = NULL;
     char *file = argparser_get(parser, "file");

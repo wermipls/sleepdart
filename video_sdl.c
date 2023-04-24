@@ -28,6 +28,7 @@ char title_buf[256];
 
 bool fullscreen = false;
 bool limit_fps = true;
+double target_ticks_frame = 0;
 
 void video_sdl_set_fps_limit(bool is_enabled)
 {
@@ -37,6 +38,11 @@ void video_sdl_set_fps_limit(bool is_enabled)
 bool video_sdl_get_fps_limit()
 {
     return limit_fps;
+}
+
+void video_sdl_set_fps(double fps)
+{
+    target_ticks_frame = 1000.0 / fps;
 }
 
 void video_sdl_set_scale(int scale)
@@ -106,12 +112,12 @@ void sdl_set_window_title_fps()
 
 void sdl_synchronize_fps()
 {
-    // precision of 1ms. this can be a little inaccurate but doesn't matter for now
     static uint64_t ticks_next = 0;
-    static const int ticks_frame = 20; // 50 FPS
+    static double error = 0;
+    int ticks_frame_flr = floor(target_ticks_frame);
     uint64_t ticks = SDL_GetTicks64();
 
-    if (!limit_fps || (ticks_next < ticks - ticks_frame)) {
+    if (!limit_fps || (ticks_next < ticks - ticks_frame_flr - 1)) {
         ticks_next = ticks;
         return;
     }
@@ -121,7 +127,12 @@ void sdl_synchronize_fps()
         SDL_Delay(delay);
     }
 
-    ticks_next += ticks_frame;
+    error += target_ticks_frame - (double)ticks_frame_flr;
+    ticks_next += ticks_frame_flr;
+    if (error >= 1) {
+        error -= 1;
+        ticks_next += 1;
+    }
 }
 
 void sdl_log_error(const char msg[])

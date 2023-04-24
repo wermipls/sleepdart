@@ -5,6 +5,7 @@
 
 void video_sdl_set_fps_limit(bool is_enabled);
 bool video_sdl_get_fps_limit();
+void video_sdl_set_fps(double fps);
 void video_sdl_set_scale(int scale);
 int video_sdl_get_scale();
 void video_sdl_toggle_window_mode();
