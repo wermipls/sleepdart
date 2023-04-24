@@ -1960,7 +1960,7 @@ void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     bit_(cpu, value, bit);
 }
 
-static inline uint8_t res(Z80_t *cpu, uint8_t value, uint8_t bit)
+static inline uint8_t res(uint8_t value, uint8_t bit)
 {
     uint8_t mask = ~(1<<bit);
     return value & mask;
@@ -1970,7 +1970,7 @@ void res_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    *dest = res(cpu, *dest, bit);
+    *dest = res(*dest, bit);
 }
 
 void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
@@ -1979,7 +1979,7 @@ void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 4;
-    value = res(cpu, value, bit);
+    value = res(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
 }
@@ -1990,14 +1990,14 @@ void res_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 4;
-    value = res(cpu, value, bit);
+    value = res(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
     if (dest) *dest = value;
 }
 
 
-static inline uint8_t set(Z80_t *cpu, uint8_t value, uint8_t bit)
+static inline uint8_t set(uint8_t value, uint8_t bit)
 {
     uint8_t mask = (1<<bit);
     return value | mask;
@@ -2007,7 +2007,7 @@ void set_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    *dest = set(cpu, *dest, bit);
+    *dest = set(*dest, bit);
 }
 
 void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
@@ -2016,7 +2016,7 @@ void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 4;
-    value = set(cpu, value, bit);
+    value = set(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
 }
@@ -2027,7 +2027,7 @@ void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 4;
-    value = set(cpu, value, bit);
+    value = set(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
     if (dest) *dest = value;

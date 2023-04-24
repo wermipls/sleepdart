@@ -232,7 +232,13 @@ int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
         err = SDL_LockTexture(texture, NULL, &pixels, &pitch);
         if (err) sdl_log_error("SDL_LockTexture");
 
-        memcpy(pixels, pixeldata, 3*buffer_height*buffer_width);
+        size_t dstbytes = 3*buffer_height*buffer_width;
+        if (dstbytes != bytes) {
+            dlog(LOG_ERR, "%s: dstbytes != bytes", __func__);
+            return -1;
+        }
+
+        memcpy(pixels, pixeldata, dstbytes);
         SDL_UnlockTexture(texture);
 
         err = SDL_RenderCopy(renderer, texture, NULL, NULL);

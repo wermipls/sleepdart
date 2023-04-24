@@ -153,7 +153,7 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
     return CallWindowProc(sdl_wndproc, hwnd, umsg, wparam, lparam);
 }
 
-void menu_init(HWND hwnd)
+void menu_init()
 {
     // force SDL to resize window to compensate for the menu bar that we just added
     video_sdl_set_scale(video_sdl_get_scale());
@@ -169,7 +169,7 @@ void gui_windows_hook_window(HWND hwnd)
     menu = LoadMenu(GetModuleHandleA(NULL), MAKEINTRESOURCE(IDR_MENU1));
     SetMenu(hwnd, menu);
 
-    menu_init(hwnd);
+    menu_init();
 
     sdl_wndproc = (WNDPROC)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)wnd_proc);

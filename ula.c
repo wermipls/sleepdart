@@ -61,7 +61,7 @@ void ula_reset_screen_dirty()
 
     screen_write_index = 0;
 
-    for (int i = 0; i < sizeof(screen_dirty); i++) {
+    for (size_t i = 0; i < sizeof(screen_dirty); i++) {
         screen_dirty[i] = mem->bus[0x4000 + i];
     }
 }
@@ -132,7 +132,7 @@ static inline uint8_t ula_get_screen_byte(uint16_t offset)
     return screen_dirty[offset];
 }
 
-static inline void ula_process_screen_8x1(Memory_t *mem, uint8_t x, uint8_t y, RGB24_t *buf)
+static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
 {
     int cycle = timing.t_firstpx + y * timing.t_scanline + x * timing.t_eightpx;
     struct WriteScreen w = writes_screen[screen_write_index];
@@ -262,7 +262,7 @@ void ula_draw_frame()
 
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 32; x++) {
-            ula_process_screen_8x1(mem, x, y, bufptr);
+            ula_process_screen_8x1(x, y, bufptr);
             bufptr += 8;
         }
         bufptr += buf_borderwidth;
