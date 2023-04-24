@@ -50,6 +50,7 @@ uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
     if (!(addr & 1)) {
         ula_set_border(value, ctx->cpu.cycles);
+        beeper_write(&ctx->beeper, !(!(value & (1<<4))), ctx->cpu.cycles);
     }
 
     if (addr == 0xFFFD) {

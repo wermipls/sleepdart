@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "ula.h"
 #include "ay.h"
+#include "beeper.h"
 
 enum MachineType
 {
@@ -32,6 +33,7 @@ typedef struct Machine {
 
     TapePlayer_t *tape_player;
     AY_t ay;
+    Beeper_t beeper;
 
     uint64_t frames;
     bool reset_pending;

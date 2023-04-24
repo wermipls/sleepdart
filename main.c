@@ -12,6 +12,7 @@
 #include "palette.h"
 #include "argparser.h"
 #include "sleepdart_info.h"
+#include "dsp.h"
 
 int main(int argc, char *argv[])
 {
@@ -85,6 +86,7 @@ int main(int argc, char *argv[])
     }
 
     ay_init(&m.ay, &m, 44100, 1750000);
+    beeper_init(&m.beeper, &m, 44100);
     audio_sdl_init(44100);
 
     bool inside_tape_routine = false;
@@ -120,6 +122,12 @@ int main(int argc, char *argv[])
                 }
             }
 
+            ay_process_frame(&m.ay);
+            beeper_process_frame(&m.beeper);
+            dsp_mix_buffers_mono_to_stereo(m.ay.buf, m.beeper.buf, m.ay.buf_len);
+
+            audio_sdl_queue(m.ay.buf, m.ay.buf_len * sizeof(float));
+
             ula_draw_frame(&m);
 
             input_sdl_copy_old_state();
@@ -127,8 +135,6 @@ int main(int argc, char *argv[])
             int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
             if (quit) break;
 
-            ay_process_frame(&m.ay);
-            audio_sdl_queue(m.ay.buf, m.ay.buf_len * sizeof(float));
 
             input_sdl_update();
 
