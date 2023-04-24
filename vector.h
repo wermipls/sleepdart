@@ -13,7 +13,7 @@
  *     vector_resize(a, 8);
  *
  *     size_t i;
- *     for (i = 0, i < vector_len(a); i++) {
+ *     for (i = 0, i < vector_len(vec); i++) {
  *         // can be accessed like a normal C array
  *         vec[i] = i;
  *     }
@@ -25,7 +25,7 @@
  *         i++;
  *     }
  * 
- *     for (i = 0; i < vector_len(a); i++) {
+ *     for (i = 0; i < vector_len(vec); i++) {
  *        printf("%d ", vec[i]);
  *     }
  * 
