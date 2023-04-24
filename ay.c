@@ -2,6 +2,15 @@
 #include <stdlib.h>
 #include "machine.h"
 
+static void ay_process_sample(AY_t *ay)
+{
+    ayumi_process_fast(&ay->ayumi);
+    ayumi_remove_dc(&ay->ayumi);
+    ay->buf[ay->buf_pos] = 0.3 * ay->ayumi.left;
+    ay->buf[ay->buf_pos+1] = 0.3 * ay->ayumi.right;
+    ay->buf_pos += 2;
+}
+
 int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock)
 {
     ay->samples_ratio = (double)ctx->timing.clock_hz / (double)sample_rate; 
@@ -87,11 +96,7 @@ void ay_write_data(AY_t *ay, uint8_t value)
 
     uint64_t write = ay->ctx->cpu.cycles / ay->samples_ratio;
     for ( ; ay->last_write < write; ay->last_write++) {
-        ayumi_process_fast(&ay->ayumi);
-        ayumi_remove_dc(&ay->ayumi);
-        ay->buf[ay->buf_pos] = 0.5 * ay->ayumi.left;
-        ay->buf[ay->buf_pos+1] = 0.5 * ay->ayumi.right;
-        ay->buf_pos += 2;
+        ay_process_sample(ay);
     }
 }
 
@@ -103,11 +108,7 @@ uint8_t ay_read_data(AY_t *ay)
 void ay_process_frame(AY_t *ay)
 {
     for ( ; ay->last_write < ay->samples_frame; ay->last_write++) {
-        ayumi_process_fast(&ay->ayumi);
-        ayumi_remove_dc(&ay->ayumi);
-        ay->buf[ay->buf_pos] = 0.5 * ay->ayumi.left;
-        ay->buf[ay->buf_pos+1] = 0.5 * ay->ayumi.right;
-        ay->buf_pos += 2;
+        ay_process_sample(ay);
     }
 
     ay->last_write = 0;
