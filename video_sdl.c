@@ -2,11 +2,18 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
+#include <math.h>
 #include "log.h"
 
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     #include "win32/gui_windows.h"
 #endif
+
+struct Frametime
+{
+    uint64_t frames;
+    uint64_t time;
+};
 
 int window_width, window_height;
 int buffer_width, buffer_height;
@@ -63,7 +70,8 @@ bool video_sdl_is_fullscreen()
 
 void sdl_set_window_title_fps()
 {
-    static const uint16_t update_interval = 2000;
+    static struct Frametime h[5] = { 0 };
+    static const uint16_t update_interval = 1000;
     static uint16_t frames = 0;
     static uint64_t ticks_old = 0;
     uint64_t ticks = SDL_GetTicks64();
@@ -71,11 +79,28 @@ void sdl_set_window_title_fps()
     frames++;
     uint16_t time = ticks - ticks_old;
     if (time >= update_interval) {
+        struct Frametime hnew;
+        hnew.frames = frames;
+        hnew.time = time;
         ticks_old = ticks;
-        float fps = frames / (time / 1000.0f);
-        snprintf(title_buf, sizeof(title_buf), "%s [%.0f FPS]", title_base, fps);
-        SDL_SetWindowTitle(window, title_buf);
         frames = 0;
+
+        size_t i;
+        for (i = 1; i < sizeof(h) / sizeof(struct Frametime); i++) {
+            h[i-1] = h[i];
+        }
+        h[i-1] = hnew;
+
+        float ftotal = 0;
+        float ttotal = 0;
+        for (i = 0; i < sizeof(h) / sizeof(struct Frametime); i++) {
+            ftotal += h[i].frames * powf(2, i+1);
+            ttotal += h[i].time   * powf(2, i+1);
+        }
+
+        float fps = ftotal / (ttotal / 1000.0f);
+        snprintf(title_buf, sizeof(title_buf), "%s [%.2f FPS]", title_base, fps);
+        SDL_SetWindowTitle(window, title_buf);
     }
 }
 
