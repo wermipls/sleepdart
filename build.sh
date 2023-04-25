@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-FILES="*.c ayumi/ayumi.c"
+FILES="src/*.c ayumi/ayumi.c"
 FLAGS="-std=c11 -Wall -Wextra -Wpedantic --static -lz `sdl2-config --libs --static-libs`"
 FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
-WIN32_FILES="win32/*.c win32/*.o"
+WIN32_FILES="src/win32/*.c src/win32/*.o"
 WIN32_FLAGS="-DPLATFORM_WIN32"
 
 while getopts ':p:d' opt; do
@@ -20,7 +20,7 @@ if [[ $PLATFORM == "WIN32" ]] || [[ $PLATFORM == "win32" ]]; then
     FILES="$FILES $WIN32_FILES"
     FLAGS="$FLAGS $WIN32_FLAGS"
 
-    windres win32/resource.rc win32/resource.o
+    windres src/win32/resource.rc src/win32/resource.o
 fi
 
 if [[ $DEBUG == "1" ]]; then
