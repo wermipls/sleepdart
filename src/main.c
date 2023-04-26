@@ -16,13 +16,6 @@
 
 int main(int argc, char *argv[])
 {
-    printf(".: sleepdart III THE FINAL :.\n");
-
-    if (argc == 0) {
-        printf("¿como estas?");
-        return 0;
-    }
-
     ArgParser_t *parser = argparser_create(SLEEPDART_NAME);
     argparser_add_arg(parser, "file", 0, 0, true, "tape or snapshot file to be loaded");
     argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");
