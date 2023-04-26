@@ -261,6 +261,7 @@ void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
+    cpu->cycles += 3;
 
     // pc+2:1 x5
     cpu_read(cpu, cpu->regs.pc);
@@ -465,7 +466,7 @@ void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
     uint8_t h = cpu_read(cpu, cpu->regs.sp+1);
     cpu->cycles += 3;
     cpu_read(cpu, cpu->regs.sp+1); // sp+1:1
-    cpu->cycles += 3;
+    cpu->cycles += 1;
     cpu_write(cpu, cpu->regs.sp+1, HIGH8(*dest));
     cpu->cycles += 3;
     cpu_write(cpu, cpu->regs.sp, LOW8(*dest));
