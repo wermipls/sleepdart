@@ -1,5 +1,7 @@
 #include "szx_state.h"
 #include "szx_blocks.h"
+#include "ula.h"
+#include "io.h"
 #include <string.h>
 #include <zlib.h>
 
@@ -75,12 +77,37 @@ int szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
     return 0;
 }
 
+int szx_load_block_ay(struct SZXBlock *b, Machine_t *m)
+{
+    SZXAYBlock_t *a = (SZXAYBlock_t *)b->data;
+
+    for (int i = 0; i < 16; i++) {
+        ay_write_address(&m->ay, i);
+        ay_write_data(&m->ay, a->ay_regs[i]);
+    }
+
+    ay_write_address(&m->ay, a->current_register);
+
+    return 0;
+}
+
+int szx_load_block_specregs(struct SZXBlock *b, Machine_t *m)
+{
+    SZXSpecRegs_t *r = (SZXSpecRegs_t *)b->data;
+
+    ula_set_border(r->border, 0);
+    io_port_write(m, 0xfe, r->fe);
+
+    return 0;
+}
+
 int szx_state_load(SZX_t *szx, struct Machine *m)
 {
     if (szx->header.machine_id != SZX_MID_48K) {
         return -1;
     }
 
+    machine_deinit(m);
     machine_init(m, MACHINE_ZX48K);
 
     for (size_t i = 0; i < szx->blocks; i++) {
@@ -94,6 +121,12 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
             break;
         case U32_FROM_CH('R','A','M','P'):
             err = szx_load_block_rampage(block, m);
+            break;
+        case U32_FROM_CH('A','Y','\0','\0'):
+            err = szx_load_block_ay(block, m);
+            break;
+        case U32_FROM_CH('S','P','C','R'):
+            err = szx_load_block_specregs(block, m);
             break;
         }
 

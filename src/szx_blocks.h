@@ -36,3 +36,27 @@ typedef struct PACKED SZXRAMPage
   byte page_no;
   byte data[1];
 } SZXRAMPage_t;
+
+
+#define SZX_AYF_FULLERBOX  1
+#define SZX_AYF_128AY      2
+
+typedef struct SZXAYBlock
+{
+  uint8_t flags;
+  uint8_t current_register;
+  uint8_t ay_regs[16];
+} SZXAYBlock_t;
+
+
+typedef struct SZXSpecRegs
+{
+  uint8_t border;
+  uint8_t port_7ffd;
+  union {
+    uint8_t port_1ffd;
+    uint8_t port_eff7;
+  };
+  uint8_t fe;
+  uint8_t reserved[4];
+} SZXSpecRegs_t;

@@ -42,6 +42,7 @@ typedef struct Machine {
 
 void machine_set_current(Machine_t *machine);
 int machine_init(Machine_t *machine, enum MachineType type);
+void machine_deinit(Machine_t *machine);
 void machine_reset();
 void machine_process_events();
 void machine_open_file(char *path);

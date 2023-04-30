@@ -61,6 +61,19 @@ int machine_init(Machine_t *machine, enum MachineType type)
     return 0;
 }
 
+void machine_deinit(Machine_t *machine)
+{
+    if (machine->player) {
+        tape_player_close(machine->player);
+        machine->player = NULL;
+    }
+
+    if (machine->tape) {
+        tape_free(machine->tape);
+        machine->tape = NULL;
+    }
+}
+
 void machine_reset() 
 {
     if (m_cur == NULL) return;
