@@ -1,5 +1,6 @@
 #include "beeper.h"
 #include <stdlib.h>
+#include <limits.h>
 #include <math.h>
 #include "machine.h"
 #include "dsp.h"

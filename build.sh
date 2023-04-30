@@ -2,7 +2,7 @@
 set -e
 
 FILES="src/*.c ayumi/ayumi.c"
-FLAGS="-std=c11 -Wall -Wextra -Wpedantic --static -lz `sdl2-config --libs --static-libs`"
+FLAGS="-std=c11 -Wall -Wextra -Wpedantic -lz -lm `sdl2-config --libs`"
 FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
 WIN32_FILES="src/win32/*.c src/win32/*.o"
