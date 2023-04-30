@@ -146,3 +146,34 @@ SZX_t *szx_load_file(char *path)
     fclose(f);
     return szx;
 }
+
+int szx_save_file(SZX_t *szx, char *path)
+{
+    FILE *f = fopen(path, "wb");
+    if (f == NULL) {
+        return -1;
+    }
+
+    size_t bytes = fwrite(&szx->header, 1, sizeof(szx->header), f);
+    if (bytes != sizeof(szx->header)) {
+        fclose(f);
+        return -2;
+    }
+
+    for (size_t i = 0; i < szx->blocks; i++) {
+        bytes = fwrite(&szx->block[i].header, 1, sizeof(struct SZXBlockHeader), f);
+        if (bytes != sizeof(struct SZXBlockHeader)) {
+            fclose(f);
+            return -3;
+        }
+
+        bytes = fwrite(szx->block[i].data, 1, szx->block[i].header.size, f);
+        if (bytes != szx->block[i].header.size) {
+            fclose(f);
+            return -4;
+        }
+    }
+
+    fclose(f);
+    return 0;
+}

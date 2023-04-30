@@ -40,6 +40,7 @@ int machine_init(Machine_t *machine, enum MachineType type)
         return -2;
     }
 
+    machine->type = type;
     machine->timing = machine_timing_zx48k;
 
     memory_init(&machine->memory);
@@ -113,7 +114,11 @@ void machine_process_events()
     }
 
     if (file_save) {
-        // FIXME: unimplemented state saving
+        SZX_t *szx = szx_state_save(m_cur);
+        if (szx != NULL) {
+            szx_save_file(szx, file_save_path);
+            szx_free(szx);
+        }
         file_save = false;
     }
 
