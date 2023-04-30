@@ -89,6 +89,31 @@ void menu_palette_init()
     menu_palette_update_check();
 }
 
+void on_file_open(HWND hwnd)
+{
+    OPENFILENAME ofn;
+    char file[260];
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwnd;
+    ofn.lpstrFile = file;
+    // Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+    // use the contents of szFile to initialize itself.
+    ofn.lpstrFile[0] = 0;
+    ofn.nMaxFile = sizeof(file);
+    ofn.lpstrFilter = "All\0*.*\0Tape\0*.tap\0SZX state\0*.szx\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileName(&ofn) == TRUE) {
+        machine_open_file(ofn.lpstrFile);
+    }
+}
+
 LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     switch (umsg)
@@ -108,6 +133,10 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             return TRUE;
         case ID_MACHINE_RESET:
             machine_reset();
+            return TRUE;
+            break;
+        case ID_FILE_OPEN:
+            on_file_open(hwnd);
             return TRUE;
             break;
         case ID_FILE_QUIT:
