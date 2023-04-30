@@ -1,5 +1,7 @@
 #include "argparser.h"
 #include <inttypes.h>
+#include <stddef.h>
+#include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
 #include "vector.h"

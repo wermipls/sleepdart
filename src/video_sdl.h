@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 void video_sdl_set_fps_limit(bool is_enabled);
 bool video_sdl_get_fps_limit();

@@ -1,4 +1,5 @@
 #include "ula.h"
+#include <stddef.h>
 #include "machine.h"
 
 struct WriteBorder

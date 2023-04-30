@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 double dsp_normalize_freq(double freq, double sr);
 double dsp_derive_1pole_factor(double freq);

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define SZX_MID_16K             0
 #define SZX_MID_48K             1

@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 enum FileType {
     FTYPE_UNKNOWN = -1,
