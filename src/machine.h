@@ -31,7 +31,8 @@ typedef struct Machine {
     Z80_t cpu;
     Memory_t memory;
 
-    TapePlayer_t *tape_player;
+    Tape_t *tape;
+    TapePlayer_t *player;
     AY_t ay;
     Beeper_t beeper;
 
@@ -42,3 +43,7 @@ typedef struct Machine {
 void machine_set_current(Machine_t *machine);
 int machine_init(Machine_t *machine, enum MachineType type);
 void machine_reset();
+void machine_process_events();
+void machine_open_file(char *path);
+void machine_save_file(char *path);
+int machine_do_cycles();

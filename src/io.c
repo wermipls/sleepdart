@@ -72,7 +72,7 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
     if (l == 0xFE) {
         *dest = keyboard_read(addr) & ~(1<<6);
 
-        if (ctx->tape_player != NULL) {
+        if (ctx->player != NULL) {
             uint64_t delta;
 
             delta = (ctx->frames - last_tape_read_frame) * ctx->timing.t_frame;
@@ -82,7 +82,7 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
             last_tape_read = ctx->cpu.cycles;
             last_tape_read_frame = ctx->frames;
 
-            uint8_t tape = tape_player_get_next_sample(ctx->tape_player, delta);
+            uint8_t tape = tape_player_get_next_sample(ctx->player, delta);
             if (tape) {
                 *dest |= (1<<6);
             }
