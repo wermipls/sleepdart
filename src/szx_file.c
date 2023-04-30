@@ -49,7 +49,7 @@ SZX_t *szx_load_file(char *path)
 {
     FILE *f = fopen(path, "rb");
     if (f == NULL) {
-        return false;
+        return NULL;
     }
 
     struct SZXHeader header;
