@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <string.h>
+#include "machine.h"
 
 static uint8_t *keyboard_state_old = NULL;
 static const uint8_t *keyboard_state;
@@ -26,9 +27,25 @@ void input_sdl_deinit()
     }
 }
 
-void input_sdl_update()
+int input_sdl_update()
 {
-    SDL_PumpEvents();
+    int quit = 0;
+
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        switch (e.type)
+        {
+        case SDL_QUIT:
+            quit = 1;
+            break;
+        case SDL_DROPFILE:
+            machine_open_file(e.drop.file);
+            SDL_free(e.drop.file);
+            break;
+        }
+    }
+
+    return quit;
 }
 
 void input_sdl_copy_old_state()

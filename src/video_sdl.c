@@ -247,20 +247,8 @@ int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
         SDL_RenderPresent(renderer);
     }
 
-    int quit = 0;
-
-
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        switch (e.type)
-        {
-        case SDL_QUIT:
-            quit = 1;
-        }
-    }
-
     sdl_set_window_title_fps();
     sdl_synchronize_fps();
 
-    return quit;
+    return 0;
 }

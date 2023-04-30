@@ -175,12 +175,11 @@ int machine_do_cycles()
 
             ula_draw_frame(m_cur);
 
+            video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+
             input_sdl_copy_old_state();
-
-            int quit = video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+            int quit = input_sdl_update();
             if (quit) return -2;
-
-            input_sdl_update();
 
             machine_process_events();
             return 0;
