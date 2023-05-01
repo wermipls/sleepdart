@@ -68,8 +68,7 @@ uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
  * Returns the amount of extra cycles stalled due to ULA contention. */
 uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 {
-    uint8_t l = addr & 255;
-    if (l == 0xFE) {
+    if (!(addr & 1)) {
         *dest = keyboard_read(addr) & ~(1<<6);
 
         if (ctx->player != NULL) {
@@ -87,6 +86,8 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
                 *dest |= (1<<6);
             }
         }
+    } else {
+        *dest = 0xFF;
     }
 
     if (addr == 0xFFFD || addr == 0xBFFD) {
