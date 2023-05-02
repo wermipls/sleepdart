@@ -1756,7 +1756,9 @@ void rlc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = rlc(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1764,10 +1766,18 @@ void rlc_rra(Z80_t *cpu, uint16_t addr)
 
 void rlc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = rlc(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1787,7 +1797,9 @@ void rrc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = rrc(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1795,10 +1807,18 @@ void rrc_rra(Z80_t *cpu, uint16_t addr)
 
 void rrc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = rrc(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1818,7 +1838,9 @@ void rl_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = rl(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1826,10 +1848,18 @@ void rl_rra(Z80_t *cpu, uint16_t addr)
 
 void rl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = rl(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1849,7 +1879,9 @@ void rr_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = rr(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1857,10 +1889,18 @@ void rr_rra(Z80_t *cpu, uint16_t addr)
 
 void rr_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = rr(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1880,7 +1920,9 @@ void sla_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = sla(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1888,10 +1930,18 @@ void sla_rra(Z80_t *cpu, uint16_t addr)
 
 void sla_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = sla(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1911,7 +1961,9 @@ void sra_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = sra(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1919,10 +1971,18 @@ void sra_rra(Z80_t *cpu, uint16_t addr)
 
 void sra_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = sra(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1942,7 +2002,9 @@ void sll_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = sll(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1950,10 +2012,18 @@ void sll_rra(Z80_t *cpu, uint16_t addr)
 
 void sll_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = sll(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1973,7 +2043,9 @@ void srl_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = srl(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -1981,10 +2053,18 @@ void srl_rra(Z80_t *cpu, uint16_t addr)
 
 void srl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = srl(cpu, value);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -2093,6 +2173,23 @@ void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     bit_(cpu, value, bit);
 }
 
+void bit_iid(Z80_t *cpu, uint16_t addr, uint8_t bit)
+{
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
+    bit_(cpu, value, bit);
+}
+
 static inline uint8_t res(uint8_t value, uint8_t bit)
 {
     uint8_t mask = ~(1<<bit);
@@ -2111,7 +2208,9 @@ void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = res(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -2119,10 +2218,18 @@ void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
 
 void res_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = res(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -2148,7 +2255,9 @@ void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // hl:1
+    cpu->cycles += 1;
     value = set(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -2156,10 +2265,18 @@ void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
 
 void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 {
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    // pc+3:1 x2
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+    cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 1;
+
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 4;
+    cpu->cycles += 3;
+    cpu_read(cpu, addr); // ii+d:1
+    cpu->cycles += 1;
     value = set(value, bit);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
@@ -2687,8 +2804,7 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     uint16_t addr = *ii + d;
 
-    // FIXME: WTF are those timings??? everything is comically wrong
-    cpu->cycles += 4;
+    cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
     inc_refresh(cpu);
@@ -2709,14 +2825,14 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
         case 0x06: sll_iid_r(cpu, addr, regptr); break;
         case 0x07: srl_iid_r(cpu, addr, regptr); break;
         // bit
-        case 0x08: bit_rra(cpu, addr, 0); break;
-        case 0x09: bit_rra(cpu, addr, 1); break;
-        case 0x0A: bit_rra(cpu, addr, 2); break;
-        case 0x0B: bit_rra(cpu, addr, 3); break;
-        case 0x0C: bit_rra(cpu, addr, 4); break;
-        case 0x0D: bit_rra(cpu, addr, 5); break;
-        case 0x0E: bit_rra(cpu, addr, 6); break;
-        case 0x0F: bit_rra(cpu, addr, 7); break;
+        case 0x08: bit_iid(cpu, addr, 0); break;
+        case 0x09: bit_iid(cpu, addr, 1); break;
+        case 0x0A: bit_iid(cpu, addr, 2); break;
+        case 0x0B: bit_iid(cpu, addr, 3); break;
+        case 0x0C: bit_iid(cpu, addr, 4); break;
+        case 0x0D: bit_iid(cpu, addr, 5); break;
+        case 0x0E: bit_iid(cpu, addr, 6); break;
+        case 0x0F: bit_iid(cpu, addr, 7); break;
         // res
         case 0x10: res_iid_r(cpu, addr, regptr, 0); break;
         case 0x11: res_iid_r(cpu, addr, regptr, 1); break;
