@@ -15,7 +15,6 @@ BEGIN
     POPUP "Machine"
     BEGIN
         MENUITEM "Reset\tF1",                   ID_MACHINE_RESET
-        MENUITEM "Trigger NMI",                 ID_MACHINE_TRIGGERNMI
     END
     POPUP "Options"
     BEGIN
