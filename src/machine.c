@@ -7,6 +7,7 @@
 #include "video_sdl.h"
 #include "audio_sdl.h"
 #include "dsp.h"
+#include "hotkeys.h"
 
 static Machine_t *m_cur = NULL;
 static bool file_open;
@@ -85,30 +86,6 @@ void machine_reset()
 void machine_process_events()
 {
     if (m_cur == NULL) return;
-
-    if (m_cur->player && input_sdl_get_key_pressed(SDL_SCANCODE_INSERT)) {
-        tape_player_pause(m_cur->player, !m_cur->player->paused);
-    }
-
-    if (input_sdl_get_key_pressed(SDL_SCANCODE_F5)) {
-        machine_save_quick();
-    }
-
-    if (input_sdl_get_key_pressed(SDL_SCANCODE_F7)) {
-        machine_load_quick();
-    }
-
-    if (input_sdl_get_key_pressed(SDL_SCANCODE_F11)) {
-        video_sdl_toggle_window_mode();
-    }
-
-    if (input_sdl_get_key_pressed(SDL_SCANCODE_F1)) {
-        machine_reset();
-    }
-
-    if (input_sdl_get_key_pressed(SDL_SCANCODE_F4)) {
-        video_sdl_set_fps_limit(!video_sdl_get_fps_limit());
-    }
 
     if (file_open) {
         file_open = false;
@@ -201,6 +178,14 @@ void machine_load_quick()
     machine_open_file(get_quicksave_path());
 }
 
+void machine_toggle_tape_playback()
+{
+    if (m_cur == NULL) return;
+    if (m_cur->player == NULL) return;
+
+    tape_player_pause(m_cur->player, !m_cur->player->paused);
+}
+
 int machine_do_cycles()
 {
     static bool inside_tape_routine = false;
@@ -242,6 +227,7 @@ int machine_do_cycles()
             int quit = input_sdl_update();
             if (quit) return -2;
 
+            hotkeys_process();
             machine_process_events();
             return 0;
         }
