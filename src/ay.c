@@ -44,6 +44,17 @@ void ay_deinit(AY_t *ay)
     ay->buf = NULL;
 }
 
+void ay_reset(AY_t *ay)
+{
+    if (ay == NULL) return;
+
+    for (size_t i = 0; i < 16; i++) {
+        ay_write_address(ay, i);
+        ay_write_data(ay, 0);
+    }
+    ay_write_address(ay, 0);
+}
+
 void ay_write_address(AY_t *ay, uint8_t value)
 {
     if (ay == NULL) return;

@@ -228,6 +228,7 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
 
     machine_deinit(m);
     machine_init(m, MACHINE_ZX48K);
+    ay_reset(&m->ay);
 
     for (size_t i = 0; i < szx->blocks; i++) {
         struct SZXBlock *block = &szx->block[i];

@@ -150,6 +150,7 @@ void machine_process_events()
 
     if (m_cur->reset_pending) {
         cpu_init(&m_cur->cpu);
+        ay_reset(&m_cur->ay);
         m_cur->reset_pending = false;
     }
 

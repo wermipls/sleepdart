@@ -64,6 +64,8 @@ int main(int argc, char *argv[])
     beeper_init(&m.beeper, &m, sample_rate);
     audio_sdl_init(sample_rate);
 
+    machine_process_events();
+
     for (;;) {
         int err = machine_do_cycles();
         if (err) break;
