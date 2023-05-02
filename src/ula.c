@@ -121,6 +121,11 @@ void ula_set_border(uint8_t color, uint64_t cycle)
     if (border_write_index < ULA_WRITES_SIZE-2) border_write_index++;
 }
 
+uint8_t ula_get_border()
+{
+    return border;
+}
+
 void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr)
 {
     struct WriteScreen w = {.cycle = cycle, .value = value, .address = addr-0x4000};

@@ -19,8 +19,10 @@ extern RGB24_t ula_buffer[BUFFER_WIDTH*BUFFER_HEIGHT];
 struct Machine;
 
 void ula_init(struct Machine *ctx);
+void ula_reset_screen_dirty();
 uint8_t ula_get_contention_cycles(uint64_t cycle);
 void ula_set_border(uint8_t color, uint64_t cycle);
+uint8_t ula_get_border();
 void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr);
 void ula_draw_frame();
 void ula_set_palette(Palette_t *palette);

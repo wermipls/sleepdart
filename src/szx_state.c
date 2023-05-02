@@ -196,8 +196,8 @@ int szx_load_block_specregs(struct SZXBlock *b, Machine_t *m)
 {
     SZXSpecRegs_t *r = (SZXSpecRegs_t *)b->data;
 
-    ula_set_border(r->border, 0);
     io_port_write(m, 0xfe, r->fe);
+    ula_set_border(r->border, 0);
 
     return 0;
 }
@@ -212,7 +212,10 @@ int szx_save_block_specregs(struct SZXBlock *b, Machine_t *m)
         return -1;
     }
 
-    // FIXME: cant get border or last fe val :(
+    SZXSpecRegs_t *r = (SZXSpecRegs_t *)b->data;
+
+    r->border = ula_get_border();
+    // FIXME: cant get last fe val :(
 
     return 0;
 }
@@ -250,6 +253,8 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
             return -2;
         }
     }
+
+    ula_reset_screen_dirty();
 
     return 0;
 }
