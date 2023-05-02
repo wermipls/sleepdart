@@ -47,4 +47,6 @@ void machine_reset();
 void machine_process_events();
 void machine_open_file(char *path);
 void machine_save_file(char *path);
+void machine_load_quick();
+void machine_save_quick();
 int machine_do_cycles();

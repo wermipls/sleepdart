@@ -90,24 +90,11 @@ void machine_process_events()
     }
 
     if (input_sdl_get_key_pressed(SDL_SCANCODE_F5)) {
-        // FIXME: nonsensical code duplication
-        char buf[2048];
-        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
-        SZX_t *szx = szx_state_save(m_cur);
-        if (szx != NULL) {
-            szx_save_file(szx, buf);
-            szx_free(szx);
-        }
+        machine_save_quick();
     }
 
     if (input_sdl_get_key_pressed(SDL_SCANCODE_F7)) {
-        char buf[2048];
-        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
-        SZX_t *szx = szx_load_file(buf);
-        if (szx != NULL) {
-            szx_state_load(szx, m_cur);
-            szx_free(szx);
-        }
+        machine_load_quick();
     }
 
     if (input_sdl_get_key_pressed(SDL_SCANCODE_F11)) {
@@ -191,6 +178,25 @@ void machine_save_file(char *path)
     strncpy(file_save_path, path, sizeof(file_save_path)-1);
     file_save_path[sizeof(file_save_path)-1] = 0;
     file_save = true;
+}
+
+static char *get_quicksave_path()
+{
+    static char buf[2048] = { 0 };
+    if (buf[0] == 0) {
+        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
+    }
+    return buf;
+}
+
+void machine_save_quick()
+{
+    machine_save_file(get_quicksave_path());
+}
+
+void machine_load_quick()
+{
+    machine_open_file(get_quicksave_path());
 }
 
 int machine_do_cycles()

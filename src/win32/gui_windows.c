@@ -164,6 +164,14 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             on_file_save(hwnd);
             return TRUE;
             break;
+        case ID_FILE_QSAVE:
+            machine_save_quick();
+            return TRUE;
+            break;
+        case ID_FILE_QLOAD:
+            machine_load_quick();
+            return TRUE;
+            break;
         case ID_FILE_QUIT:
             on_file_quit();
             return TRUE; 

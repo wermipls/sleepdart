@@ -7,18 +7,21 @@ BEGIN
         MENUITEM "Open",                        ID_FILE_OPEN
         MENUITEM "Save",                        ID_FILE_SAVE
         MENUITEM SEPARATOR
-        MENUITEM "Quit",                        ID_FILE_QUIT
+        MENUITEM "Quick save\tF5",              ID_FILE_QSAVE
+        MENUITEM "Quick load\tF7",              ID_FILE_QLOAD
+        MENUITEM SEPARATOR
+        MENUITEM "Quit\tAlt+F4",                ID_FILE_QUIT
     END
     POPUP "Machine"
     BEGIN
-        MENUITEM "Reset",                       ID_MACHINE_RESET
+        MENUITEM "Reset\tF1",                   ID_MACHINE_RESET
         MENUITEM "Trigger NMI",                 ID_MACHINE_TRIGGERNMI
     END
     POPUP "Options"
     BEGIN
-        MENUITEM "Limit FPS",                   ID_OPTIONS_LIMITFPS
+        MENUITEM "Limit FPS\tF4",               ID_OPTIONS_LIMITFPS
         MENUITEM SEPARATOR
-        MENUITEM "Fullscreen",                  ID_OPTIONS_FULLSCREEN
+        MENUITEM "Fullscreen\tF11",             ID_OPTIONS_FULLSCREEN
         POPUP "Window scale"
         BEGIN
             MENUITEM "1x",                          ID_WINDOWSCALE_1X

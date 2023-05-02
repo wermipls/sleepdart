@@ -19,6 +19,8 @@
 #define ID_WINDOWSCALE_4X               40018
 #define ID_WINDOWSCALE_5X               40019
 #define ID_PALETTE_DEFAULT              40020
+#define ID_FILE_QSAVE                   40021
+#define ID_FILE_QLOAD                   40022
 
 #define ID_PALETTE_BASE                 41000
 #define ID_PALETTE_BASE_END             41099
