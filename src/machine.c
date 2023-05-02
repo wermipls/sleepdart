@@ -85,6 +85,43 @@ void machine_process_events()
 {
     if (m_cur == NULL) return;
 
+    if (m_cur->player && input_sdl_get_key_pressed(SDL_SCANCODE_INSERT)) {
+        tape_player_pause(m_cur->player, !m_cur->player->paused);
+    }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F5)) {
+        // FIXME: nonsensical code duplication
+        char buf[2048];
+        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
+        SZX_t *szx = szx_state_save(m_cur);
+        if (szx != NULL) {
+            szx_save_file(szx, buf);
+            szx_free(szx);
+        }
+    }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F7)) {
+        char buf[2048];
+        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
+        SZX_t *szx = szx_load_file(buf);
+        if (szx != NULL) {
+            szx_state_load(szx, m_cur);
+            szx_free(szx);
+        }
+    }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F11)) {
+        video_sdl_toggle_window_mode();
+    }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F1)) {
+        machine_reset();
+    }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F4)) {
+        video_sdl_set_fps_limit(!video_sdl_get_fps_limit());
+    }
+
     if (file_open) {
         file_open = false;
         enum FileType ft = file_detect_type(file_open_path);
@@ -105,8 +142,10 @@ void machine_process_events()
             break;
         case FTYPE_SZX: ;
             SZX_t *szx = szx_load_file(file_open_path);
-            szx_state_load(szx, m_cur);
-            szx_free(szx);
+            if (szx != NULL) {
+                szx_state_load(szx, m_cur);
+                szx_free(szx);
+            }
             break;
         default:
             dlog(LOG_ERR, "Unrecognized input file \"%s\"", file_open_path);
@@ -133,10 +172,6 @@ void machine_process_events()
             ula_set_palette(pal);
             palette_free(pal);
         }
-    }
-
-    if (m_cur->player && input_sdl_get_key_pressed(SDL_SCANCODE_INSERT)) {
-        tape_player_pause(m_cur->player, !m_cur->player->paused);
     }
 }
 
