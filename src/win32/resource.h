@@ -21,6 +21,7 @@
 #define ID_PALETTE_DEFAULT              40020
 #define ID_FILE_QSAVE                   40021
 #define ID_FILE_QLOAD                   40022
+#define ID_OPTIONS_MENUBAR              40023
 
 #define ID_PALETTE_BASE                 41000
 #define ID_PALETTE_BASE_END             41099

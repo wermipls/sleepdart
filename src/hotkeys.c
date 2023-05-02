@@ -28,4 +28,8 @@ void hotkeys_process()
     if (input_sdl_get_key_pressed(SDL_SCANCODE_F4)) {
         video_sdl_set_fps_limit(!video_sdl_get_fps_limit());
     }
+
+    if (input_sdl_get_key_pressed(SDL_SCANCODE_F8)) {
+        video_sdl_toggle_menubar();
+    }
 }

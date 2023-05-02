@@ -33,6 +33,8 @@ BEGIN
         BEGIN
             MENUITEM "Reset default",           ID_PALETTE_DEFAULT
         END
+        MENUITEM SEPARATOR
+        MENUITEM "Hide menu bar\tF8",           ID_OPTIONS_MENUBAR
     END
     POPUP "Help"
     BEGIN

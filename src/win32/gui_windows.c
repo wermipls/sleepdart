@@ -7,8 +7,9 @@
 #include "../palette.h"
 #include "../file.h"
 
-WNDPROC sdl_wndproc;
-HMENU menu;
+static WNDPROC sdl_wndproc;
+static HMENU menu = NULL;
+static HWND parent_window = NULL;
 
 void windowscale_update_check()
 {
@@ -181,6 +182,10 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             limit_fps_update_check();
             return TRUE;
             break;
+        case ID_OPTIONS_MENUBAR:
+            gui_windows_toggle_menubar();
+            return TRUE;
+            break;
         case ID_OPTIONS_FULLSCREEN:
             video_sdl_toggle_window_mode();
             fullscreen_update_check();
@@ -228,6 +233,7 @@ void menu_init()
 
 void gui_windows_hook_window(HWND hwnd)
 {
+    parent_window = hwnd;
     menu = LoadMenu(GetModuleHandleA(NULL), MAKEINTRESOURCE(IDR_MENU1));
     SetMenu(hwnd, menu);
 
@@ -235,4 +241,18 @@ void gui_windows_hook_window(HWND hwnd)
 
     sdl_wndproc = (WNDPROC)GetWindowLongPtr(hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)wnd_proc);
+}
+
+void gui_windows_toggle_menubar()
+{
+    if (parent_window == NULL) return;
+
+    HMENU current = GetMenu(parent_window);
+    if (current == NULL) {
+        SetMenu(parent_window, menu);
+    } else {
+        SetMenu(parent_window, NULL);
+    }
+
+    video_sdl_set_scale(video_sdl_get_scale());
 }

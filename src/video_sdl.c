@@ -135,6 +135,13 @@ void sdl_synchronize_fps()
     }
 }
 
+void video_sdl_toggle_menubar()
+{
+#if defined(_WIN32) && defined(PLATFORM_WIN32)
+    gui_windows_toggle_menubar();
+#endif
+}
+
 void sdl_log_error(const char msg[])
 {
     dlog(LOG_ERR, "%s: %s", msg, SDL_GetError());

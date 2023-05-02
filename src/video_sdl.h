@@ -11,5 +11,6 @@ void video_sdl_set_scale(int scale);
 int video_sdl_get_scale();
 void video_sdl_toggle_window_mode();
 bool video_sdl_is_fullscreen();
+void video_sdl_toggle_menubar();
 int video_sdl_init(const char *title, int width, int height, int scale);
 int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes);
