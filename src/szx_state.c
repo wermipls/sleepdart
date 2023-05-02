@@ -159,11 +159,11 @@ int szx_load_block_ay(struct SZXBlock *b, Machine_t *m)
     SZXAYBlock_t *a = (SZXAYBlock_t *)b->data;
 
     for (int i = 0; i < 16; i++) {
-        ay_write_address(&m->ay, i);
-        ay_write_data(&m->ay, a->ay_regs[i]);
+        ay_write_address(m->ay, i);
+        ay_write_data(m->ay, a->ay_regs[i]);
     }
 
-    ay_write_address(&m->ay, a->current_register);
+    ay_write_address(m->ay, a->current_register);
 
     return 0;
 }
@@ -181,10 +181,10 @@ int szx_save_block_ay(struct SZXBlock *b, Machine_t *m)
     SZXAYBlock_t *a = (SZXAYBlock_t *)b->data;
 
     for (int i = 0; i < 16; i++) {
-        a->ay_regs[i] = m->ay.regs[i];
+        a->ay_regs[i] = m->ay->regs[i];
     }
 
-    a->current_register = m->ay.address;
+    a->current_register = m->ay->address;
     if (m->type == MACHINE_ZX48K) {
         a->flags |= SZX_AYF_128AY;
     }
@@ -228,7 +228,7 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
 
     machine_deinit(m);
     machine_init(m, MACHINE_ZX48K);
-    ay_reset(&m->ay);
+    ay_reset(m->ay);
 
     for (size_t i = 0; i < szx->blocks; i++) {
         struct SZXBlock *block = &szx->block[i];

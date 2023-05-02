@@ -33,7 +33,7 @@ typedef struct Machine {
 
     Tape_t *tape;
     TapePlayer_t *player;
-    AY_t ay;
+    AY_t *ay;
     Beeper_t beeper;
 
     uint64_t frames;

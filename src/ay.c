@@ -11,8 +11,13 @@ static void ay_process_sample(AY_t *ay)
     ay->buf_pos += 2;
 }
 
-int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock)
+AY_t *ay_init(struct Machine *ctx, int sample_rate, double clock)
 {
+    AY_t *ay = calloc(sizeof(AY_t), 1);
+    if (ay == NULL) {
+        return NULL;
+    }
+
     ay->samples_ratio = (double)ctx->timing.clock_hz / (double)sample_rate; 
     ay->samples_frame = (double)ctx->timing.t_frame / ay->samples_ratio;
 
@@ -27,7 +32,8 @@ int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock)
 
     ay->buf = malloc(ay->buf_len * sizeof(double));
     if (ay->buf == NULL) {
-        return -1;
+        free(ay);
+        return NULL;
     }
 
     for (size_t i = 0; i < 16; i++) {
@@ -35,13 +41,15 @@ int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock)
     }
 
     ay->ctx = ctx;
-    return 0;
+    return ay;
 }
 
 void ay_deinit(AY_t *ay)
 {
+    if (ay == NULL) return;
+
     free(ay->buf);
-    ay->buf = NULL;
+    free(ay);
 }
 
 void ay_reset(AY_t *ay)
@@ -113,11 +121,15 @@ void ay_write_data(AY_t *ay, uint8_t value)
 
 uint8_t ay_read_data(AY_t *ay)
 {
+    if (ay == NULL) return 0;
+
     return ay->regs[ay->address];
 }
 
 void ay_process_frame(AY_t *ay)
 {
+    if (ay == NULL) return;
+
     for ( ; ay->last_write < ay->samples_frame; ay->last_write++) {
         ay_process_sample(ay);
     }

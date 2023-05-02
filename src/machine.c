@@ -52,6 +52,7 @@ int machine_init(Machine_t *machine, enum MachineType type)
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);
 
+    machine->tape = NULL;
     machine->player = NULL;
     machine->frames = 0;
     machine->reset_pending = false;
@@ -150,7 +151,7 @@ void machine_process_events()
 
     if (m_cur->reset_pending) {
         cpu_init(&m_cur->cpu);
-        ay_reset(&m_cur->ay);
+        ay_reset(m_cur->ay);
         m_cur->reset_pending = false;
     }
 
@@ -227,11 +228,11 @@ int machine_do_cycles()
             m_cur->cpu.cycles -= m_cur->timing.t_frame;
             m_cur->frames++;
 
-            ay_process_frame(&m_cur->ay);
+            ay_process_frame(m_cur->ay);
             beeper_process_frame(&m_cur->beeper);
-            dsp_mix_buffers_mono_to_stereo(m_cur->ay.buf, m_cur->beeper.buf, m_cur->ay.buf_len);
+            dsp_mix_buffers_mono_to_stereo(m_cur->ay->buf, m_cur->beeper.buf, m_cur->ay->buf_len);
 
-            audio_sdl_queue(m_cur->ay.buf, m_cur->ay.buf_len * sizeof(float));
+            audio_sdl_queue(m_cur->ay->buf, m_cur->ay->buf_len * sizeof(float));
 
             ula_draw_frame(m_cur);
 

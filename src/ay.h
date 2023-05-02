@@ -21,7 +21,7 @@ typedef struct AY
     struct Machine *ctx;
 } AY_t;
 
-int ay_init(AY_t *ay, struct Machine *ctx, int sample_rate, double clock);
+AY_t *ay_init(struct Machine *ctx, int sample_rate, double clock);
 void ay_deinit(AY_t *ay);
 void ay_reset(AY_t *ay);
 void ay_write_address(AY_t *ay, uint8_t value);

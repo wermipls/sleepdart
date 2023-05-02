@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     input_sdl_init();
 
-    Machine_t m;
+    Machine_t m = { 0 };
 
     machine_init(&m, MACHINE_ZX48K);
     machine_set_current(&m);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     int sample_rate = 44100;
 
-    ay_init(&m.ay, &m, sample_rate, 1750000);
+    m.ay = ay_init(&m, sample_rate, 1750000);
     beeper_init(&m.beeper, &m, sample_rate);
     audio_sdl_init(sample_rate);
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
         if (err) break;
     }
 
-    ay_deinit(&m.ay);
+    ay_deinit(m.ay);
 
     palette_list_free();
 
