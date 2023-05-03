@@ -24,6 +24,7 @@ void palette_list_init();
 void palette_list_free();
 char **palette_list_get();
 void palette_set_by_index(size_t index);
+void palette_set_by_name(const char *name);
 void palette_set_default();
 size_t palette_get_index();
 bool palette_has_changed();

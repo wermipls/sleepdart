@@ -12,6 +12,7 @@
 #include "palette.h"
 #include "argparser.h"
 #include "sleepdart_info.h"
+#include "config.h"
 
 int main(int argc, char *argv[])
 {
@@ -24,15 +25,30 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    palette_list_init();
-    palette_set_default();
+    config_init();
 
-    int *scale = argparser_get(parser, "scale");
+    palette_list_init();
+
+    char *palette = config_get_str(&g_config, "palette");
+    if (palette) {
+        palette_set_by_name(palette);
+        free(palette);
+    } else {
+        palette_set_default();
+    }
+
+    int *p_scale = argparser_get(parser, "scale");
+    int scale = 2;
+    if (p_scale) {
+        scale = *p_scale;
+    } else {
+        config_get_int(&g_config, "window-scale", &scale);
+    }
 
     int err = video_sdl_init(
         "third (sixth) iteration of sleepdart, the",
         BUFFER_WIDTH, BUFFER_HEIGHT, 
-        scale ? *scale : 3);
+        scale);
 
     if (err) {
         dlog(LOG_ERR, "Failed to initialize video backend!");
@@ -41,6 +57,11 @@ int main(int argc, char *argv[])
 
     if (argparser_get(parser, "fullscreen")) {
         video_sdl_toggle_window_mode();
+    }
+    
+    int limit_fps;
+    if (config_get_int(&g_config, "limit-fps", &limit_fps) == 0) {
+        video_sdl_set_fps_limit(limit_fps);
     }
 
     input_sdl_init();
@@ -73,7 +94,12 @@ int main(int argc, char *argv[])
 
     ay_deinit(m.ay);
 
-    palette_list_free();
+    config_set_int(&g_config, "window-scale", video_sdl_get_scale());
+    config_set_int(&g_config, "limit-fps", video_sdl_get_fps_limit());
+    char **palette_list = palette_list_get();
+    config_set_str(&g_config, "palette", palette_list[palette_get_index()]);
+
+    config_save();
 
     argparser_free(parser);
 }

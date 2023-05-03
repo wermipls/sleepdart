@@ -146,19 +146,24 @@ void palette_set_by_index(size_t index)
     palette_changed = true;
 }
 
+void palette_set_by_name(const char *name)
+{
+    for (size_t i = 0; palette_list[i] != NULL; i++) {
+        int result = strcmp(name, palette_list[i]);
+        if (result == 0) {
+            palette_current = i;
+            palette_changed = true;
+        }
+    }
+}
+
 void palette_set_default()
 {
     if (palette_list == NULL) {
         return;
     }
 
-    for (size_t i = 0; palette_list[i] != NULL; i++) {
-        int result = strcmp("default.raw", palette_list[i]);
-        if (result == 0) {
-            palette_current = i;
-            palette_changed = true;
-        }
-    }
+    palette_set_by_name("default.raw");
 }
 
 size_t palette_get_index()
