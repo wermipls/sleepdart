@@ -2,3 +2,5 @@
 .vscode
 *.o
 /sleepdart
+*.ini
+/*.szx
