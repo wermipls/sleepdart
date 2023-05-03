@@ -5,7 +5,7 @@ FILES="src/*.c ayumi/ayumi.c"
 FLAGS="-std=c11 -Wall -Wextra -Wpedantic -lz -lm `sdl2-config --libs`"
 FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
-WIN32_FILES="src/win32/*.c src/win32/*.o"
+WIN32_FILES="src/win32/*.c src/win32/*.o -static `sdl2-config --static-libs`"
 WIN32_FLAGS="-DPLATFORM_WIN32"
 
 while getopts ':p:d' opt; do
