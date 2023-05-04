@@ -1,7 +1,7 @@
 # sleepdart
 A half-hearted attempt at writing a reasonably accurate ZX Spectrum emulator.
 
-![shock](https://user-images.githubusercontent.com/32251376/234389694-45e35ba2-b437-4d82-a1cd-40884a48b6d3.png)
+![sleepdart running Shock](https://user-images.githubusercontent.com/32251376/234389694-45e35ba2-b437-4d82-a1cd-40884a48b6d3.png)
 
 See it in action:
 * ["Shock" megademo](https://www.youtube.com/watch?v=ak0xUiLwCu0)
@@ -20,7 +20,15 @@ See it in action:
 * Adjustable palettes
 * More to come...
 
-## Building (Windows)
+## Building
+
+Clone the repository, including submodules:
+```
+git clone --recursive https://github.com/wermipls/sleepdart
+```
+
+### Windows
+
 Use MSYS2 (MinGW 64-bit) with following packages installed:
 * `mingw-w64-x86_64-SDL2`
 * `zlib`
@@ -30,4 +38,11 @@ Use MSYS2 (MinGW 64-bit) with following packages installed:
 # -p <platform> includes platform-specific features (win32 ui in this case)
 
 ./build.sh -p win32
+```
+
+### Fedora 38
+
+```sh
+sudo dnf install gcc SDL2-devel zlib-devel
+./build.sh
 ```
