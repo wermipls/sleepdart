@@ -7,11 +7,13 @@ FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
 WIN32_FILES="src/win32/*.c src/win32/*.o -static `sdl2-config --static-libs`"
 WIN32_FLAGS="-DPLATFORM_WIN32"
+RELEASE_FILES="sleepdart* rom/* palettes/*"
 
-while getopts ':p:d' opt; do
+while getopts ':p:d:r' opt; do
     case $opt in
         (p) PLATFORM=$OPTARG;;
         (d) DEBUG=1;;
+        (r) RELEASEPKG=1;;
         (:) :;;
     esac
 done
@@ -34,9 +36,20 @@ DESCRIBE=`git describe --dirty --always`
 set -e
 if [[ $? -eq 0 ]]; then
     FLAGS="$FLAGS -DGIT_DESCRIBE=\"$DESCRIBE\""
+else
+    DESCRIBE=0
 fi
 
 echo "FILES: $FILES"
 echo "FLAGS: $FLAGS"
 gcc $FILES $FLAGS -o sleepdart
 
+if [[ $RELEASEPKG == "1" ]]; then
+    if [[ "$DESCRIBE" == "0" ]]; then
+        PKGNAME="sleepdart.zip"
+    else
+        PKGNAME="sleepdart-$DESCRIBE.zip"
+    fi
+
+    zip "$PKGNAME" $RELEASE_FILES
+fi
