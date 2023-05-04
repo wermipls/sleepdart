@@ -32,7 +32,7 @@ else
 fi
 
 set +e
-DESCRIBE=`git describe --dirty --always`
+DESCRIBE=`git describe --tags --dirty --always`
 set -e
 if [[ $? -eq 0 ]]; then
     FLAGS="$FLAGS -DGIT_DESCRIBE=\"$DESCRIBE\""
