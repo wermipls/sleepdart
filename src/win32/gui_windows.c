@@ -21,7 +21,7 @@ void windowscale_update_check()
     CheckMenuItem(menu, scale-1 + ID_WINDOWSCALE_1X, MF_BYCOMMAND | MF_CHECKED);
 }
 
-void limit_fps_update_check()
+void gui_windows_limit_fps_update_check()
 {
     bool is_on = video_sdl_get_fps_limit();
     CheckMenuItem(menu, ID_OPTIONS_LIMITFPS, MF_BYCOMMAND | MF_CHECKED*is_on);
@@ -179,7 +179,6 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             break;
         case ID_OPTIONS_LIMITFPS:
             video_sdl_set_fps_limit(!video_sdl_get_fps_limit());
-            limit_fps_update_check();
             return TRUE;
             break;
         case ID_OPTIONS_MENUBAR:
@@ -228,7 +227,7 @@ void menu_init()
     menu_palette_init();
 
     windowscale_update_check();
-    limit_fps_update_check();
+    gui_windows_limit_fps_update_check();
 }
 
 void gui_windows_hook_window(HWND hwnd)

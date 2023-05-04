@@ -33,6 +33,9 @@ double target_ticks_frame = 0;
 void video_sdl_set_fps_limit(bool is_enabled)
 {
     limit_fps = is_enabled;
+#if defined(_WIN32) && defined(PLATFORM_WIN32)
+    gui_windows_limit_fps_update_check();
+#endif
 }
 
 bool video_sdl_get_fps_limit()
