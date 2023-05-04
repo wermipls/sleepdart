@@ -4,49 +4,39 @@
 #include <stdlib.h>
 #include <float.h>
 #include <SDL2/SDL_assert.h>
+#include <limits.h>
 #include "log.h"
 #include "parser_helpers.h"
+#include "file.h"
 
-static char *process_string(FILE *f, int start, int end)
+static char *trim_whitespace(char *str, size_t len)
 {
-    int first = -1;
-    int last = -1;
-    int pos_old = ftell(f);
+    char *p_first = NULL;
+    char *p_last = NULL;
 
-    if (start == end) {
-        return NULL;
-    }
-
-    fseek(f, start, SEEK_SET);
-
-    int c;
-    while ((c = fgetc(f)) != EOF && start < end) {
-        if (c != ' ') {
-            last = ftell(f);
-            if (first < 0) first = last;
+    while (*str != 0 && len) {
+        if (*str != '\t' && *str != ' ') {
+            p_last = str;
+            if (!p_first) {
+                p_first = str;
+            }
         }
-
-        start++;
+        str++;
+        len--;
     }
 
-    if (first < 0) {
-        fseek(f, pos_old, SEEK_SET);
+    if (p_first == NULL) {
         return NULL;
     }
 
-    size_t len = last - first + 2;
-    char *str = malloc(len);
-    if (str == NULL) {
-        fseek(f, pos_old, SEEK_SET);
+    size_t size = p_last - p_first + 2;
+    char *new = malloc(size);
+    if (new == NULL) {
         return NULL;
     }
-
-    fseek(f, first-1, SEEK_SET);
-    fread(str, 1, len-1, f);
-    str[len-1] = 0;
-
-    fseek(f, pos_old, SEEK_SET);
-    return str;
+    strncpy(new, p_first, size-1);
+    new[size-1] = 0;
+    return new;
 }
 
 static int config_find_index(CfgData_t *cfg, const char *key)
@@ -59,22 +49,8 @@ static int config_find_index(CfgData_t *cfg, const char *key)
     return -1;
 }
 
-static void config_process_keyvalue(
-    CfgData_t *cfg, FILE *f, int start, int delimiter, int end, int line)
+static void config_process_keyvalue(CfgData_t *cfg, char *key, char *value, int line)
 {
-    char *key = process_string(f, start, delimiter);
-    if (key == NULL) {
-        dlog(LOG_WARN, "%s: invalid key on line %d", __func__, line);
-        return;
-    }
-
-    char *value = process_string(f, delimiter+1, end-1);
-    if (value == NULL) {
-        dlog(LOG_WARN, "%s: invalid value on line %d", __func__, line);
-        free(key);
-        return;
-    }
-
     int i = config_find_index(cfg, key);
     if (i < 0) {
         dlog(LOG_WARN, "%s: unknown key \"%s\" on line %d, ignoring", __func__, key, line);
@@ -115,47 +91,45 @@ int config_load_file(CfgData_t *cfg, char *path)
         return -1;
     }
 
-    int line_no = 1;
-    int line_start = 0;
-    int key_end = -1;
-    int value_end = -1;
-    int line_ignore = 0;
-    int c;
-    while ((c = fgetc(f)) != EOF) {
-        if (c == '\n') {
-            if (key_end > 0) {
-                if (value_end < 0) {
-                    value_end = ftell(f)-1;
-                }
-                config_process_keyvalue(cfg, f, line_start, key_end, value_end, line_no);
+    char *line;
+    int line_no = 0;
+    while ((line = file_read_line(f)) != NULL) {
+        line_no++;
+        char *p_value = strchr(line, '=');
+        char *p_comment = strchr(line, '#');
+        if (p_value == NULL) {
+            free(line);
+            continue;
+        }
+
+        if (p_comment != NULL) {
+            if (p_comment < p_value) {
+                free(line);
+                continue;
             }
-            line_start = ftell(f);
-            key_end = -1;
-            value_end = -1;
-            line_ignore = 0;
-            line_no++;
+        }
+
+        size_t key_len = p_value - line;
+        p_value++;
+
+        char *key = trim_whitespace(line, key_len);
+        if (key == NULL) {
+            dlog(LOG_WARN, "%s: invalid key on line %d", __func__, line_no);
+            free(line);
             continue;
         }
 
-        if (line_ignore) {
+        size_t value_len = p_comment ? (size_t)(p_comment - p_value) : SIZE_MAX;
+        char *value = trim_whitespace(p_value, value_len);
+        if (value == NULL) {
+            dlog(LOG_WARN, "%s: invalid value on line %d", __func__, line_no);
+            free(key);
+            free(line);
             continue;
         }
 
-        if (c == '#') {
-            value_end = ftell(f)-1;
-            line_ignore = 1;
-        }
-
-        if (c == '=' && key_end < 0) {
-            key_end = ftell(f)-1;
-        }
-    }
-
-    if (key_end > 0) {
-        if (value_end < 0) {
-            value_end = ftell(f)+1;
-        }
-        config_process_keyvalue(cfg, f, line_start, key_end, value_end, line_no);
+        config_process_keyvalue(cfg, key, value, line_no);
+        free(line);
     }
 
     fclose(f);

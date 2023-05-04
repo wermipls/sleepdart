@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 enum FileType {
     FTYPE_UNKNOWN = -1,
@@ -17,3 +18,4 @@ int file_path_append(char *dst, const char *a, const char *b, size_t len);
 void file_free_list(char *list[]);
 char **file_list_directory_files(char *path);
 enum FileType file_detect_type(char *path);
+char *file_read_line(FILE *f);

@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include "szx_file.h"
 #include "vector.h"
+#include "log.h"
 
 static char basedir[4096] = { 0 };
 
@@ -219,4 +220,41 @@ enum FileType file_detect_type(char *path)
     }
 
     return FTYPE_UNKNOWN;
+}
+
+/* returns a pointer to a line string (without newline character),
+ * or null on error or if there is none left.
+ * user is expected to free the returned pointer */
+char *file_read_line(FILE *f)
+{
+    char buf[256];
+    char *str = NULL;
+    size_t str_len = 0;
+    size_t offset = 0;
+    while (fgets(buf, sizeof(buf), f)) {
+        char *eol = strchr(buf, '\n');
+        size_t len;
+        if (eol) {
+            len = eol - buf;
+        } else {
+            char *end = strchr(buf, '\0');
+            len = end - buf;
+        }
+        str_len += len;
+        char *str_new = realloc(str, str_len+1);
+        if (str_new == NULL) {
+            dlog(LOG_ERRSILENT, "%s: realloc fail", __func__);
+            free(str);
+            return NULL;
+        }
+        str = str_new;
+        strncpy(&str[offset], buf, len);
+        offset = str_len;
+        str[str_len] = 0;
+        if (eol) {
+            break;
+        }
+    }
+
+    return str;
 }
