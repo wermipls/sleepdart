@@ -2,6 +2,16 @@
 #include <stdio.h>
 #include "machine.h"
 #include "video_sdl.h"
+#include "keyboard_macro.h"
+
+const KeyboardMacro_t macro_tapeload[6] = {
+    { 10, KBMACRO_KEY, 33 }, // LOAD
+    { 15, KBMACRO_KEY, 36 }, // SYM SHFT
+    { 15, KBMACRO_KEY, 25 }, // "
+    { 20, KBMACRO_KEY, 36 }, // SYM SHFT
+    { 20, KBMACRO_KEY, 25 }, // "
+    { 25, KBMACRO_KEY, 30 }, // ENTER
+};
 
 static void putc_zx(uint8_t ch, FILE *f)
 {
@@ -40,10 +50,20 @@ static void putc_zx(uint8_t ch, FILE *f)
 void machine_process_hooks(struct Machine *m)
 {
     static bool inside_tape_routine = false;
+    static bool tape_macro_handled = false;
 
     uint16_t pc = m->cpu.regs.pc;
 
+    if (pc == 0x15DE && m->player != NULL && m->player->position == 0) {
+        if (!tape_macro_handled) {
+            keyboard_macro_play(
+                macro_tapeload, sizeof(macro_tapeload) / sizeof(KeyboardMacro_t));
+            tape_macro_handled = true;
+        }
+    }
+
     if (pc == 0x0556) {
+        tape_macro_handled = false;
         inside_tape_routine = true;
         video_sdl_set_fps_limit(false);
         tape_player_pause(m->player, false);

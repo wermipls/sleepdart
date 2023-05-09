@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "keyboard_macro.h"
 #include "input_sdl.h"
 
 // speccy -> sdl scancode key map
@@ -76,6 +77,8 @@ uint8_t keyboard_read(uint16_t addr)
                 if (input_sdl_get_key(scancode))
                     result &= mask;
             }
+
+            result &= keyboard_macro_get(a_bit);
         }
     }
 

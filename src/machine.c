@@ -1,6 +1,7 @@
 #include "machine.h"
 #include <string.h>
 #include "machine_hooks.h"
+#include "keyboard_macro.h"
 #include "file.h"
 #include "szx_state.h"
 #include "log.h"
@@ -211,6 +212,8 @@ int machine_do_cycles()
             ula_draw_frame(m_cur);
 
             video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+
+            keyboard_macro_process();
 
             input_sdl_copy_old_state();
             int quit = input_sdl_update();
