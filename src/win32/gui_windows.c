@@ -125,6 +125,7 @@ void on_file_save(HWND hwnd)
     ofn.lpstrFile[0] = 0;
     ofn.nMaxFile = sizeof(file);
     ofn.lpstrFilter = "SZX state\0*.szx\0";
+    ofn.lpstrDefExt = "szx";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
