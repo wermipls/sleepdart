@@ -1,5 +1,6 @@
 #include "machine.h"
 #include <string.h>
+#include "machine_hooks.h"
 #include "file.h"
 #include "szx_state.h"
 #include "log.h"
@@ -188,26 +189,14 @@ void machine_toggle_tape_playback()
 
 int machine_do_cycles()
 {
-    static bool inside_tape_routine = false;
-
     while (!m_cur->cpu.error) {
         if (m_cur->cpu.cycles < m_cur->timing.t_int_hold) {
             cpu_fire_interrupt(&m_cur->cpu);
         }
+
+        machine_process_hooks(m_cur);
+
         cpu_do_cycles(&m_cur->cpu);
-
-        if (m_cur->cpu.regs.pc == 0x0556) {
-            inside_tape_routine = true;
-            video_sdl_set_fps_limit(false);
-            tape_player_pause(m_cur->player, false);
-        }
-
-        if (inside_tape_routine 
-        && (m_cur->cpu.regs.pc < 0x0556 || m_cur->cpu.regs.pc >= 0x0605)) {
-            inside_tape_routine = false;
-            video_sdl_set_fps_limit(true);
-            tape_player_pause(m_cur->player, true);
-        }
 
         if (m_cur->cpu.cycles >= m_cur->timing.t_frame) {
             m_cur->cpu.cycles -= m_cur->timing.t_frame;
