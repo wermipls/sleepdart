@@ -9,7 +9,7 @@ WIN32_FILES="src/win32/*.c src/win32/*.o -static `sdl2-config --static-libs`"
 WIN32_FLAGS="-DPLATFORM_WIN32"
 RELEASE_FILES="sleepdart* rom/* palettes/*"
 
-while getopts ':p:d:r' opt; do
+while getopts ':p:dr' opt; do
     case $opt in
         (p) PLATFORM=$OPTARG;;
         (d) DEBUG=1;;
