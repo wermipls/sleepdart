@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with: 
+        submodules: recursive
     - name: set up packages
       run: sudo apt install gcc libsdl2-dev xxhash
     - name: build release
