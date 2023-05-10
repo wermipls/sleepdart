@@ -1,0 +1,58 @@
+name: build and test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with: 
+        submodules: recursive
+    - name: set up packages
+      run: sudo apt install gcc libsdl2-dev libxxhash-dev
+    - name: build release
+      run: ./build.sh
+    - name: upload build
+      uses: actions/upload-artifact@v3
+      with:
+        name: sleepdart-linux
+        path: sleepdart
+    - name: run tests
+      run: |
+        echo "limit-fps=0" > ./config.ini
+        SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
+        ./run_tests.sh
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        release: false
+        install: git mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash
+    - run: git config --global core.autocrlf input
+      shell: bash
+    - uses: actions/checkout@v3
+      with: 
+        submodules: recursive
+    - name: build release
+      run: ./build.sh -p win32
+    - name: upload build
+      uses: actions/upload-artifact@v3
+      with:
+        name: sleepdart-windows
+        path: sleepdart.exe
+    - name: run tests
+      run: |
+        echo "limit-fps=0" > ./config.ini
+        SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
+        SLEEPDART_ERRSILENT=1 ; export SLEEPDART_ERRSILENT
+        ./run_tests.sh
