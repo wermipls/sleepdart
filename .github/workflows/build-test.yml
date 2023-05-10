@@ -38,6 +38,8 @@ jobs:
       with:
         release: false
         install: git mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash
+    - run: git config --global core.autocrlf input
+      shell: bash
     - uses: actions/checkout@v3
       with: 
         submodules: recursive
