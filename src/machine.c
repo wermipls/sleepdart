@@ -1,5 +1,6 @@
 #include "machine.h"
 #include <string.h>
+#include "machine_test.h"
 #include "machine_hooks.h"
 #include "keyboard_macro.h"
 #include "file.h"
@@ -196,6 +197,7 @@ int machine_do_cycles()
         }
 
         machine_process_hooks(m_cur);
+        machine_test_iterate(m_cur);
 
         cpu_do_cycles(&m_cur->cpu);
 

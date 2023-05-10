@@ -2,7 +2,7 @@
 set -e
 
 FILES="src/*.c ayumi/ayumi.c"
-FLAGS="-std=c11 -Wall -Wextra -Wpedantic -lz -lm `sdl2-config --libs`"
+FLAGS="-std=gnu11 -Wall -Wextra -Wpedantic -lz -lm `sdl2-config --libs`"
 FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
 RELEASE_FILES="sleepdart* rom/* palettes/*"

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "log.h"
 #include "machine.h"
+#include "machine_test.h"
 #include "ula.h"
 #include "video_sdl.h"
 #include "input_sdl.h"
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
     argparser_add_arg(parser, "file", 0, 0, true, "tape or snapshot file to be loaded");
     argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");
     argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, "run in fullscreen mode");
+    argparser_add_arg(parser, "--test", 0, ARG_STRING, 0, "perform an automated regression test");
 
     if (argparser_parse(parser, argc, argv)) {
         return -1;
@@ -73,6 +75,11 @@ int main(int argc, char *argv[])
 
     video_sdl_set_fps((double)m.timing.clock_hz / (double)m.timing.t_frame);
 
+    char *testpath = argparser_get(parser, "test");
+    if (testpath) {
+        machine_test_open(testpath);
+    }
+
     char *file = argparser_get(parser, "file");
 
     if (file) {
@@ -102,4 +109,6 @@ int main(int argc, char *argv[])
     config_save();
 
     argparser_free(parser);
+
+    machine_test_close();
 }

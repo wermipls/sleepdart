@@ -1,0 +1,2 @@
+Based on zexdoc.tap from https://mdfs.net/Software/Z80/Exerciser/Spectrum/
+Converted to .szx using Spectaculator 8.0

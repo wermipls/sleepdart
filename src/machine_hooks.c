@@ -1,6 +1,6 @@
 #include "machine_hooks.h"
-#include <stdio.h>
 #include "machine.h"
+#include "machine_test.h"
 #include "video_sdl.h"
 #include "keyboard_macro.h"
 
@@ -12,6 +12,8 @@ const KeyboardMacro_t macro_tapeload[6] = {
     { 20, KBMACRO_KEY, 25 }, // "
     { 25, KBMACRO_KEY, 30 }, // ENTER
 };
+
+static FILE *out_stream = NULL;
 
 static void putc_zx(uint8_t ch, FILE *f)
 {
@@ -48,6 +50,11 @@ static void putc_zx(uint8_t ch, FILE *f)
     fputs(s, f);
 }
 
+void machine_set_print_stream(FILE *f)
+{
+    out_stream = f;
+}
+
 void machine_process_hooks(struct Machine *m)
 {
     static bool inside_tape_routine = false;
@@ -81,7 +88,7 @@ void machine_process_hooks(struct Machine *m)
         memory_read(m, m->cpu.regs.iy + 0x02, &tv_flag);
         memory_read(m, m->cpu.regs.iy + 0x30, &flags2);
         if (!(flags2 & (1<<4)) && !(tv_flag & 1)) {
-            putc_zx(m->cpu.regs.main.a, stdout);
+            putc_zx(m->cpu.regs.main.a, out_stream);
         }
     }
 }
