@@ -23,6 +23,9 @@ int main(int argc, char *argv[])
     argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, "run in fullscreen mode");
     argparser_add_arg(parser, "--test", 0, ARG_STRING, 0, "perform an automated regression test");
 
+    dlog(LOG_INFO, 
+        SLEEPDART_NAME " version " SLEEPDART_VERSION ", built on " __DATE__ "\n");
+
     if (argparser_parse(parser, argc, argv)) {
         return -1;
     }
