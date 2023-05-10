@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "log.h"
 #include "machine.h"
 #include "machine_test.h"
@@ -17,6 +18,11 @@
 
 int main(int argc, char *argv[])
 {
+    char *errsilent = getenv("SLEEPDART_ERRSILENT");
+    if (errsilent) {
+        log_force_errsilent();
+    }
+
     ArgParser_t *parser = argparser_create(SLEEPDART_NAME);
     argparser_add_arg(parser, "file", 0, 0, true, "tape or snapshot file to be loaded");
     argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");

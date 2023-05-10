@@ -10,6 +10,12 @@
 static const char prefix_err[] = "err: ";
 static const char prefix_warn[] = "warn: ";
 static const char prefix_none[] = "";
+static int force_errsilent = 0;
+
+void log_force_errsilent()
+{
+    force_errsilent = 1;
+}
 
 void dlog(enum LogLevel l, char fmt[], ...)
 {
@@ -41,7 +47,7 @@ void dlog(enum LogLevel l, char fmt[], ...)
     fprintf(stderr, "%s%s\n", prefix, msg);
     
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
-    if (l == LOG_ERR) {
+    if (l == LOG_ERR && !force_errsilent) {
         MessageBoxA(GetActiveWindow(), msg, "Error", MB_OK | MB_ICONERROR);
     }
 #endif

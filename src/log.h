@@ -8,4 +8,5 @@ enum LogLevel
     LOG_ERRSILENT,
 };
 
+void log_force_errsilent();
 void dlog(enum LogLevel l, char fmt[], ...);
