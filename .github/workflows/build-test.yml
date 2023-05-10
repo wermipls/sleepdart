@@ -1,0 +1,21 @@
+name: build and test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: set up packages
+      run: sudo apt install gcc libsdl2-dev xxhash
+    - name: build release
+      run: ./build.sh
+    - name: run tests
+      run: |
+        echo "limit-fps=0" > ./config.ini
+        ./run_tests.sh
