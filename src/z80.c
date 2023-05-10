@@ -2287,19 +2287,6 @@ void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 
 /* Jump Group */
 
-// FIXME: probably should remove this because its virtually the same as cc_nn :?
-void jp_nn(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t l = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    uint8_t h = cpu_read(cpu, cpu->regs.pc);
-    cpu->regs.pc = MAKE16(l, h);
-    cpu->cycles += 3;
-}
-
 void jp_cc_nn(Z80_t *cpu, bool cc)
 {
     cpu->cycles += 4;
@@ -3368,7 +3355,7 @@ void do_opcode(Z80_t *cpu)
     case 0xF2: jp_cc_nn(cpu, !cpu->regs.main.flags.s); break;
     case 0xFA: jp_cc_nn(cpu, cpu->regs.main.flags.s); break;
     // jp nn
-    case 0xC3: jp_nn(cpu); break;
+    case 0xC3: jp_cc_nn(cpu, true); break;
     // jp hl
     case 0xE9: jp_rr(cpu, cpu->regs.main.hl); break;
 
