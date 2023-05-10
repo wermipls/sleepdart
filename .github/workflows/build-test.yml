@@ -52,4 +52,5 @@ jobs:
       run: |
         echo "limit-fps=0" > ./config.ini
         SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
+        SLEEPDART_ERRSILENT=1 ; export SLEEPDART_ERRSILENT
         ./run_tests.sh
