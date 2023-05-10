@@ -42,6 +42,7 @@ static void putc_zx(uint8_t ch, FILE *f)
     default:
         if (ch < 0x20 || ch >= 0x80) return;
         putc(ch, f);
+        return;
     }
 
     fputs(s, f);
