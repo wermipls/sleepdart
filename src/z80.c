@@ -731,53 +731,6 @@ static inline uint8_t add8(Z80_t *cpu, uint8_t value)
     return result;
 }
 
-/* ADD A, r */
-void add_a_r(Z80_t *cpu, uint8_t value)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    cpu->regs.main.a = add8(cpu, value);
-}
-
-/* ADD A, n */
-void add_a_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    cpu->regs.main.a = add8(cpu, value);
-}
-
-/* ADD A, (rr) */
-void add_a_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = add8(cpu, value);
-}
-
-/* ADD a, (ii+d) */
-void add_a_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = add8(cpu, value);
-}
-
 /* ADC helper */
 static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
 {
@@ -793,53 +746,6 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
                               cpu->regs.main.flags.c) > 255;
     cpu->regs.main.flags.n = 0;
     return result;
-}
-
-/* ADC A, r */
-void adc_a_r(Z80_t *cpu, uint8_t value)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    cpu->regs.main.a = adc8(cpu, value);
-}
-
-/* ADC A, n */
-void adc_a_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    cpu->regs.main.a = adc8(cpu, value);
-}
-
-/* ADC A, (rr) */
-void adc_a_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = adc8(cpu, value);
-}
-
-/* ADC a, (ii+d) */
-void adc_a_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = adc8(cpu, value);
 }
 
 /* SBC helper */
@@ -858,147 +764,6 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
     return result;
 }
 
-/* SBC A, r */
-void sbc_a_r(Z80_t *cpu, uint8_t value)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    cpu->regs.main.a = sbc8(cpu, value);
-}
-
-/* SBC A, n */
-void sbc_a_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    cpu->regs.main.a = sbc8(cpu, value);
-}
-
-/* SBC A, (rr) */
-void sbc_a_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = sbc8(cpu, value);
-}
-
-/* SBC a, (ii+d) */
-void sbc_a_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = sbc8(cpu, value);
-}
-
-/* SUB r */
-void sub_r(Z80_t *cpu, uint8_t value)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* SUB n */
-void sub_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* SUB (rr) */
-void sub_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* SUB (ii+d) */
-void sub_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* CP r */
-void cp_r(Z80_t *cpu, uint8_t value)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* CP n */
-void cp_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* CP (rr) */
-void cp_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    sub8(cpu, cpu->regs.main.a, value);
-}
-
-/* CP (ii+d) */
-void cp_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    sub8(cpu, cpu->regs.main.a, value);
-}
-
 /* AND helper */
 static inline void and(Z80_t *cpu, uint8_t value)
 {
@@ -1012,53 +777,6 @@ static inline void and(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.c = 0;
     cpu->regs.main.flags.n = 0;
-}
-
-/* AND r */
-void and_r(Z80_t *cpu, uint8_t value)
-{
-    and(cpu, value);
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-}
-
-/* AND (rr) */
-void and_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    uint8_t value = cpu_read(cpu, addr);
-    and(cpu, value);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-}
-
-/* AND n */
-void and_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    and(cpu, value);
-}
-
-/* AND (ii+d) */
-void and_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    and(cpu, value);
 }
 
 /* XOR helper */
@@ -1076,53 +794,6 @@ static inline void xor(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.n = 0;
 }
 
-/* XOR r */
-void xor_r(Z80_t *cpu, uint8_t value)
-{
-    xor(cpu, value);
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-}
-
-/* XOR (rr) */
-void xor_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    uint8_t value = cpu_read(cpu, addr);
-    xor(cpu, value);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-}
-
-/* XOR n */
-void xor_n(Z80_t *cpu)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    xor(cpu, value);
-}
-
-/* XOR (ii+d) */
-void xor_iid(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
-    addr += d;
-    cpu->cycles += 3;
-
-    // pc+2:1 x5
-    cpu_memory_stall(cpu, cpu->regs.pc, 5);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    xor(cpu, value);
-}
-
 /* OR helper */
 static inline void or(Z80_t *cpu, uint8_t value)
 {
@@ -1138,37 +809,65 @@ static inline void or(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.n = 0;
 }
 
-/* OR r */
-void or_r(Z80_t *cpu, uint8_t value)
+static inline void alo(Z80_t *cpu, uint8_t value, uint8_t op)
 {
-    or(cpu, value);
-    cpu->cycles += 4;
-    cpu->regs.pc++;
+    switch (op)
+    {
+    case 0: // add
+        cpu->regs.main.a = add8(cpu, value);
+        break;
+    case 1: // adc
+        cpu->regs.main.a = adc8(cpu, value);
+        break;
+    case 2: // sub
+        cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
+        break;
+    case 3: // sbc
+        cpu->regs.main.a = sbc8(cpu, value);
+        break;
+    case 4: // and
+        and(cpu, value);
+        break;
+    case 5: // xor
+        xor(cpu, value);
+        break;
+    case 6: // or
+        or(cpu, value);
+        break;
+    case 7: // cp
+        sub8(cpu, cpu->regs.main.a, value);
+        break;
+    }
 }
 
-/* OR (rr) */
-void or_rra(Z80_t *cpu, uint16_t addr)
+static void alo_r(Z80_t *cpu, uint8_t value, uint8_t op)
 {
     cpu->cycles += 4;
-    uint8_t value = cpu_read(cpu, addr);
-    or(cpu, value);
-    cpu->cycles += 3;
     cpu->regs.pc++;
+    alo(cpu, value, op);
 }
 
-/* OR n */
-void or_n(Z80_t *cpu)
+static void alo_n(Z80_t *cpu, uint8_t op)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
-    or(cpu, value);
+    alo(cpu, value, op);
 }
 
-/* OR (ii+d) */
-void or_iid(Z80_t *cpu, uint16_t addr)
+static void alo_rra(Z80_t *cpu, uint16_t addr, uint8_t op)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t value = cpu_read(cpu, addr);
+    cpu->cycles += 3;
+    alo(cpu, value, op);
+}
+
+/* ADD a, (ii+d) */
+static void alo_iid(Z80_t *cpu, uint16_t addr, uint8_t op)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1182,7 +881,7 @@ void or_iid(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    or(cpu, value);
+    alo(cpu, value, op);
 }
 
 /* General-Purpose Arithmetic and CPU Control Groups */
@@ -2286,80 +1985,80 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     case 0x7E: ld_r_iid(cpu, &cpu->regs.main.a, *ii); break;
 
     // add/adc/sub/sbc/and/xor/or/cp (ii+d)
-    case 0x86: add_a_iid(cpu, *ii); break;
-    case 0x8E: adc_a_iid(cpu, *ii); break;
-    case 0x96: sub_iid(cpu, *ii); break;
-    case 0x9E: sbc_a_iid(cpu, *ii); break;
-    case 0xA6: and_iid(cpu, *ii); break;
-    case 0xAE: xor_iid(cpu, *ii); break;
-    case 0xB6: or_iid(cpu, *ii); break;
-    case 0xBE: cp_iid(cpu, *ii); break;
+    case 0x86: alo_iid(cpu, *ii, 0); break;
+    case 0x8E: alo_iid(cpu, *ii, 1); break;
+    case 0x96: alo_iid(cpu, *ii, 2); break;
+    case 0x9E: alo_iid(cpu, *ii, 3); break;
+    case 0xA6: alo_iid(cpu, *ii, 4); break;
+    case 0xAE: alo_iid(cpu, *ii, 5); break;
+    case 0xB6: alo_iid(cpu, *ii, 6); break;
+    case 0xBE: alo_iid(cpu, *ii, 7); break;
 
     // non (ii+d) alo
     // add a
-    case 0x80: add_a_r(cpu, cpu->regs.main.b); break;
-    case 0x81: add_a_r(cpu, cpu->regs.main.c); break;
-    case 0x82: add_a_r(cpu, cpu->regs.main.d); break;
-    case 0x83: add_a_r(cpu, cpu->regs.main.e); break;
-    case 0x84: add_a_r(cpu, *ih); break;
-    case 0x85: add_a_r(cpu, *il); break;
-    case 0x87: add_a_r(cpu, cpu->regs.main.a); break;
+    case 0x80: alo_r(cpu, cpu->regs.main.b, 0); break;
+    case 0x81: alo_r(cpu, cpu->regs.main.c, 0); break;
+    case 0x82: alo_r(cpu, cpu->regs.main.d, 0); break;
+    case 0x83: alo_r(cpu, cpu->regs.main.e, 0); break;
+    case 0x84: alo_r(cpu, *ih, 0); break;
+    case 0x85: alo_r(cpu, *il, 0); break;
+    case 0x87: alo_r(cpu, cpu->regs.main.a, 0); break;
     // adc a
-    case 0x88: adc_a_r(cpu, cpu->regs.main.b); break;
-    case 0x89: adc_a_r(cpu, cpu->regs.main.c); break;
-    case 0x8A: adc_a_r(cpu, cpu->regs.main.d); break;
-    case 0x8B: adc_a_r(cpu, cpu->regs.main.e); break;
-    case 0x8C: adc_a_r(cpu, *ih); break;
-    case 0x8D: adc_a_r(cpu, *il); break;
-    case 0x8F: adc_a_r(cpu, cpu->regs.main.a); break;
+    case 0x88: alo_r(cpu, cpu->regs.main.b, 1); break;
+    case 0x89: alo_r(cpu, cpu->regs.main.c, 1); break;
+    case 0x8A: alo_r(cpu, cpu->regs.main.d, 1); break;
+    case 0x8B: alo_r(cpu, cpu->regs.main.e, 1); break;
+    case 0x8C: alo_r(cpu, *ih, 1); break;
+    case 0x8D: alo_r(cpu, *il, 1); break;
+    case 0x8F: alo_r(cpu, cpu->regs.main.a, 1); break;
     // sub
-    case 0x90: sub_r(cpu, cpu->regs.main.b); break;
-    case 0x91: sub_r(cpu, cpu->regs.main.c); break;
-    case 0x92: sub_r(cpu, cpu->regs.main.d); break;
-    case 0x93: sub_r(cpu, cpu->regs.main.e); break;
-    case 0x94: sub_r(cpu, *ih); break;
-    case 0x95: sub_r(cpu, *il); break;
-    case 0x97: sub_r(cpu, cpu->regs.main.a); break;
+    case 0x90: alo_r(cpu, cpu->regs.main.b, 2); break;
+    case 0x91: alo_r(cpu, cpu->regs.main.c, 2); break;
+    case 0x92: alo_r(cpu, cpu->regs.main.d, 2); break;
+    case 0x93: alo_r(cpu, cpu->regs.main.e, 2); break;
+    case 0x94: alo_r(cpu, *ih, 2); break;
+    case 0x95: alo_r(cpu, *il, 2); break;
+    case 0x97: alo_r(cpu, cpu->regs.main.a, 2); break;
     // sbc a
-    case 0x98: sbc_a_r(cpu, cpu->regs.main.b); break;
-    case 0x99: sbc_a_r(cpu, cpu->regs.main.c); break;
-    case 0x9A: sbc_a_r(cpu, cpu->regs.main.d); break;
-    case 0x9B: sbc_a_r(cpu, cpu->regs.main.e); break;
-    case 0x9C: sbc_a_r(cpu, *ih); break;
-    case 0x9D: sbc_a_r(cpu, *il); break;
-    case 0x9F: sbc_a_r(cpu, cpu->regs.main.a); break;
+    case 0x98: alo_r(cpu, cpu->regs.main.b, 3); break;
+    case 0x99: alo_r(cpu, cpu->regs.main.c, 3); break;
+    case 0x9A: alo_r(cpu, cpu->regs.main.d, 3); break;
+    case 0x9B: alo_r(cpu, cpu->regs.main.e, 3); break;
+    case 0x9C: alo_r(cpu, *ih, 3); break;
+    case 0x9D: alo_r(cpu, *il, 3); break;
+    case 0x9F: alo_r(cpu, cpu->regs.main.a, 3); break;
     // and
-    case 0xA0: and_r(cpu, cpu->regs.main.b); break;
-    case 0xA1: and_r(cpu, cpu->regs.main.c); break;
-    case 0xA2: and_r(cpu, cpu->regs.main.d); break;
-    case 0xA3: and_r(cpu, cpu->regs.main.e); break;
-    case 0xA4: and_r(cpu, *ih); break;
-    case 0xA5: and_r(cpu, *il); break;
-    case 0xA7: and_r(cpu, cpu->regs.main.a); break;
+    case 0xA0: alo_r(cpu, cpu->regs.main.b, 4); break;
+    case 0xA1: alo_r(cpu, cpu->regs.main.c, 4); break;
+    case 0xA2: alo_r(cpu, cpu->regs.main.d, 4); break;
+    case 0xA3: alo_r(cpu, cpu->regs.main.e, 4); break;
+    case 0xA4: alo_r(cpu, *ih, 4); break;
+    case 0xA5: alo_r(cpu, *il, 4); break;
+    case 0xA7: alo_r(cpu, cpu->regs.main.a, 4); break;
     // xor
-    case 0xA8: xor_r(cpu, cpu->regs.main.b); break;
-    case 0xA9: xor_r(cpu, cpu->regs.main.c); break;
-    case 0xAA: xor_r(cpu, cpu->regs.main.d); break;
-    case 0xAB: xor_r(cpu, cpu->regs.main.e); break;
-    case 0xAC: xor_r(cpu, *ih); break;
-    case 0xAD: xor_r(cpu, *il); break;
-    case 0xAF: xor_r(cpu, cpu->regs.main.a); break;
+    case 0xA8: alo_r(cpu, cpu->regs.main.b, 5); break;
+    case 0xA9: alo_r(cpu, cpu->regs.main.c, 5); break;
+    case 0xAA: alo_r(cpu, cpu->regs.main.d, 5); break;
+    case 0xAB: alo_r(cpu, cpu->regs.main.e, 5); break;
+    case 0xAC: alo_r(cpu, *ih, 5); break;
+    case 0xAD: alo_r(cpu, *il, 5); break;
+    case 0xAF: alo_r(cpu, cpu->regs.main.a, 5); break;
     // or
-    case 0xB0: or_r(cpu, cpu->regs.main.b); break;
-    case 0xB1: or_r(cpu, cpu->regs.main.c); break;
-    case 0xB2: or_r(cpu, cpu->regs.main.d); break;
-    case 0xB3: or_r(cpu, cpu->regs.main.e); break;
-    case 0xB4: or_r(cpu, *ih); break;
-    case 0xB5: or_r(cpu, *il); break;
-    case 0xB7: or_r(cpu, cpu->regs.main.a); break;
+    case 0xB0: alo_r(cpu, cpu->regs.main.b, 6); break;
+    case 0xB1: alo_r(cpu, cpu->regs.main.c, 6); break;
+    case 0xB2: alo_r(cpu, cpu->regs.main.d, 6); break;
+    case 0xB3: alo_r(cpu, cpu->regs.main.e, 6); break;
+    case 0xB4: alo_r(cpu, *ih, 6); break;
+    case 0xB5: alo_r(cpu, *il, 6); break;
+    case 0xB7: alo_r(cpu, cpu->regs.main.a, 6); break;
     // cp
-    case 0xB8: cp_r(cpu, cpu->regs.main.b); break;
-    case 0xB9: cp_r(cpu, cpu->regs.main.c); break;
-    case 0xBA: cp_r(cpu, cpu->regs.main.d); break;
-    case 0xBB: cp_r(cpu, cpu->regs.main.e); break;
-    case 0xBC: cp_r(cpu, *ih); break;
-    case 0xBD: cp_r(cpu, *il); break;
-    case 0xBF: cp_r(cpu, cpu->regs.main.a); break;
+    case 0xB8: alo_r(cpu, cpu->regs.main.b, 7); break;
+    case 0xB9: alo_r(cpu, cpu->regs.main.c, 7); break;
+    case 0xBA: alo_r(cpu, cpu->regs.main.d, 7); break;
+    case 0xBB: alo_r(cpu, cpu->regs.main.e, 7); break;
+    case 0xBC: alo_r(cpu, *ih, 7); break;
+    case 0xBD: alo_r(cpu, *il, 7); break;
+    case 0xBF: alo_r(cpu, cpu->regs.main.a, 7); break;
 
     // inc r
     case 0x04: inc_r(cpu, &cpu->regs.main.b); break;
@@ -2639,87 +2338,87 @@ void do_opcode(Z80_t *cpu)
     case 0x77: ld_rra_r(cpu, cpu->regs.main.hl, cpu->regs.main.a); break;
 
     // add a
-    case 0x80: add_a_r(cpu, cpu->regs.main.b); break;
-    case 0x81: add_a_r(cpu, cpu->regs.main.c); break;
-    case 0x82: add_a_r(cpu, cpu->regs.main.d); break;
-    case 0x83: add_a_r(cpu, cpu->regs.main.e); break;
-    case 0x84: add_a_r(cpu, cpu->regs.main.h); break;
-    case 0x85: add_a_r(cpu, cpu->regs.main.l); break;
-    case 0x86: add_a_rra(cpu, cpu->regs.main.hl); break;
-    case 0x87: add_a_r(cpu, cpu->regs.main.a); break;
+    case 0x80: alo_r(cpu, cpu->regs.main.b, 0); break;
+    case 0x81: alo_r(cpu, cpu->regs.main.c, 0); break;
+    case 0x82: alo_r(cpu, cpu->regs.main.d, 0); break;
+    case 0x83: alo_r(cpu, cpu->regs.main.e, 0); break;
+    case 0x84: alo_r(cpu, cpu->regs.main.h, 0); break;
+    case 0x85: alo_r(cpu, cpu->regs.main.l, 0); break;
+    case 0x86: alo_rra(cpu, cpu->regs.main.hl, 0); break;
+    case 0x87: alo_r(cpu, cpu->regs.main.a, 0); break;
     // adc a
-    case 0x88: adc_a_r(cpu, cpu->regs.main.b); break;
-    case 0x89: adc_a_r(cpu, cpu->regs.main.c); break;
-    case 0x8A: adc_a_r(cpu, cpu->regs.main.d); break;
-    case 0x8B: adc_a_r(cpu, cpu->regs.main.e); break;
-    case 0x8C: adc_a_r(cpu, cpu->regs.main.h); break;
-    case 0x8D: adc_a_r(cpu, cpu->regs.main.l); break;
-    case 0x8E: adc_a_rra(cpu, cpu->regs.main.hl); break;
-    case 0x8F: adc_a_r(cpu, cpu->regs.main.a); break;
+    case 0x88: alo_r(cpu, cpu->regs.main.b, 1); break;
+    case 0x89: alo_r(cpu, cpu->regs.main.c, 1); break;
+    case 0x8A: alo_r(cpu, cpu->regs.main.d, 1); break;
+    case 0x8B: alo_r(cpu, cpu->regs.main.e, 1); break;
+    case 0x8C: alo_r(cpu, cpu->regs.main.h, 1); break;
+    case 0x8D: alo_r(cpu, cpu->regs.main.l, 1); break;
+    case 0x8E: alo_rra(cpu, cpu->regs.main.hl, 1); break;
+    case 0x8F: alo_r(cpu, cpu->regs.main.a, 1); break;
     // sub
-    case 0x90: sub_r(cpu, cpu->regs.main.b); break;
-    case 0x91: sub_r(cpu, cpu->regs.main.c); break;
-    case 0x92: sub_r(cpu, cpu->regs.main.d); break;
-    case 0x93: sub_r(cpu, cpu->regs.main.e); break;
-    case 0x94: sub_r(cpu, cpu->regs.main.h); break;
-    case 0x95: sub_r(cpu, cpu->regs.main.l); break;
-    case 0x96: sub_rra(cpu, cpu->regs.main.hl); break;
-    case 0x97: sub_r(cpu, cpu->regs.main.a); break;
+    case 0x90: alo_r(cpu, cpu->regs.main.b, 2); break;
+    case 0x91: alo_r(cpu, cpu->regs.main.c, 2); break;
+    case 0x92: alo_r(cpu, cpu->regs.main.d, 2); break;
+    case 0x93: alo_r(cpu, cpu->regs.main.e, 2); break;
+    case 0x94: alo_r(cpu, cpu->regs.main.h, 2); break;
+    case 0x95: alo_r(cpu, cpu->regs.main.l, 2); break;
+    case 0x96: alo_rra(cpu, cpu->regs.main.hl, 2); break;
+    case 0x97: alo_r(cpu, cpu->regs.main.a, 2); break;
     // sbc a
-    case 0x98: sbc_a_r(cpu, cpu->regs.main.b); break;
-    case 0x99: sbc_a_r(cpu, cpu->regs.main.c); break;
-    case 0x9A: sbc_a_r(cpu, cpu->regs.main.d); break;
-    case 0x9B: sbc_a_r(cpu, cpu->regs.main.e); break;
-    case 0x9C: sbc_a_r(cpu, cpu->regs.main.h); break;
-    case 0x9D: sbc_a_r(cpu, cpu->regs.main.l); break;
-    case 0x9E: sbc_a_rra(cpu, cpu->regs.main.hl); break;
-    case 0x9F: sbc_a_r(cpu, cpu->regs.main.a); break;
+    case 0x98: alo_r(cpu, cpu->regs.main.b, 3); break;
+    case 0x99: alo_r(cpu, cpu->regs.main.c, 3); break;
+    case 0x9A: alo_r(cpu, cpu->regs.main.d, 3); break;
+    case 0x9B: alo_r(cpu, cpu->regs.main.e, 3); break;
+    case 0x9C: alo_r(cpu, cpu->regs.main.h, 3); break;
+    case 0x9D: alo_r(cpu, cpu->regs.main.l, 3); break;
+    case 0x9E: alo_rra(cpu, cpu->regs.main.hl, 3); break;
+    case 0x9F: alo_r(cpu, cpu->regs.main.a, 3); break;
     // and
-    case 0xA0: and_r(cpu, cpu->regs.main.b); break;
-    case 0xA1: and_r(cpu, cpu->regs.main.c); break;
-    case 0xA2: and_r(cpu, cpu->regs.main.d); break;
-    case 0xA3: and_r(cpu, cpu->regs.main.e); break;
-    case 0xA4: and_r(cpu, cpu->regs.main.h); break;
-    case 0xA5: and_r(cpu, cpu->regs.main.l); break;
-    case 0xA6: and_rra(cpu, cpu->regs.main.hl); break;
-    case 0xA7: and_r(cpu, cpu->regs.main.a); break;
+    case 0xA0: alo_r(cpu, cpu->regs.main.b, 4); break;
+    case 0xA1: alo_r(cpu, cpu->regs.main.c, 4); break;
+    case 0xA2: alo_r(cpu, cpu->regs.main.d, 4); break;
+    case 0xA3: alo_r(cpu, cpu->regs.main.e, 4); break;
+    case 0xA4: alo_r(cpu, cpu->regs.main.h, 4); break;
+    case 0xA5: alo_r(cpu, cpu->regs.main.l, 4); break;
+    case 0xA6: alo_rra(cpu, cpu->regs.main.hl, 4); break;
+    case 0xA7: alo_r(cpu, cpu->regs.main.a, 4); break;
     // xor
-    case 0xA8: xor_r(cpu, cpu->regs.main.b); break;
-    case 0xA9: xor_r(cpu, cpu->regs.main.c); break;
-    case 0xAA: xor_r(cpu, cpu->regs.main.d); break;
-    case 0xAB: xor_r(cpu, cpu->regs.main.e); break;
-    case 0xAC: xor_r(cpu, cpu->regs.main.h); break;
-    case 0xAD: xor_r(cpu, cpu->regs.main.l); break;
-    case 0xAE: xor_rra(cpu, cpu->regs.main.hl); break;
-    case 0xAF: xor_r(cpu, cpu->regs.main.a); break;
+    case 0xA8: alo_r(cpu, cpu->regs.main.b, 5); break;
+    case 0xA9: alo_r(cpu, cpu->regs.main.c, 5); break;
+    case 0xAA: alo_r(cpu, cpu->regs.main.d, 5); break;
+    case 0xAB: alo_r(cpu, cpu->regs.main.e, 5); break;
+    case 0xAC: alo_r(cpu, cpu->regs.main.h, 5); break;
+    case 0xAD: alo_r(cpu, cpu->regs.main.l, 5); break;
+    case 0xAE: alo_rra(cpu, cpu->regs.main.hl, 5); break;
+    case 0xAF: alo_r(cpu, cpu->regs.main.a, 5); break;
     // or
-    case 0xB0: or_r(cpu, cpu->regs.main.b); break;
-    case 0xB1: or_r(cpu, cpu->regs.main.c); break;
-    case 0xB2: or_r(cpu, cpu->regs.main.d); break;
-    case 0xB3: or_r(cpu, cpu->regs.main.e); break;
-    case 0xB4: or_r(cpu, cpu->regs.main.h); break;
-    case 0xB5: or_r(cpu, cpu->regs.main.l); break;
-    case 0xB6: or_rra(cpu, cpu->regs.main.hl); break;
-    case 0xB7: or_r(cpu, cpu->regs.main.a); break;
+    case 0xB0: alo_r(cpu, cpu->regs.main.b, 6); break;
+    case 0xB1: alo_r(cpu, cpu->regs.main.c, 6); break;
+    case 0xB2: alo_r(cpu, cpu->regs.main.d, 6); break;
+    case 0xB3: alo_r(cpu, cpu->regs.main.e, 6); break;
+    case 0xB4: alo_r(cpu, cpu->regs.main.h, 6); break;
+    case 0xB5: alo_r(cpu, cpu->regs.main.l, 6); break;
+    case 0xB6: alo_rra(cpu, cpu->regs.main.hl, 6); break;
+    case 0xB7: alo_r(cpu, cpu->regs.main.a, 6); break;
     // cp
-    case 0xB8: cp_r(cpu, cpu->regs.main.b); break;
-    case 0xB9: cp_r(cpu, cpu->regs.main.c); break;
-    case 0xBA: cp_r(cpu, cpu->regs.main.d); break;
-    case 0xBB: cp_r(cpu, cpu->regs.main.e); break;
-    case 0xBC: cp_r(cpu, cpu->regs.main.h); break;
-    case 0xBD: cp_r(cpu, cpu->regs.main.l); break;
-    case 0xBE: cp_rra(cpu, cpu->regs.main.hl); break;
-    case 0xBF: cp_r(cpu, cpu->regs.main.a); break;
+    case 0xB8: alo_r(cpu, cpu->regs.main.b, 7); break;
+    case 0xB9: alo_r(cpu, cpu->regs.main.c, 7); break;
+    case 0xBA: alo_r(cpu, cpu->regs.main.d, 7); break;
+    case 0xBB: alo_r(cpu, cpu->regs.main.e, 7); break;
+    case 0xBC: alo_r(cpu, cpu->regs.main.h, 7); break;
+    case 0xBD: alo_r(cpu, cpu->regs.main.l, 7); break;
+    case 0xBE: alo_rra(cpu, cpu->regs.main.hl, 7); break;
+    case 0xBF: alo_r(cpu, cpu->regs.main.a, 7); break;
 
     // add/adc/sub/sbc/and/xor/or/cp n
-    case 0xC6: add_a_n(cpu); break;
-    case 0xCE: adc_a_n(cpu); break;
-    case 0xD6: sub_n(cpu); break;
-    case 0xDE: sbc_a_n(cpu); break;
-    case 0xE6: and_n(cpu); break;
-    case 0xEE: xor_n(cpu); break;
-    case 0xF6: or_n(cpu); break;
-    case 0xFE: cp_n(cpu); break;
+    case 0xC6: alo_n(cpu, 0); break;
+    case 0xCE: alo_n(cpu, 1); break;
+    case 0xD6: alo_n(cpu, 2); break;
+    case 0xDE: alo_n(cpu, 3); break;
+    case 0xE6: alo_n(cpu, 4); break;
+    case 0xEE: alo_n(cpu, 5); break;
+    case 0xF6: alo_n(cpu, 6); break;
+    case 0xFE: alo_n(cpu, 7); break;
 
     // djnz
     case 0x10: djnz_d(cpu); break;
