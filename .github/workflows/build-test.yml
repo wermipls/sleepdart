@@ -14,7 +14,7 @@ jobs:
       with: 
         submodules: recursive
     - name: set up packages
-      run: sudo apt install gcc libsdl2-dev xxhash
+      run: sudo apt install gcc libsdl2-dev libxxhash-dev
     - name: build release
       run: ./build.sh
     - name: run tests
