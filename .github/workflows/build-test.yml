@@ -20,4 +20,5 @@ jobs:
     - name: run tests
       run: |
         echo "limit-fps=0" > ./config.ini
+        SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
         ./run_tests.sh
