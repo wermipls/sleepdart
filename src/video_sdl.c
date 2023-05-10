@@ -183,7 +183,7 @@ int video_sdl_init(const char *title, int width, int height, int scale)
     renderer = SDL_CreateRenderer(
         window,
         -1, // rendering driver index
-        SDL_RENDERER_ACCELERATED);
+        0);
 
     if (renderer == NULL)
     {
