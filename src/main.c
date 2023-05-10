@@ -86,7 +86,12 @@ int main(int argc, char *argv[])
 
     char *testpath = argparser_get(parser, "test");
     if (testpath) {
-        machine_test_open(testpath);
+        int err = machine_test_open(testpath);
+        if (err) {
+            dlog(LOG_ERRSILENT, "Failed to run test!");
+            machine_test_close();
+            return 2;
+        }
     }
 
     char *file = argparser_get(parser, "file");

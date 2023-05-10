@@ -244,7 +244,8 @@ int machine_test_open(const char *path)
         file_path_append(buf, path, "print.txt.tmp", sizeof(buf));
         test.print = fopen(buf, "wb+");
         if (test.print == NULL) {
-            dlog(LOG_WARN, "Failed to open file \"%s\" for write", buf);
+            dlog(LOG_ERR, "Failed to open file \"%s\" for write", buf);
+            return -8;
         }
         machine_set_print_stream(test.print);
     }
@@ -256,6 +257,7 @@ int machine_test_open(const char *path)
         test.macro = parse_macro(buf);
         if (test.macro == NULL) {
             dlog(LOG_WARN, "Failed to parse macro file \"%s\"", buf);
+            return -8;
         } else {
             keyboard_macro_play(test.macro, vector_len(test.macro));
         }
