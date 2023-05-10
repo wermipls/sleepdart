@@ -2,12 +2,12 @@ name: build and test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "github-actions" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  build-test:
+  linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -17,6 +17,11 @@ jobs:
       run: sudo apt install gcc libsdl2-dev libxxhash-dev
     - name: build release
       run: ./build.sh
+    - name: upload build
+      uses: actions/upload-artifact@v3
+      with:
+        name: sleepdart-linux
+        path: sleepdart
     - name: run tests
       run: |
         echo "limit-fps=0" > ./config.ini
