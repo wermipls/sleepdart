@@ -232,14 +232,7 @@ char *file_read_line(FILE *f)
     size_t str_len = 0;
     size_t offset = 0;
     while (fgets(buf, sizeof(buf), f)) {
-        char *eol = strchr(buf, '\n');
-        size_t len;
-        if (eol) {
-            len = eol - buf;
-        } else {
-            char *end = strchr(buf, '\0');
-            len = end - buf;
-        }
+        size_t len = strcspn(buf, "\r\n");
         str_len += len;
         char *str_new = realloc(str, str_len+1);
         if (str_new == NULL) {
@@ -251,7 +244,7 @@ char *file_read_line(FILE *f)
         strncpy(&str[offset], buf, len);
         offset = str_len;
         str[str_len] = 0;
-        if (eol) {
+        if (len < sizeof(buf)-1) {
             break;
         }
     }
