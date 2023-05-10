@@ -1342,125 +1342,46 @@ void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 
 /* Rotate and Shift Group */
 
-/* helpers */
-static inline uint8_t rlc(Z80_t *cpu, uint8_t value)
+static inline uint8_t sro(Z80_t *cpu, uint8_t value, uint8_t op)
 {
-    value = (value<<1) | (value>>7);
-    cpu->regs.main.flags.c = value & 1;
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t rrc(Z80_t *cpu, uint8_t value)
-{
-    cpu->regs.main.flags.c = value & 1;
-    value = (value>>1) | (value<<7);
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t rl(Z80_t *cpu, uint8_t value)
-{
-    bool c_new = (value>>7);
-    value = (value<<1) | cpu->regs.main.flags.c;
-    cpu->regs.main.flags.c = c_new;
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t rr(Z80_t *cpu, uint8_t value)
-{
-    bool c_new = value & 1;
-    value = (value>>1) | (cpu->regs.main.flags.c<<7);
-    cpu->regs.main.flags.c = c_new;
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t sla(Z80_t *cpu, uint8_t value)
-{
-    cpu->regs.main.flags.c = value>>7;
-    value = (value<<1);
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t sra(Z80_t *cpu, uint8_t value)
-{
-    cpu->regs.main.flags.c = value & 1;
-    value = ((value & (1<<7)) | (value>>1));
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t sll(Z80_t *cpu, uint8_t value)
-{
-    cpu->regs.main.flags.c = value>>7;
-    value = (value<<1) | 1;
-
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
-    cpu->regs.main.flags.h = 0;
-    cpu->regs.main.flags.pv = get_parity(value);
-    cpu->regs.main.flags.n = 0;
-
-    return value;
-}
-
-static inline uint8_t srl(Z80_t *cpu, uint8_t value)
-{
-    cpu->regs.main.flags.c = value & 1;
-    value = (value>>1);
+    bool c_new;
+    switch (op)
+    {
+    case 0: // rlc
+        value = (value<<1) | (value>>7);
+        cpu->regs.main.flags.c = value & 1;
+        break;
+    case 1: // rrc
+        cpu->regs.main.flags.c = value & 1;
+        value = (value>>1) | (value<<7);
+        break;
+    case 2: // rl
+        c_new = (value>>7);
+        value = (value<<1) | cpu->regs.main.flags.c;
+        cpu->regs.main.flags.c = c_new;
+        break;
+    case 3: // rr
+        c_new = value & 1;
+        value = (value>>1) | (cpu->regs.main.flags.c<<7);
+        cpu->regs.main.flags.c = c_new;
+        break;
+    case 4: // sla
+        cpu->regs.main.flags.c = value>>7;
+        value = (value<<1);
+        break;
+    case 5:
+        cpu->regs.main.flags.c = value & 1;
+        value = ((value & (1<<7)) | (value>>1));
+        break;
+    case 6:
+        cpu->regs.main.flags.c = value>>7;
+        value = (value<<1) | 1;
+        break;
+    case 7:
+        cpu->regs.main.flags.c = value & 1;
+        value = (value>>1);
+        break;
+    }
 
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
@@ -1539,16 +1460,14 @@ void rra(Z80_t *cpu)
     cpu->regs.main.flags.n = 0;
 }
 
-
-
-void rlc_r(Z80_t *cpu, uint8_t *dest)
+static void sro_r(Z80_t *cpu, uint8_t *dest, uint8_t op)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
-    *dest = rlc(cpu, *dest);
+    *dest = sro(cpu, *dest, op);
 }
 
-void rlc_rra(Z80_t *cpu, uint16_t addr)
+static void sro_rra(Z80_t *cpu, uint16_t addr, uint8_t op)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1556,12 +1475,12 @@ void rlc_rra(Z80_t *cpu, uint16_t addr)
     cpu->cycles += 3;
     cpu_read(cpu, addr); // hl:1
     cpu->cycles += 1;
-    value = rlc(cpu, value);
+    value = sro(cpu, value, op);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
 }
 
-void rlc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
+static void sro_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t op)
 {
     cpu->cycles += 3;
     // pc+3:1 x2
@@ -1572,273 +1491,7 @@ void rlc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
     cpu->cycles += 3;
     cpu_read(cpu, addr); // ii+d:1
     cpu->cycles += 1;
-    value = rlc(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void rrc_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = rrc(cpu, *dest);
-}
-
-void rrc_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = rrc(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void rrc_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = rrc(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void rl_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = rl(cpu, *dest);
-}
-
-void rl_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = rl(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void rl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = rl(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void rr_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = rr(cpu, *dest);
-}
-
-void rr_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = rr(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void rr_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = rr(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void sla_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = sla(cpu, *dest);
-}
-
-void sla_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = sla(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void sla_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = sla(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void sra_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = sra(cpu, *dest);
-}
-
-void sra_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = sra(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void sra_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = sra(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void sll_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = sll(cpu, *dest);
-}
-
-void sll_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = sll(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void sll_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = sll(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-    if (dest) *dest = value;
-}
-
-
-void srl_r(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    *dest = srl(cpu, *dest);
-}
-
-void srl_rra(Z80_t *cpu, uint16_t addr)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // hl:1
-    cpu->cycles += 1;
-    value = srl(cpu, value);
-    cpu_write(cpu, addr, value);
-    cpu->cycles += 3;
-}
-
-void srl_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest)
-{
-    cpu->cycles += 3;
-    // pc+3:1 x2
-    cpu_memory_stall(cpu, cpu->regs.pc, 2);
-
-    cpu->regs.pc++;
-    uint8_t value = cpu_read(cpu, addr);
-    cpu->cycles += 3;
-    cpu_read(cpu, addr); // ii+d:1
-    cpu->cycles += 1;
-    value = srl(cpu, value);
+    value = sro(cpu, value, op);
     cpu_write(cpu, addr, value);
     cpu->cycles += 3;
     if (dest) *dest = value;
@@ -2422,14 +2075,14 @@ void do_cb(Z80_t *cpu)
     if (reg == 6) { // (hl)
         switch (op_partial) 
         {
-            case 0x00: rlc_rra(cpu, cpu->regs.main.hl); break;
-            case 0x01: rrc_rra(cpu, cpu->regs.main.hl); break;
-            case 0x02: rl_rra(cpu, cpu->regs.main.hl); break;
-            case 0x03: rr_rra(cpu, cpu->regs.main.hl); break;
-            case 0x04: sla_rra(cpu, cpu->regs.main.hl); break;
-            case 0x05: sra_rra(cpu, cpu->regs.main.hl); break;
-            case 0x06: sll_rra(cpu, cpu->regs.main.hl); break;
-            case 0x07: srl_rra(cpu, cpu->regs.main.hl); break;
+            case 0x00: sro_rra(cpu, cpu->regs.main.hl, 0); break;
+            case 0x01: sro_rra(cpu, cpu->regs.main.hl, 1); break;
+            case 0x02: sro_rra(cpu, cpu->regs.main.hl, 2); break;
+            case 0x03: sro_rra(cpu, cpu->regs.main.hl, 3); break;
+            case 0x04: sro_rra(cpu, cpu->regs.main.hl, 4); break;
+            case 0x05: sro_rra(cpu, cpu->regs.main.hl, 5); break;
+            case 0x06: sro_rra(cpu, cpu->regs.main.hl, 6); break;
+            case 0x07: sro_rra(cpu, cpu->regs.main.hl, 7); break;
             // bit
             case 0x08: bit_rra(cpu, cpu->regs.main.hl, 0); break;
             case 0x09: bit_rra(cpu, cpu->regs.main.hl, 1); break;
@@ -2463,14 +2116,14 @@ void do_cb(Z80_t *cpu)
 
         switch (op_partial) 
         {
-            case 0x00: rlc_r(cpu, regptr); break;
-            case 0x01: rrc_r(cpu, regptr); break;
-            case 0x02: rl_r(cpu, regptr); break;
-            case 0x03: rr_r(cpu, regptr); break;
-            case 0x04: sla_r(cpu, regptr); break;
-            case 0x05: sra_r(cpu, regptr); break;
-            case 0x06: sll_r(cpu, regptr); break;
-            case 0x07: srl_r(cpu, regptr); break;
+            case 0x00: sro_r(cpu, regptr, 0); break;
+            case 0x01: sro_r(cpu, regptr, 1); break;
+            case 0x02: sro_r(cpu, regptr, 2); break;
+            case 0x03: sro_r(cpu, regptr, 3); break;
+            case 0x04: sro_r(cpu, regptr, 4); break;
+            case 0x05: sro_r(cpu, regptr, 5); break;
+            case 0x06: sro_r(cpu, regptr, 6); break;
+            case 0x07: sro_r(cpu, regptr, 7); break;
             // bit
             case 0x08: bit_r(cpu, *regptr, 0); break;
             case 0x09: bit_r(cpu, *regptr, 1); break;
@@ -2535,14 +2188,14 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
 
     switch (op_partial)
     {
-        case 0x00: rlc_iid_r(cpu, addr, regptr); break;
-        case 0x01: rrc_iid_r(cpu, addr, regptr); break;
-        case 0x02: rl_iid_r(cpu, addr, regptr); break;
-        case 0x03: rr_iid_r(cpu, addr, regptr); break;
-        case 0x04: sla_iid_r(cpu, addr, regptr); break;
-        case 0x05: sra_iid_r(cpu, addr, regptr); break;
-        case 0x06: sll_iid_r(cpu, addr, regptr); break;
-        case 0x07: srl_iid_r(cpu, addr, regptr); break;
+        case 0x00: sro_iid_r(cpu, addr, regptr, 0); break;
+        case 0x01: sro_iid_r(cpu, addr, regptr, 1); break;
+        case 0x02: sro_iid_r(cpu, addr, regptr, 2); break;
+        case 0x03: sro_iid_r(cpu, addr, regptr, 3); break;
+        case 0x04: sro_iid_r(cpu, addr, regptr, 4); break;
+        case 0x05: sro_iid_r(cpu, addr, regptr, 5); break;
+        case 0x06: sro_iid_r(cpu, addr, regptr, 6); break;
+        case 0x07: sro_iid_r(cpu, addr, regptr, 7); break;
         // bit
         case 0x08: bit_iid(cpu, addr, 0); break;
         case 0x09: bit_iid(cpu, addr, 1); break;
