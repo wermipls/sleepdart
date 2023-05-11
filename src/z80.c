@@ -996,7 +996,9 @@ void dec_rr(Z80_t *cpu, uint16_t *dest)
 void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest + value;
-    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x1000;
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
     cpu->regs.q = true;
@@ -1012,9 +1014,11 @@ void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest + value + cpu->regs.main.flags.c;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
     cpu->regs.main.flags.s = result & (1<<15);
     cpu->regs.main.flags.z = !(result & 0xFFFF);
-    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x1000;
     cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
@@ -1031,9 +1035,11 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     uint32_t result = (uint32_t)*dest - value - cpu->regs.main.flags.c;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
     cpu->regs.main.flags.s = result & (1<<15);
     cpu->regs.main.flags.z = !(result & 0xFFFF);
-    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
+    cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x1000;
     cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, true);
     cpu->regs.main.flags.n = 1;
     cpu->regs.main.flags.c = *dest < ((uint32_t)value + cpu->regs.main.flags.c);
