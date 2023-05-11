@@ -916,10 +916,12 @@ void cpl(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+    cpu->regs.main.a ^= 0xFF;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (cpu->regs.main.a & MASK_FLAG_XY);
     cpu->regs.main.flags.h = 1;
     cpu->regs.main.flags.n = 1;
     cpu->regs.q = true;
-    cpu->regs.main.a ^= 0xFF;
 }
 
 void neg(Z80_t *cpu)
