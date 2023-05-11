@@ -16,9 +16,9 @@ struct Z80RegsMain {
                     bool c  : 1;
                     bool n  : 1;
                     bool pv : 1;
-                    bool y  : 1;
+                    bool x  : 1;
                     bool h  : 1;
-                    bool x  : 1; 
+                    bool y  : 1; 
                     bool z  : 1;
                     bool s  : 1;
                 } flags;
@@ -76,6 +76,15 @@ struct Z80Regs {
     uint8_t r;
     uint16_t sp;
     uint16_t pc;
+
+    union {
+        uint16_t memptr;
+        struct {
+            uint8_t z;
+            uint8_t w;
+        };
+    };
+
     bool iff1, iff2, q, q_old;
     uint8_t im;
 };

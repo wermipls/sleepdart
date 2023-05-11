@@ -132,6 +132,15 @@ void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
     cpu->regs.pc += 1;
 }
 
+void ld_a_rra(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.main.a = cpu_read(cpu, addr);
+    cpu->regs.memptr = addr+1;
+    cpu->cycles += 3;
+    cpu->regs.pc += 1;
+}
+
 /* LD r, n */
 void ld_r_n(Z80_t *cpu, uint8_t *dest)
 {
@@ -154,6 +163,22 @@ void ld_r_nna(Z80_t *cpu, uint8_t *dest)
     cpu->cycles += 3;
     cpu->regs.pc++;
     *dest = cpu_read(cpu, MAKE16(l, h));
+    cpu->cycles += 3;
+}
+
+void ld_a_nna(Z80_t *cpu, uint8_t *dest)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint8_t h = cpu_read(cpu, cpu->regs.pc);
+    cpu->cycles += 3;
+    cpu->regs.pc++;
+    uint16_t addr = MAKE16(l, h);
+    cpu->regs.memptr = addr;
+    *dest = cpu_read(cpu, addr);
     cpu->cycles += 3;
 }
 
@@ -209,6 +234,8 @@ void ld_nna_a(Z80_t *cpu)
     cpu->regs.pc++;
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
     int16_t addr = MAKE16(l, h);
+    cpu->regs.z = (addr + 1) & 0xFF;
+    cpu->regs.w = cpu->regs.main.a;
     cpu->cycles += 3;
     cpu->regs.pc++;
     cpu_write(cpu, addr, cpu->regs.main.a);
@@ -224,6 +251,16 @@ void ld_rra_r(Z80_t *cpu, uint16_t addr, uint8_t value)
     cpu->cycles += 3;
 }
 
+void ld_rra_a(Z80_t *cpu, uint16_t addr)
+{
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu_write(cpu, addr, cpu->regs.main.a);
+    cpu->regs.w = cpu->regs.main.a;
+    cpu->regs.z = (addr+1) & 0xFF;
+    cpu->cycles += 3;
+}
+
 /* LD (ii+d), r */
 void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
@@ -231,6 +268,7 @@ void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
+    cpu->regs.memptr = addr;
     cpu->cycles += 3;
 
     // pc+2:1 x5
@@ -248,6 +286,7 @@ void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
+    cpu->regs.memptr = addr;
     cpu->cycles += 3;
 
     // pc+2:1 x5
@@ -265,6 +304,7 @@ void ld_iid_n(Z80_t *cpu, uint16_t addr)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
+    cpu->regs.memptr = addr;
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.pc);
@@ -309,7 +349,8 @@ void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
     cpu->regs.pc++;
     l = cpu_read(cpu, addr);
     cpu->cycles += 3;
-    h = cpu_read(cpu, addr+1);
+    h = cpu_read(cpu, ++addr);
+    cpu->regs.memptr = addr;
     cpu->cycles += 3;
     *dest = MAKE16(l, h);
 }
@@ -328,8 +369,9 @@ void ld_nna_rr(Z80_t *cpu, uint16_t value)
     cpu->regs.pc++;
     cpu_write(cpu, addr, LOW8(value));
     cpu->cycles += 3;
-    cpu_write(cpu, addr+1, HIGH8(value));
+    cpu_write(cpu, ++addr, HIGH8(value));
     cpu->cycles += 3;
+    cpu->regs.memptr = addr;
 }
 
 void ld_sp_rr(Z80_t *cpu, uint16_t value)
@@ -446,7 +488,7 @@ void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
     // sp(write):1 x2
     cpu_memory_stall(cpu, cpu->regs.sp, 2);
 
-    *dest = MAKE16(l, h);
+    cpu->regs.memptr = *dest = MAKE16(l, h);
 }
 
 /* LDI/LDD */
@@ -466,6 +508,9 @@ void ldx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.de += increment;
     cpu->regs.main.bc--;
 
+    uint8_t n = value + cpu->regs.main.a;
+    cpu->regs.main.flags.y = n & (1<<1);
+    cpu->regs.main.flags.x = n & (1<<3);
     cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
@@ -479,6 +524,7 @@ void ldxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.bc != 0) {
         cpu->regs.pc -= 2;
+        cpu->regs.memptr = cpu->regs.pc;
         // de:1 x5
         cpu_memory_stall(cpu, cpu->regs.main.de, 5);
     }
@@ -493,13 +539,14 @@ void cpx(Z80_t *cpu, int8_t increment)
     cpu->cycles += 3;
     cpu->regs.main.bc--;
     cpu->regs.main.hl += increment;
+    cpu->regs.memptr += increment;
 
     // hl:1 x5
     cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
 
     bool c = cpu->regs.main.flags.c;
     alo(cpu, value, 7);
-    uint8_t n = cpu->regs.main.a - value - cpu->regs.main.h;
+    uint8_t n = cpu->regs.main.a - value - cpu->regs.main.flags.h;
     cpu->regs.main.flags.y = n & (1<<1);
     cpu->regs.main.flags.x = n & (1<<3); 
     cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
@@ -514,6 +561,7 @@ void cpxr(Z80_t *cpu, int8_t increment)
 
     if (cpu->regs.main.bc != 0 && !cpu->regs.main.flags.z) {
         cpu->regs.pc -= 2;
+        cpu->regs.memptr = cpu->regs.pc + 1;
         // hl:1 x5
         cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
     }
@@ -533,6 +581,9 @@ void outx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.hl += increment;
 
     cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
+
+    cpu->regs.memptr = cpu->regs.main.bc + increment;
+
     uint16_t k = cpu->regs.main.l + value;
     cpu->regs.main.flags.h = k > 255;
     cpu->regs.main.flags.c = k > 255;
@@ -560,6 +611,8 @@ void inx(Z80_t *cpu, int8_t increment)
     cpu->regs.pc++;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
     cpu->cycles += 1;
+
+    cpu->regs.memptr = cpu->regs.main.bc + increment;
 
     cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
 
@@ -641,6 +694,7 @@ void inc_iid(Z80_t *cpu, uint16_t addr)
 
     cpu->regs.pc++;
     addr += d;
+    cpu->regs.memptr = addr;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
     cpu_read(cpu, addr); // ii+n:1
@@ -700,6 +754,7 @@ void dec_iid(Z80_t *cpu, uint16_t addr)
 
     cpu->regs.pc++;
     addr += d;
+    cpu->regs.memptr = addr;
     uint8_t value = cpu_read(cpu, addr);
     cpu->cycles += 3;
     cpu_read(cpu, addr); // ii+n:1
@@ -865,6 +920,7 @@ static void alo_iid(Z80_t *cpu, uint16_t addr, uint8_t op)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     addr += d;
+    cpu->regs.memptr = addr;
     cpu->cycles += 3;
 
     // pc+2:1 x5
@@ -997,6 +1053,7 @@ void dec_rr(Z80_t *cpu, uint16_t *dest)
 
 void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
+    cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest + value;
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
@@ -1015,6 +1072,7 @@ void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 
 void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
+    cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest + value + cpu->regs.main.flags.c;
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
@@ -1036,6 +1094,7 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 
 void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
+    cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest - value - cpu->regs.main.flags.c;
     cpu->regs.main.f &= ~MASK_FLAG_XY;
     cpu->regs.main.f |= (result >> 8) & MASK_FLAG_XY;
@@ -1241,6 +1300,8 @@ void rld(Z80_t *cpu)
     cpu->regs.main.flags.n = 0;
     cpu->regs.q = true;
 
+    cpu->regs.memptr = cpu->regs.main.hl + 1;
+
     cpu_write(cpu, cpu->regs.main.hl, value);
     cpu->cycles += 3;
 }
@@ -1269,6 +1330,8 @@ void rrd(Z80_t *cpu)
     cpu->regs.main.flags.n = 0;
     cpu->regs.q = true;
 
+    cpu->regs.memptr = cpu->regs.main.hl + 1;
+
     cpu_write(cpu, cpu->regs.main.hl, value);
     cpu->cycles += 3;
 }
@@ -1280,8 +1343,6 @@ static inline void bit_(Z80_t *cpu, uint8_t value, uint8_t bit)
 {
     uint8_t mask = (1<<bit);
     value &= mask;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 1;
@@ -1295,6 +1356,8 @@ void bit_r(Z80_t *cpu, uint8_t value, uint8_t bit)
     cpu->cycles += 4;
     cpu->regs.pc++;
     bit_(cpu, value, bit);
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
 }
 
 void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
@@ -1306,6 +1369,8 @@ void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu_read(cpu, addr); // hl:1
     cpu->cycles += 1;
     bit_(cpu, value, bit);
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (cpu->regs.w & MASK_FLAG_XY);
 }
 
 void bit_iid(Z80_t *cpu, uint16_t addr, uint8_t bit)
@@ -1320,6 +1385,8 @@ void bit_iid(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu_read(cpu, addr); // ii+d:1
     cpu->cycles += 1;
     bit_(cpu, value, bit);
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (cpu->regs.w & MASK_FLAG_XY);
 }
 
 static inline uint8_t res(uint8_t value, uint8_t bit)
@@ -1423,8 +1490,9 @@ void jp_cc_nn(Z80_t *cpu, bool cc)
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
+    cpu->regs.memptr = MAKE16(l, h);
     if (cc) {
-        cpu->regs.pc = MAKE16(l, h);
+        cpu->regs.pc = cpu->regs.memptr;
     }
 }
 
@@ -1436,6 +1504,7 @@ void jr_cc_d(Z80_t *cpu, bool cc)
     cpu->cycles += 3;
     if (cc) {
         cpu->regs.pc += offset;
+        cpu->regs.memptr = cpu->regs.pc;
         // pc+1:1 x5
         cpu_memory_stall(cpu, cpu->regs.pc, 5);
     }
@@ -1446,6 +1515,7 @@ void jp_rr(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc = addr;
+    cpu->regs.memptr = cpu->regs.pc;
 }
 
 void djnz_d(Z80_t *cpu)
@@ -1462,6 +1532,7 @@ void djnz_d(Z80_t *cpu)
         cpu_memory_stall(cpu, cpu->regs.pc, 5);
 
         cpu->regs.pc += offset;
+        cpu->regs.memptr = cpu->regs.pc;
     }
     cpu->regs.pc++;
 }
@@ -1478,6 +1549,7 @@ void call_cc_nn(Z80_t *cpu, bool cc)
     uint8_t h = cpu_read(cpu, cpu->regs.pc);
     cpu->cycles += 3;
     cpu->regs.pc++;
+    cpu->regs.memptr = MAKE16(l, h);
     if (cc) {
         cpu_read(cpu, cpu->regs.pc); // pc+2:1
         cpu->cycles++;
@@ -1487,7 +1559,7 @@ void call_cc_nn(Z80_t *cpu, bool cc)
         cpu->regs.sp--;
         cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
         cpu->cycles += 3;
-        cpu->regs.pc = MAKE16(l, h);
+        cpu->regs.pc = cpu->regs.memptr;
     }
 }
 
@@ -1506,6 +1578,7 @@ void ret_cc(Z80_t *cpu, bool cc)
         cpu->cycles += 3;
         cpu->regs.sp++;
         cpu->regs.pc = MAKE16(l, h);
+        cpu->regs.memptr = cpu->regs.pc;
     }
 }
 
@@ -1522,6 +1595,7 @@ void rst(Z80_t *cpu, uint8_t offset)
     cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
     cpu->cycles += 3;
     cpu->regs.pc = offset;
+    cpu->regs.memptr = cpu->regs.pc;
 }
 
 
@@ -1533,6 +1607,8 @@ void out_na_a(Z80_t *cpu)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t l = cpu_read(cpu, cpu->regs.pc);
+    cpu->regs.w = cpu->regs.main.a;
+    cpu->regs.z = (l + 1) & 0xFF;
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint16_t addr = MAKE16(l, cpu->regs.main.a);
@@ -1544,6 +1620,7 @@ void out_c_r(Z80_t *cpu, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+    cpu->regs.memptr = cpu->regs.main.bc+1;
     cpu_out(cpu, cpu->regs.main.bc, value);
     cpu->cycles += 4;
 }
@@ -1552,6 +1629,7 @@ void in_r_c(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
+    cpu->regs.memptr = cpu->regs.main.bc+1; // FIXME: dunno about correctness
     uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
     if (dest) *dest = value; 
     cpu->cycles += 4;
@@ -1572,6 +1650,7 @@ void in_a_na(Z80_t *cpu)
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint16_t addr = MAKE16(l, cpu->regs.main.a);
+    cpu->regs.memptr = addr+1;
     uint8_t value = cpu_in(cpu, addr);
     cpu->regs.main.a = value;
     cpu->cycles += 4;
@@ -1900,6 +1979,7 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     uint16_t addr = *ii + d;
+    cpu->regs.memptr = addr; 
 
     cpu->cycles += 3;
     cpu->regs.pc++;
@@ -2215,13 +2295,13 @@ void do_opcode(Z80_t *cpu)
     case 0x31: ld_rr_nn(cpu, &cpu->regs.sp); break;
 
     // ld (rr), a
-    case 0x02: ld_rra_r(cpu, cpu->regs.main.bc, cpu->regs.main.a); break;
-    case 0x12: ld_rra_r(cpu, cpu->regs.main.de, cpu->regs.main.a); break;
+    case 0x02: ld_rra_a(cpu, cpu->regs.main.bc); break;
+    case 0x12: ld_rra_a(cpu, cpu->regs.main.de); break;
     // ld a, (rr)
-    case 0x0A: ld_r_rra(cpu, &cpu->regs.main.a, cpu->regs.main.bc); break;
-    case 0x1A: ld_r_rra(cpu, &cpu->regs.main.a, cpu->regs.main.de); break;
+    case 0x0A: ld_a_rra(cpu, cpu->regs.main.bc); break;
+    case 0x1A: ld_a_rra(cpu, cpu->regs.main.de); break;
     // ld a, (nn)
-    case 0x3A: ld_r_nna(cpu, &cpu->regs.main.a); break;
+    case 0x3A: ld_a_nna(cpu, &cpu->regs.main.a); break;
 
     // inc rr
     case 0x03: inc_rr(cpu, &cpu->regs.main.bc); break;
@@ -2593,6 +2673,7 @@ int cpu_do_cycles(Z80_t *cpu)
             cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
             cpu->cycles += 3;
             cpu->regs.pc = 0x38;
+            cpu->regs.memptr = cpu->regs.pc;
             break;
         case 2:
             cpu->regs.iff1 = 0;
@@ -2610,6 +2691,7 @@ int cpu_do_cycles(Z80_t *cpu)
             uint8_t h = cpu_read(cpu, addr+1);
             addr = MAKE16(l, h);
             cpu->regs.pc = addr;
+            cpu->regs.memptr = cpu->regs.pc;
             cpu->cycles += 3;
             break;
         }
