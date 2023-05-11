@@ -107,21 +107,8 @@ static inline void inc_refresh(Z80_t *cpu)
     cpu->regs.r = (cpu->regs.r & (1<<7)) | r;
 }
 
-/* SUB helper */
-static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
-{
-    uint8_t result = a - value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (result & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = result & (1<<7);
-    cpu->regs.main.flags.z = !result;
-    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0, true);
-    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
-    cpu->regs.main.flags.c = (a < value);
-    cpu->regs.main.flags.n = 1;
-    return result;
-}
-
+static inline void alo(Z80_t *cpu, uint8_t value, const uint8_t op);
+static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value);
 static inline uint8_t dec8(Z80_t *cpu, uint8_t value);
 
 /* instruction implementations */
@@ -509,7 +496,7 @@ void cpx(Z80_t *cpu, int8_t increment)
     cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
 
     bool c = cpu->regs.main.flags.c;
-    sub8(cpu, cpu->regs.main.a, value);
+    alo(cpu, value, 7);
     uint8_t n = cpu->regs.main.a - value - cpu->regs.main.h;
     cpu->regs.main.flags.y = n & (1<<1);
     cpu->regs.main.flags.x = n & (1<<3); 
@@ -720,10 +707,6 @@ static inline uint8_t add8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a + value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = result & (1<<7);
-    cpu->regs.main.flags.z = !result;
     cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0, false);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value) > 255;
@@ -736,10 +719,6 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a + value + cpu->regs.main.flags.c;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (result & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = result & (1<<7);
-    cpu->regs.main.flags.z = !result;
     cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value + 
@@ -748,15 +727,22 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
     return result;
 }
 
+/* SUB helper */
+static inline uint8_t sub8(Z80_t *cpu, uint8_t a, uint8_t value)
+{
+    uint8_t result = a - value;
+    cpu->regs.main.flags.pv = flag_overflow_8(a, value, 0, true);
+    cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
+    cpu->regs.main.flags.c = (a < value);
+    cpu->regs.main.flags.n = 1;
+    return result;
+}
+
 /* SBC helper */
 static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
 {
     uint8_t a = cpu->regs.main.a;
     uint8_t result = a - value - cpu->regs.main.flags.c;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (result & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = result & (1<<7);
-    cpu->regs.main.flags.z = !result;
     cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c, true);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
     cpu->regs.main.flags.c = a < ((uint16_t)value + cpu->regs.main.flags.c);
@@ -765,79 +751,77 @@ static inline uint8_t sbc8(Z80_t *cpu, uint8_t value)
 }
 
 /* AND helper */
-static inline void and(Z80_t *cpu, uint8_t value)
+static inline uint8_t and(Z80_t *cpu, uint8_t value)
 {
     value &= cpu->regs.main.a;
-    cpu->regs.main.a = value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 1;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.c = 0;
     cpu->regs.main.flags.n = 0;
+    return value;
 }
 
 /* XOR helper */
-static inline void xor(Z80_t *cpu, uint8_t value)
+static inline uint8_t xor(Z80_t *cpu, uint8_t value)
 {
     value ^= cpu->regs.main.a;
-    cpu->regs.main.a = value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.c = 0;
     cpu->regs.main.flags.n = 0;
+    return value;
 }
 
 /* OR helper */
-static inline void or(Z80_t *cpu, uint8_t value)
+static inline uint8_t or(Z80_t *cpu, uint8_t value)
 {
     value |= cpu->regs.main.a;
-    cpu->regs.main.a = value;
-    cpu->regs.main.f &= ~MASK_FLAG_XY;
-    cpu->regs.main.f |= (value & MASK_FLAG_XY);
-    cpu->regs.main.flags.s = value & (1<<7);
-    cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.c = 0;
     cpu->regs.main.flags.n = 0;
+    return value;
 }
 
-static inline void alo(Z80_t *cpu, uint8_t value, uint8_t op)
+static inline void alo(Z80_t *cpu, uint8_t value, const uint8_t op)
 {
+    uint8_t result;
     switch (op)
     {
     case 0: // add
-        cpu->regs.main.a = add8(cpu, value);
+        result = cpu->regs.main.a = add8(cpu, value);
         break;
     case 1: // adc
-        cpu->regs.main.a = adc8(cpu, value);
+        result = cpu->regs.main.a = adc8(cpu, value);
         break;
     case 2: // sub
-        cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
+        result = cpu->regs.main.a = sub8(cpu, cpu->regs.main.a, value);
         break;
     case 3: // sbc
-        cpu->regs.main.a = sbc8(cpu, value);
+        result = cpu->regs.main.a = sbc8(cpu, value);
         break;
     case 4: // and
-        and(cpu, value);
+        result = cpu->regs.main.a = and(cpu, value);
         break;
     case 5: // xor
-        xor(cpu, value);
+        result = cpu->regs.main.a = xor(cpu, value);
         break;
     case 6: // or
-        or(cpu, value);
+        result = cpu->regs.main.a = or(cpu, value);
         break;
     case 7: // cp
-        sub8(cpu, cpu->regs.main.a, value);
+        result = sub8(cpu, cpu->regs.main.a, value);
         break;
+    default:
+        result = 0;
+        cpu->error = true;
     }
+
+    uint8_t xy = (op == 7) ? value : result;
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (xy & MASK_FLAG_XY);
+    cpu->regs.main.flags.s = result & (1<<7);
+    cpu->regs.main.flags.z = !result;
 }
 
 static void alo_r(Z80_t *cpu, uint8_t value, uint8_t op)
@@ -933,6 +917,10 @@ void neg(Z80_t *cpu)
     cpu->cycles += 4;
     cpu->regs.pc++;
     uint8_t result = sub8(cpu, 0, cpu->regs.main.a);
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (result & MASK_FLAG_XY);
+    cpu->regs.main.flags.s = result & (1<<7);
+    cpu->regs.main.flags.z = !result;
     cpu->regs.main.flags.c = !(!cpu->regs.main.a);
     cpu->regs.main.flags.pv = (cpu->regs.main.a == 0x80);
     cpu->regs.main.a = result;
