@@ -194,6 +194,7 @@ void ld_a_i(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.pv = cpu->regs.iff2;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 
     cpu->regs.main.a = value;
 }
@@ -468,6 +469,7 @@ void ldx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 /* LDIR/LDDR */
@@ -502,6 +504,7 @@ void cpx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.flags.x = n & (1<<3); 
     cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
     cpu->regs.main.flags.c = c;
+    cpu->regs.q = true;
 }
 
 /* CPIR/CPDR */
@@ -535,6 +538,7 @@ void outx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.flags.c = k > 255;
     cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
     cpu->regs.main.flags.n = value & (1<<7);
+    cpu->regs.q = true;
 }
 
 /* OTIR/OTDR */
@@ -570,6 +574,7 @@ void inx(Z80_t *cpu, int8_t increment)
     cpu->regs.main.flags.c = k > 255;
     cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
     cpu->regs.main.flags.n = value & (1<<7);
+    cpu->regs.q = true;
 }
 
 /* INIR/INDR */
@@ -597,6 +602,7 @@ static inline uint8_t inc8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.h = !(value & 0x0F);
     cpu->regs.main.flags.pv = value == 0x80;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
     return value;
 }
 
@@ -655,6 +661,7 @@ static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
     cpu->regs.main.flags.h = (value & 0x0F) == 0x0F;
     cpu->regs.main.flags.pv = value == 0x7F;
     cpu->regs.main.flags.n = 1;
+    cpu->regs.q = true;
     return value;
 }
 
@@ -822,6 +829,7 @@ static inline void alo(Z80_t *cpu, uint8_t value, const uint8_t op)
     cpu->regs.main.f |= (xy & MASK_FLAG_XY);
     cpu->regs.main.flags.s = result & (1<<7);
     cpu->regs.main.flags.z = !result;
+    cpu->regs.q = true;
 }
 
 static void alo_r(Z80_t *cpu, uint8_t value, uint8_t op)
@@ -899,6 +907,7 @@ void daa(Z80_t *cpu)
     cpu->regs.main.flags.c = c;
     cpu->regs.main.flags.h = h;
     cpu->regs.main.flags.pv = get_parity(result);
+    cpu->regs.q = true;
 
     cpu->regs.main.a = result;
 }
@@ -909,6 +918,7 @@ void cpl(Z80_t *cpu)
     cpu->regs.pc++;
     cpu->regs.main.flags.h = 1;
     cpu->regs.main.flags.n = 1;
+    cpu->regs.q = true;
     cpu->regs.main.a ^= 0xFF;
 }
 
@@ -923,6 +933,7 @@ void neg(Z80_t *cpu)
     cpu->regs.main.flags.z = !result;
     cpu->regs.main.flags.c = !(!cpu->regs.main.a);
     cpu->regs.main.flags.pv = (cpu->regs.main.a == 0x80);
+    cpu->regs.q = true;
     cpu->regs.main.a = result;
 }
 
@@ -934,6 +945,9 @@ void ccf(Z80_t *cpu)
     cpu->regs.main.flags.h = cpu->regs.main.flags.c;
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c ^= 1;
+    if (cpu->regs.q_old) cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= cpu->regs.main.a & MASK_FLAG_XY;
+    cpu->regs.q = true;
 }
 
 void scf(Z80_t *cpu)
@@ -943,6 +957,9 @@ void scf(Z80_t *cpu)
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = 1;
+    if (cpu->regs.q_old) cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= cpu->regs.main.a & MASK_FLAG_XY;
+    cpu->regs.q = true;
 }
 
 /* IM 0/1/2 */
@@ -982,6 +999,7 @@ void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
     cpu->regs.main.flags.h = (*dest ^ result ^ value) & 0x100;
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
+    cpu->regs.q = true;
     *dest = (uint16_t)result;
     cpu->cycles += 4;
 
@@ -1000,6 +1018,7 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
     cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.n = 0;
     cpu->regs.main.flags.c = result & (1<<16); // hmm thats kinda stupid
+    cpu->regs.q = true;
     *dest = (uint16_t)result;
     cpu->cycles += 4;
 
@@ -1018,6 +1037,7 @@ void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
     cpu->regs.main.flags.pv = flag_overflow_16(*dest, value, cpu->regs.main.flags.c, true);
     cpu->regs.main.flags.n = 1;
     cpu->regs.main.flags.c = *dest < ((uint32_t)value + cpu->regs.main.flags.c);
+    cpu->regs.q = true;
     *dest = (uint16_t)result;
     cpu->cycles += 4;
 
@@ -1077,6 +1097,7 @@ static inline uint8_t sro(Z80_t *cpu, uint8_t value, uint8_t op)
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 
     return value;
 }
@@ -1095,6 +1116,7 @@ void rlca(Z80_t *cpu)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 void rrca(Z80_t *cpu)
@@ -1111,6 +1133,7 @@ void rrca(Z80_t *cpu)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 void rla(Z80_t *cpu)
@@ -1128,6 +1151,7 @@ void rla(Z80_t *cpu)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 void rra(Z80_t *cpu)
@@ -1145,6 +1169,7 @@ void rra(Z80_t *cpu)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 static void sro_r(Z80_t *cpu, uint8_t *dest, uint8_t op)
@@ -1206,6 +1231,7 @@ void rld(Z80_t *cpu)
     cpu->regs.main.flags.pv = get_parity(a);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 
     cpu_write(cpu, cpu->regs.main.hl, value);
     cpu->cycles += 3;
@@ -1233,6 +1259,7 @@ void rrd(Z80_t *cpu)
     cpu->regs.main.flags.pv = get_parity(a);
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 
     cpu_write(cpu, cpu->regs.main.hl, value);
     cpu->cycles += 3;
@@ -1252,6 +1279,7 @@ static inline void bit_(Z80_t *cpu, uint8_t value, uint8_t bit)
     cpu->regs.main.flags.h = 1;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 }
 
 void bit_r(Z80_t *cpu, uint8_t value, uint8_t bit)
@@ -1525,6 +1553,7 @@ void in_r_c(Z80_t *cpu, uint8_t *dest)
     cpu->regs.main.flags.h = 0;
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.n = 0;
+    cpu->regs.q = true;
 } 
 
 void in_a_na(Z80_t *cpu)
@@ -1602,6 +1631,7 @@ void cpu_init(Z80_t *cpu)
 
     cpu->regs.iff1 = 0;
     cpu->regs.iff2 = 0;
+    cpu->regs.q = 0;
     cpu->regs.im = 0;
     cpu->regs.pc = 0;
 
@@ -2531,6 +2561,9 @@ static inline bool cpu_can_process_interrupts(Z80_t *cpu)
 int cpu_do_cycles(Z80_t *cpu)
 {
     uint64_t cyc_old = cpu->cycles;
+
+    cpu->regs.q_old = cpu->regs.q;
+    cpu->regs.q = false;
 
     if (cpu->interrupt_pending && cpu_can_process_interrupts(cpu)) {
         if (cpu->halted) {

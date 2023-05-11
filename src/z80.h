@@ -76,7 +76,7 @@ struct Z80Regs {
     uint8_t r;
     uint16_t sp;
     uint16_t pc;
-    bool iff1, iff2;
+    bool iff1, iff2, q, q_old;
     uint8_t im;
 };
 
