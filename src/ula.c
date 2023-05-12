@@ -165,19 +165,15 @@ static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
     int bright = (attrib>>6) & 1;
 
     int flash = attrib & (1<<7);
-    RGB24_t ink, paper;
-    if (flash && ((frame % 32) > 16)) {
-        ink = colors[bright*8 + ((attrib >> 3) & 7)];
-        paper = colors[bright*8 + (attrib & 7)];
-    } else {
-        ink = colors[bright*8 + (attrib & 7)];
-        paper = colors[bright*8 + ((attrib >> 3) & 7)];
-    }
+    RGB24_t ink_paper[2];
+    ink_paper[0] = colors[bright*8 + ((attrib >> 3) & 7)];
+    ink_paper[1] = colors[bright*8 + (attrib & 7)];
+    bool flip = flash && ((frame % 32) > 16);
 
     buf += 7;
     for (int i = 0; i < 8; i++) {
         uint8_t p = (pixel >> i) & 1;
-        *buf = p ? ink : paper;
+        *buf = ink_paper[p ^ flip];
         buf--;
     }
 }
