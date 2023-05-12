@@ -1837,19 +1837,7 @@ void do_ed(Z80_t *cpu)
     case 0x67: rrd(cpu); break;
     case 0x6F: rld(cpu); break;
 
-    default:
-        // FIXME: HACK WHILE NOT ALL OPS ARE IMPLEMENTED
-        if (op < 0x40 
-        || (op >= 0xA0 && (op & 4))
-        || (op >= 0x80 && op < 0xA0)) {
-            nop(cpu);
-        } else {
-            cpu->regs.pc--;
-            cpu->cycles -= 4;
-            print_regs(cpu);
-            dlog(LOG_ERR, "unimplemented opcode ED %02X at %04X", op, cpu->regs.pc);
-            cpu->error = 1;
-        }
+    default: nop(cpu); break;
     }
 }
 
