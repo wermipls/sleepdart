@@ -151,22 +151,7 @@ static void ld_r_n(Z80_t *cpu, uint8_t *dest)
     cpu->regs.pc++;
 }
 
-/* LD r, (nn) */
-static void ld_r_nna(Z80_t *cpu, uint8_t *dest)
-{
-    cpu->cycles += 4;
-    cpu->regs.pc++;
-    uint8_t l = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    uint8_t h = cpu_read(cpu, cpu->regs.pc);
-    cpu->cycles += 3;
-    cpu->regs.pc++;
-    *dest = cpu_read(cpu, MAKE16(l, h));
-    cpu->cycles += 3;
-}
-
-static void ld_a_nna(Z80_t *cpu, uint8_t *dest)
+static void ld_a_nna(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -178,7 +163,7 @@ static void ld_a_nna(Z80_t *cpu, uint8_t *dest)
     cpu->regs.pc++;
     uint16_t addr = MAKE16(l, h);
     cpu->regs.memptr = addr;
-    *dest = cpu_read(cpu, addr);
+    cpu->regs.main.a = cpu_read(cpu, addr);
     cpu->cycles += 3;
 }
 
@@ -2198,7 +2183,7 @@ static void do_opcode(Z80_t *cpu)
     case 0x0A: ld_a_rra(cpu, cpu->regs.main.bc); break;
     case 0x1A: ld_a_rra(cpu, cpu->regs.main.de); break;
     // ld a, (nn)
-    case 0x3A: ld_a_nna(cpu, &cpu->regs.main.a); break;
+    case 0x3A: ld_a_nna(cpu); break;
 
     // inc rr
     case 0x03: inc_rr(cpu, &cpu->regs.main.bc); break;
