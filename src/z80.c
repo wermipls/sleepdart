@@ -2150,6 +2150,139 @@ static void do_ddfd(Z80_t *cpu, bool is_iy)
     // bit instructions
     case 0xCB: do_ddfd_cb(cpu, ii); break;
 
+    // DUPLICATE OPCODES
+    // ld rr, nn
+    case 0x01: ld_rr_nn(cpu, &cpu->regs.main.bc); break;
+    case 0x11: ld_rr_nn(cpu, &cpu->regs.main.de); break;
+    case 0x31: ld_rr_nn(cpu, &cpu->regs.sp); break;
+
+    // ld (rr), a
+    case 0x02: ld_rra_a(cpu, cpu->regs.main.bc); break;
+    case 0x12: ld_rra_a(cpu, cpu->regs.main.de); break;
+    // ld a, (rr)
+    case 0x0A: ld_a_rra(cpu, cpu->regs.main.bc); break;
+    case 0x1A: ld_a_rra(cpu, cpu->regs.main.de); break;
+    // ld a, (nn)
+    case 0x3A: ld_a_nna(cpu); break;
+    // ld (nn), a
+    case 0x32: ld_nna_a(cpu); break;
+    // inc rr
+    case 0x03: inc_rr(cpu, &cpu->regs.main.bc); break;
+    case 0x13: inc_rr(cpu, &cpu->regs.main.de); break;
+    case 0x33: inc_rr(cpu, &cpu->regs.sp); break;
+    // dec rr
+    case 0x0B: dec_rr(cpu, &cpu->regs.main.bc); break;
+    case 0x1B: dec_rr(cpu, &cpu->regs.main.de); break;
+    case 0x3B: dec_rr(cpu, &cpu->regs.sp); break;
+
+    // rra/rla/rrca/rlca
+    case 0x07: rlca(cpu); break;
+    case 0x0F: rrca(cpu); break;
+    case 0x17: rla(cpu); break;
+    case 0x1F: rra(cpu); break;
+
+    case 0x27: daa(cpu); break;
+    // cpl
+    case 0x2F: cpl(cpu); break;
+    // scf/ccf
+    case 0x37: scf(cpu); break;
+    case 0x3F: ccf(cpu); break;
+
+    // add/adc/sub/sbc/and/xor/or/cp n
+    case 0xC6: alo_n(cpu, 0); break;
+    case 0xCE: alo_n(cpu, 1); break;
+    case 0xD6: alo_n(cpu, 2); break;
+    case 0xDE: alo_n(cpu, 3); break;
+    case 0xE6: alo_n(cpu, 4); break;
+    case 0xEE: alo_n(cpu, 5); break;
+    case 0xF6: alo_n(cpu, 6); break;
+    case 0xFE: alo_n(cpu, 7); break;
+
+    // djnz
+    case 0x10: djnz_d(cpu); break;
+    // jr
+    case 0x18: jr_cc_d(cpu, true); break;
+    // jr cc, d
+    case 0x20: jr_cc_d(cpu, !cpu->regs.main.flags.z); break;
+    case 0x28: jr_cc_d(cpu, cpu->regs.main.flags.z); break;
+    case 0x30: jr_cc_d(cpu, !cpu->regs.main.flags.c); break;
+    case 0x38: jr_cc_d(cpu, cpu->regs.main.flags.c); break;
+    // jp cc, nn
+    case 0xC2: jp_cc_nn(cpu, !cpu->regs.main.flags.z); break;
+    case 0xCA: jp_cc_nn(cpu, cpu->regs.main.flags.z); break;
+    case 0xD2: jp_cc_nn(cpu, !cpu->regs.main.flags.c); break;
+    case 0xDA: jp_cc_nn(cpu, cpu->regs.main.flags.c); break;
+    case 0xE2: jp_cc_nn(cpu, !cpu->regs.main.flags.pv); break;
+    case 0xEA: jp_cc_nn(cpu, cpu->regs.main.flags.pv); break;
+    case 0xF2: jp_cc_nn(cpu, !cpu->regs.main.flags.s); break;
+    case 0xFA: jp_cc_nn(cpu, cpu->regs.main.flags.s); break;
+    // jp nn
+    case 0xC3: jp_cc_nn(cpu, true); break;
+    // call cc, nn
+    case 0xC4: call_cc_nn(cpu, !cpu->regs.main.flags.z); break;
+    case 0xCC: call_cc_nn(cpu, cpu->regs.main.flags.z); break;
+    case 0xD4: call_cc_nn(cpu, !cpu->regs.main.flags.c); break;
+    case 0xDC: call_cc_nn(cpu, cpu->regs.main.flags.c); break;
+    case 0xE4: call_cc_nn(cpu, !cpu->regs.main.flags.pv); break;
+    case 0xEC: call_cc_nn(cpu, cpu->regs.main.flags.pv); break;
+    case 0xF4: call_cc_nn(cpu, !cpu->regs.main.flags.s); break;
+    case 0xFC: call_cc_nn(cpu, cpu->regs.main.flags.s); break;
+    // call nn
+    case 0xCD: call_cc_nn(cpu, true); break;
+    // ret cc
+    case 0xC0: ret_cc(cpu, !cpu->regs.main.flags.z); break;
+    case 0xC8: ret_cc(cpu, cpu->regs.main.flags.z); break;
+    case 0xD0: ret_cc(cpu, !cpu->regs.main.flags.c); break;
+    case 0xD8: ret_cc(cpu, cpu->regs.main.flags.c); break;
+    case 0xE0: ret_cc(cpu, !cpu->regs.main.flags.pv); break;
+    case 0xE8: ret_cc(cpu, cpu->regs.main.flags.pv); break;
+    case 0xF0: ret_cc(cpu, !cpu->regs.main.flags.s); break;
+    case 0xF8: ret_cc(cpu, cpu->regs.main.flags.s); break;
+    // ret (same behavior as imaginary instruction pop pc)
+    case 0xC9: ret(cpu); break;
+
+    // rst
+    case 0xC7: rst(cpu, 0x00); break;
+    case 0xCF: rst(cpu, 0x08); break;
+    case 0xD7: rst(cpu, 0x10); break;
+    case 0xDF: rst(cpu, 0x18); break;
+    case 0xE7: rst(cpu, 0x20); break;
+    case 0xEF: rst(cpu, 0x28); break;
+    case 0xF7: rst(cpu, 0x30); break;
+    case 0xFF: rst(cpu, 0x38); break;
+
+    // pop
+    case 0xC1: pop(cpu, &cpu->regs.main.bc); break;
+    case 0xD1: pop(cpu, &cpu->regs.main.de); break;
+    case 0xF1: pop(cpu, &cpu->regs.main.af); break;
+    // push
+    case 0xC5: push(cpu, cpu->regs.main.bc); break;
+    case 0xD5: push(cpu, cpu->regs.main.de); break;
+    case 0xF5: push(cpu, cpu->regs.main.af); break;
+
+    // out (n), a
+    case 0xD3: out_na_a(cpu); break;
+    // in a, (n)
+    case 0xDB: in_a_na(cpu); break;
+
+    // ex af
+    case 0x08: ex_af(cpu); break;
+    // exx
+    case 0xD9: exx(cpu); break;
+    // XD
+    case 0xEB: ex_de_hl(cpu); break;
+
+    // DI / EI
+    case 0xF3: di(cpu); break;
+    case 0xFB: ei(cpu); break;
+    // halt
+    case 0x76: halt(cpu); break;
+
+    case 0x00: nop(cpu); break;
+
+    // misc instructions
+    case 0xED: do_ed(cpu); break;
+
     default:
         print_regs(cpu);
 
