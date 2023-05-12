@@ -22,7 +22,7 @@
 #define LOW8(HL)        (HL & 255)
 #define HIGH8(HL)       (HL >> 8)
 
-void print_regs(Z80_t *cpu)
+static void print_regs(Z80_t *cpu)
 {
     uint8_t *bus = cpu->ctx->memory.bus;
 
@@ -116,7 +116,7 @@ static inline uint8_t dec8(Z80_t *cpu, uint8_t value);
 /* 8-Bit Load Group */
 
 /* LD r, r */
-void ld_r_r(Z80_t *cpu, uint8_t *dest, uint8_t value)
+static void ld_r_r(Z80_t *cpu, uint8_t *dest, uint8_t value)
 {
     *dest = value;
     cpu->cycles += 4;
@@ -124,7 +124,7 @@ void ld_r_r(Z80_t *cpu, uint8_t *dest, uint8_t value)
 }
 
 /* LD r, (rr) */
-void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
+static void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
 {
     cpu->cycles += 4;
     *dest = cpu_read(cpu, addr);
@@ -132,7 +132,7 @@ void ld_r_rra(Z80_t *cpu, uint8_t *dest, uint16_t addr)
     cpu->regs.pc += 1;
 }
 
-void ld_a_rra(Z80_t *cpu, uint16_t addr)
+static void ld_a_rra(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.main.a = cpu_read(cpu, addr);
@@ -142,7 +142,7 @@ void ld_a_rra(Z80_t *cpu, uint16_t addr)
 }
 
 /* LD r, n */
-void ld_r_n(Z80_t *cpu, uint8_t *dest)
+static void ld_r_n(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -152,7 +152,7 @@ void ld_r_n(Z80_t *cpu, uint8_t *dest)
 }
 
 /* LD r, (nn) */
-void ld_r_nna(Z80_t *cpu, uint8_t *dest)
+static void ld_r_nna(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -166,7 +166,7 @@ void ld_r_nna(Z80_t *cpu, uint8_t *dest)
     cpu->cycles += 3;
 }
 
-void ld_a_nna(Z80_t *cpu, uint8_t *dest)
+static void ld_a_nna(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -183,7 +183,7 @@ void ld_a_nna(Z80_t *cpu, uint8_t *dest)
 }
 
 /* LD (rr), n */
-void ld_rra_n(Z80_t *cpu, uint16_t addr)
+static void ld_rra_n(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -195,7 +195,7 @@ void ld_rra_n(Z80_t *cpu, uint16_t addr)
 }
 
 /* ld i, a */
-void ld_i_a(Z80_t *cpu, uint8_t *dest)
+static void ld_i_a(Z80_t *cpu, uint8_t *dest)
 {
     *dest = cpu->regs.main.a;
     cpu->regs.pc++;
@@ -205,7 +205,7 @@ void ld_i_a(Z80_t *cpu, uint8_t *dest)
 }
 
 /* ld a, i */
-void ld_a_i(Z80_t *cpu, uint8_t value)
+static void ld_a_i(Z80_t *cpu, uint8_t value)
 {
     cpu->regs.pc++;
     cpu->cycles += 4;
@@ -225,7 +225,7 @@ void ld_a_i(Z80_t *cpu, uint8_t value)
 }
 
 /* LD (nn), a */
-void ld_nna_a(Z80_t *cpu)
+static void ld_nna_a(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -243,7 +243,7 @@ void ld_nna_a(Z80_t *cpu)
 }
 
 /* LD (rr), r */
-void ld_rra_r(Z80_t *cpu, uint16_t addr, uint8_t value)
+static void ld_rra_r(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -251,7 +251,7 @@ void ld_rra_r(Z80_t *cpu, uint16_t addr, uint8_t value)
     cpu->cycles += 3;
 }
 
-void ld_rra_a(Z80_t *cpu, uint16_t addr)
+static void ld_rra_a(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -262,7 +262,7 @@ void ld_rra_a(Z80_t *cpu, uint16_t addr)
 }
 
 /* LD (ii+d), r */
-void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
+static void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -280,7 +280,7 @@ void ld_iid_r(Z80_t *cpu, uint16_t addr, uint8_t value)
 }
 
 /* LD r, (ii+d) */
-void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
+static void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -298,7 +298,7 @@ void ld_r_iid(Z80_t *cpu, uint8_t *dest, uint16_t addr)
 }
 
 /* LD (ii+d), n */
-void ld_iid_n(Z80_t *cpu, uint16_t addr)
+static void ld_iid_n(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -322,7 +322,7 @@ void ld_iid_n(Z80_t *cpu, uint16_t addr)
 /* 16-Bit Load Group */
 
 /* LD rr, nn */
-void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
+static void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -336,7 +336,7 @@ void ld_rr_nn(Z80_t *cpu, uint16_t *dest)
 }
 
 /* LD rr, (nn) */
-void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
+static void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -356,7 +356,7 @@ void ld_rr_nna(Z80_t *cpu, uint16_t *dest)
 }
 
 /* LD (nn), rr */
-void ld_nna_rr(Z80_t *cpu, uint16_t value)
+static void ld_nna_rr(Z80_t *cpu, uint16_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -374,7 +374,7 @@ void ld_nna_rr(Z80_t *cpu, uint16_t value)
     cpu->regs.memptr = addr;
 }
 
-void ld_sp_rr(Z80_t *cpu, uint16_t value)
+static void ld_sp_rr(Z80_t *cpu, uint16_t value)
 {
     cpu->cycles += 4;
     // ir:1 x2
@@ -384,7 +384,7 @@ void ld_sp_rr(Z80_t *cpu, uint16_t value)
     cpu->regs.sp = value;
 }
 
-void pop(Z80_t *cpu, uint16_t *dest)
+static void pop(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -397,24 +397,24 @@ void pop(Z80_t *cpu, uint16_t *dest)
     *dest = MAKE16(l, h);
 }
 
-void ret(Z80_t *cpu)
+static void ret(Z80_t *cpu)
 {
     pop(cpu, &cpu->regs.pc);
 }
 
-void retn(Z80_t *cpu)
+static void retn(Z80_t *cpu)
 {
     pop(cpu, &cpu->regs.pc);
     cpu->regs.iff1 = cpu->regs.iff2;
 }
 
-void reti(Z80_t *cpu)
+static void reti(Z80_t *cpu)
 {
     // don't care about correct behavior since it's irrelevant on speccy
     pop(cpu, &cpu->regs.pc);
 }
 
-void push(Z80_t *cpu, uint16_t value)
+static void push(Z80_t *cpu, uint16_t value)
 {
     cpu->cycles += 4;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
@@ -430,7 +430,7 @@ void push(Z80_t *cpu, uint16_t value)
 
 /* Exchange, Block Transfer and Search Group */
 
-void exx(Z80_t *cpu)
+static void exx(Z80_t *cpu)
 {
     uint16_t tmp;
     tmp = cpu->regs.main.bc;
@@ -449,7 +449,7 @@ void exx(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
-void ex_de_hl(Z80_t *cpu)
+static void ex_de_hl(Z80_t *cpu)
 {
     uint16_t tmp;
     tmp = cpu->regs.main.hl;
@@ -460,7 +460,7 @@ void ex_de_hl(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
-void ex_af(Z80_t *cpu)
+static void ex_af(Z80_t *cpu)
 {
     uint16_t tmp;
     tmp = cpu->regs.main.af;
@@ -471,7 +471,7 @@ void ex_af(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
-void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
+static void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -492,7 +492,7 @@ void ex_spa_rr(Z80_t *cpu, uint16_t *dest)
 }
 
 /* LDI/LDD */
-void ldx(Z80_t *cpu, int8_t increment)
+static void ldx(Z80_t *cpu, int8_t increment)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -518,7 +518,7 @@ void ldx(Z80_t *cpu, int8_t increment)
 }
 
 /* LDIR/LDDR */
-void ldxr(Z80_t *cpu, int8_t increment)
+static void ldxr(Z80_t *cpu, int8_t increment)
 {
     ldx(cpu, increment);
 
@@ -531,7 +531,7 @@ void ldxr(Z80_t *cpu, int8_t increment)
 }
 
 /* CPI/CPD */
-void cpx(Z80_t *cpu, int8_t increment)
+static void cpx(Z80_t *cpu, int8_t increment)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -555,7 +555,7 @@ void cpx(Z80_t *cpu, int8_t increment)
 }
 
 /* CPIR/CPDR */
-void cpxr(Z80_t *cpu, int8_t increment)
+static void cpxr(Z80_t *cpu, int8_t increment)
 {
     cpx(cpu, increment);
 
@@ -568,7 +568,7 @@ void cpxr(Z80_t *cpu, int8_t increment)
 }
 
 /* OUTI/OUTD */
-void outx(Z80_t *cpu, int8_t increment)
+static void outx(Z80_t *cpu, int8_t increment)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -593,7 +593,7 @@ void outx(Z80_t *cpu, int8_t increment)
 }
 
 /* OTIR/OTDR */
-void otxr(Z80_t *cpu, int8_t increment)
+static void otxr(Z80_t *cpu, int8_t increment)
 {
     outx(cpu, increment);
 
@@ -605,7 +605,7 @@ void otxr(Z80_t *cpu, int8_t increment)
 }
 
 /* INI/IND */
-void inx(Z80_t *cpu, int8_t increment)
+static void inx(Z80_t *cpu, int8_t increment)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -631,7 +631,7 @@ void inx(Z80_t *cpu, int8_t increment)
 }
 
 /* INIR/INDR */
-void inxr(Z80_t *cpu, int8_t increment)
+static void inxr(Z80_t *cpu, int8_t increment)
 {
     inx(cpu, increment);
 
@@ -660,7 +660,7 @@ static inline uint8_t inc8(Z80_t *cpu, uint8_t value)
 }
 
 /* INC r */
-void inc_r(Z80_t *cpu, uint8_t *dest)
+static void inc_r(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -668,7 +668,7 @@ void inc_r(Z80_t *cpu, uint8_t *dest)
 }
 
 /* INC (rr) */
-void inc_rra(Z80_t *cpu, uint16_t addr)
+static void inc_rra(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -682,7 +682,7 @@ void inc_rra(Z80_t *cpu, uint16_t addr)
 }
 
 /* INC (ii+d) */
-void inc_iid(Z80_t *cpu, uint16_t addr)
+static void inc_iid(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -720,7 +720,7 @@ static inline uint8_t dec8(Z80_t *cpu, uint8_t value)
 }
 
 /* DEC r */
-void dec_r(Z80_t *cpu, uint8_t *dest)
+static void dec_r(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -728,7 +728,7 @@ void dec_r(Z80_t *cpu, uint8_t *dest)
 }
 
 /* DEC (rr) */
-void dec_rra(Z80_t *cpu, uint16_t addr)
+static void dec_rra(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -742,7 +742,7 @@ void dec_rra(Z80_t *cpu, uint16_t addr)
 }
 
 /* DEC (ii+d) */
-void dec_iid(Z80_t *cpu, uint16_t addr)
+static void dec_iid(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -934,7 +934,7 @@ static void alo_iid(Z80_t *cpu, uint16_t addr, uint8_t op)
 
 /* General-Purpose Arithmetic and CPU Control Groups */
 
-void daa(Z80_t *cpu)
+static void daa(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -968,7 +968,7 @@ void daa(Z80_t *cpu)
     cpu->regs.main.a = result;
 }
 
-void cpl(Z80_t *cpu)
+static void cpl(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -980,7 +980,7 @@ void cpl(Z80_t *cpu)
     cpu->regs.q = true;
 }
 
-void neg(Z80_t *cpu)
+static void neg(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -996,7 +996,7 @@ void neg(Z80_t *cpu)
 }
 
 /* CCF/SCF */
-void ccf(Z80_t *cpu)
+static void ccf(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1008,7 +1008,7 @@ void ccf(Z80_t *cpu)
     cpu->regs.q = true;
 }
 
-void scf(Z80_t *cpu)
+static void scf(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1021,7 +1021,7 @@ void scf(Z80_t *cpu)
 }
 
 /* IM 0/1/2 */
-void im(Z80_t *cpu, uint8_t im)
+static void im(Z80_t *cpu, uint8_t im)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1031,7 +1031,7 @@ void im(Z80_t *cpu, uint8_t im)
 
 /* 16-Bit Arithmetic Group */
 
-void inc_rr(Z80_t *cpu, uint16_t *dest)
+static void inc_rr(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     // ir:1 x2
@@ -1041,7 +1041,7 @@ void inc_rr(Z80_t *cpu, uint16_t *dest)
     *dest += 1;
 }
 
-void dec_rr(Z80_t *cpu, uint16_t *dest)
+static void dec_rr(Z80_t *cpu, uint16_t *dest)
 {
     cpu->cycles += 4;
     // ir:1 x2
@@ -1051,7 +1051,7 @@ void dec_rr(Z80_t *cpu, uint16_t *dest)
     *dest -= 1;
 }
 
-void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
+static void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest + value;
@@ -1070,7 +1070,7 @@ void add_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
     cpu->regs.pc++;
 }
 
-void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
+static void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest + value + cpu->regs.main.flags.c;
@@ -1092,7 +1092,7 @@ void adc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
     cpu->regs.pc++;
 }
 
-void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
+static void sbc_rr_rr(Z80_t *cpu, uint16_t *dest, uint16_t value)
 {
     cpu->regs.memptr = *dest + 1;
     uint32_t result = (uint32_t)*dest - value - cpu->regs.main.flags.c;
@@ -1169,7 +1169,7 @@ static inline uint8_t sro(Z80_t *cpu, uint8_t value, uint8_t op)
     return value;
 }
 
-void rlca(Z80_t *cpu)
+static void rlca(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1186,7 +1186,7 @@ void rlca(Z80_t *cpu)
     cpu->regs.q = true;
 }
 
-void rrca(Z80_t *cpu)
+static void rrca(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1203,7 +1203,7 @@ void rrca(Z80_t *cpu)
     cpu->regs.q = true;
 }
 
-void rla(Z80_t *cpu)
+static void rla(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1221,7 +1221,7 @@ void rla(Z80_t *cpu)
     cpu->regs.q = true;
 }
 
-void rra(Z80_t *cpu)
+static void rra(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1276,7 +1276,7 @@ static void sro_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t op)
     if (dest) *dest = value;
 }
 
-void rld(Z80_t *cpu)
+static void rld(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1306,7 +1306,7 @@ void rld(Z80_t *cpu)
     cpu->cycles += 3;
 }
 
-void rrd(Z80_t *cpu)
+static void rrd(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1351,7 +1351,7 @@ static inline void bit_(Z80_t *cpu, uint8_t value, uint8_t bit)
     cpu->regs.q = true;
 }
 
-void bit_r(Z80_t *cpu, uint8_t value, uint8_t bit)
+static void bit_r(Z80_t *cpu, uint8_t value, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1360,7 +1360,7 @@ void bit_r(Z80_t *cpu, uint8_t value, uint8_t bit)
     cpu->regs.main.f |= (value & MASK_FLAG_XY);
 }
 
-void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
+static void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1373,7 +1373,7 @@ void bit_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->regs.main.f |= (cpu->regs.w & MASK_FLAG_XY);
 }
 
-void bit_iid(Z80_t *cpu, uint16_t addr, uint8_t bit)
+static void bit_iid(Z80_t *cpu, uint16_t addr, uint8_t bit)
 {
     cpu->cycles += 3;
     // pc+3:1 x2
@@ -1395,14 +1395,14 @@ static inline uint8_t res(uint8_t value, uint8_t bit)
     return value & mask;
 }
 
-void res_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
+static void res_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
     *dest = res(*dest, bit);
 }
 
-void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
+static void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1415,7 +1415,7 @@ void res_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 3;
 }
 
-void res_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
+static void res_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 3;
     // pc+3:1 x2
@@ -1439,14 +1439,14 @@ static inline uint8_t set(uint8_t value, uint8_t bit)
     return value | mask;
 }
 
-void set_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
+static void set_r(Z80_t *cpu, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
     *dest = set(*dest, bit);
 }
 
-void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
+static void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1459,7 +1459,7 @@ void set_rra(Z80_t *cpu, uint16_t addr, uint8_t bit)
     cpu->cycles += 3;
 }
 
-void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
+static void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 {
     cpu->cycles += 3;
     // pc+3:1 x2
@@ -1480,7 +1480,7 @@ void set_iid_r(Z80_t *cpu, uint16_t addr, uint8_t *dest, uint8_t bit)
 
 /* Jump Group */
 
-void jp_cc_nn(Z80_t *cpu, bool cc)
+static void jp_cc_nn(Z80_t *cpu, bool cc)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1496,7 +1496,7 @@ void jp_cc_nn(Z80_t *cpu, bool cc)
     }
 }
 
-void jr_cc_d(Z80_t *cpu, bool cc)
+static void jr_cc_d(Z80_t *cpu, bool cc)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1511,14 +1511,14 @@ void jr_cc_d(Z80_t *cpu, bool cc)
     cpu->regs.pc++;
 }
 
-void jp_rr(Z80_t *cpu, uint16_t addr)
+static void jp_rr(Z80_t *cpu, uint16_t addr)
 {
     cpu->cycles += 4;
     cpu->regs.pc = addr;
     cpu->regs.memptr = cpu->regs.pc;
 }
 
-void djnz_d(Z80_t *cpu)
+static void djnz_d(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
@@ -1539,7 +1539,7 @@ void djnz_d(Z80_t *cpu)
 
 /* Call and Return Group */
 
-void call_cc_nn(Z80_t *cpu, bool cc)
+static void call_cc_nn(Z80_t *cpu, bool cc)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1564,7 +1564,7 @@ void call_cc_nn(Z80_t *cpu, bool cc)
 }
 
 // RET cc (and ONLY cc as timings are different)
-void ret_cc(Z80_t *cpu, bool cc)
+static void ret_cc(Z80_t *cpu, bool cc)
 {
     cpu->cycles += 4;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
@@ -1582,7 +1582,7 @@ void ret_cc(Z80_t *cpu, bool cc)
     }
 }
 
-void rst(Z80_t *cpu, uint8_t offset)
+static void rst(Z80_t *cpu, uint8_t offset)
 {
     cpu->cycles += 4;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
@@ -1602,7 +1602,7 @@ void rst(Z80_t *cpu, uint8_t offset)
 /* Input and Output Group */
 
 /* OUT (n), a */
-void out_na_a(Z80_t *cpu)
+static void out_na_a(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1616,7 +1616,7 @@ void out_na_a(Z80_t *cpu)
     cpu->cycles += 4;
 }
 
-void out_c_r(Z80_t *cpu, uint8_t value)
+static void out_c_r(Z80_t *cpu, uint8_t value)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1625,7 +1625,7 @@ void out_c_r(Z80_t *cpu, uint8_t value)
     cpu->cycles += 4;
 }
 
-void in_r_c(Z80_t *cpu, uint8_t *dest)
+static void in_r_c(Z80_t *cpu, uint8_t *dest)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1642,7 +1642,7 @@ void in_r_c(Z80_t *cpu, uint8_t *dest)
     cpu->regs.q = true;
 } 
 
-void in_a_na(Z80_t *cpu)
+static void in_a_na(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1659,19 +1659,19 @@ void in_a_na(Z80_t *cpu)
 
 /* CPU Control Group */
 
-void nop(Z80_t *cpu)
+static void nop(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
 }
 
-void halt(Z80_t *cpu)
+static void halt(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->halted = true;
 }
 
-void di(Z80_t *cpu)
+static void di(Z80_t *cpu)
 {
     cpu->regs.iff1 = 0;
     cpu->regs.iff2 = 0;
@@ -1679,7 +1679,7 @@ void di(Z80_t *cpu)
     cpu->regs.pc++;
 }
 
-void ei(Z80_t *cpu)
+static void ei(Z80_t *cpu)
 {
     cpu->regs.iff1 = 1;
     cpu->regs.iff2 = 1;
@@ -1691,7 +1691,7 @@ void ei(Z80_t *cpu)
 
 /* DD/FD handler */
 
-void ddfd(Z80_t *cpu, bool is_iy)
+static void ddfd(Z80_t *cpu, bool is_iy)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1728,7 +1728,7 @@ void cpu_init(Z80_t *cpu)
     cpu->interrupt_pending = false;
 }
 
-void do_ed(Z80_t *cpu)
+static void do_ed(Z80_t *cpu)
 {
     cpu->cycles += 4;
     cpu->regs.pc++;
@@ -1843,7 +1843,7 @@ void do_ed(Z80_t *cpu)
 
 /* For bit instructions, I've decided to handle partial decoding 
  * for simplicity, as the opcode table is quite orthogonal. */
-void do_cb(Z80_t *cpu)
+static void do_cb(Z80_t *cpu)
 {
     uint8_t *regs[] = {
         &cpu->regs.main.b,
@@ -1886,7 +1886,7 @@ void do_cb(Z80_t *cpu)
     }
 }
 
-void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
+static void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
 {
     // as a side effect of how Z80 works internally, all the instructions
     // copy their result to a register specified in the last 3 bits
@@ -1932,7 +1932,7 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
  * "use IY/IX instead of HL for the next instruction".
  * there's some funky behavior associated with that i Do Not wanna emulate rn.
  * i also don't bother implementing illegal/duplicate opcodes */
-void do_ddfd(Z80_t *cpu, bool is_iy)
+static void do_ddfd(Z80_t *cpu, bool is_iy)
 {
     cpu->prefix_state = STATE_NOPREFIX;
 
@@ -2177,7 +2177,7 @@ void do_ddfd(Z80_t *cpu, bool is_iy)
     }
 }
 
-void do_opcode(Z80_t *cpu)
+static void do_opcode(Z80_t *cpu)
 {
     // oppa gangnam style
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
