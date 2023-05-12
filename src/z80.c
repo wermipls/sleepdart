@@ -1862,87 +1862,26 @@ void do_cb(Z80_t *cpu)
     inc_refresh(cpu);
 
     uint8_t reg = op & 7; // op & 0b111
-    uint8_t op_partial = op >> 3;
+    uint8_t op_partial = op >> 6;
+    uint8_t bit_type = (op >> 3) & 7;
 
     if (reg == 6) { // (hl)
         switch (op_partial) 
         {
-            case 0x00: sro_rra(cpu, cpu->regs.main.hl, 0); break;
-            case 0x01: sro_rra(cpu, cpu->regs.main.hl, 1); break;
-            case 0x02: sro_rra(cpu, cpu->regs.main.hl, 2); break;
-            case 0x03: sro_rra(cpu, cpu->regs.main.hl, 3); break;
-            case 0x04: sro_rra(cpu, cpu->regs.main.hl, 4); break;
-            case 0x05: sro_rra(cpu, cpu->regs.main.hl, 5); break;
-            case 0x06: sro_rra(cpu, cpu->regs.main.hl, 6); break;
-            case 0x07: sro_rra(cpu, cpu->regs.main.hl, 7); break;
-            // bit
-            case 0x08: bit_rra(cpu, cpu->regs.main.hl, 0); break;
-            case 0x09: bit_rra(cpu, cpu->regs.main.hl, 1); break;
-            case 0x0A: bit_rra(cpu, cpu->regs.main.hl, 2); break;
-            case 0x0B: bit_rra(cpu, cpu->regs.main.hl, 3); break;
-            case 0x0C: bit_rra(cpu, cpu->regs.main.hl, 4); break;
-            case 0x0D: bit_rra(cpu, cpu->regs.main.hl, 5); break;
-            case 0x0E: bit_rra(cpu, cpu->regs.main.hl, 6); break;
-            case 0x0F: bit_rra(cpu, cpu->regs.main.hl, 7); break;
-            // res
-            case 0x10: res_rra(cpu, cpu->regs.main.hl, 0); break;
-            case 0x11: res_rra(cpu, cpu->regs.main.hl, 1); break;
-            case 0x12: res_rra(cpu, cpu->regs.main.hl, 2); break;
-            case 0x13: res_rra(cpu, cpu->regs.main.hl, 3); break;
-            case 0x14: res_rra(cpu, cpu->regs.main.hl, 4); break;
-            case 0x15: res_rra(cpu, cpu->regs.main.hl, 5); break;
-            case 0x16: res_rra(cpu, cpu->regs.main.hl, 6); break;
-            case 0x17: res_rra(cpu, cpu->regs.main.hl, 7); break;
-            // set
-            case 0x18: set_rra(cpu, cpu->regs.main.hl, 0); break;
-            case 0x19: set_rra(cpu, cpu->regs.main.hl, 1); break;
-            case 0x1A: set_rra(cpu, cpu->regs.main.hl, 2); break;
-            case 0x1B: set_rra(cpu, cpu->regs.main.hl, 3); break;
-            case 0x1C: set_rra(cpu, cpu->regs.main.hl, 4); break;
-            case 0x1D: set_rra(cpu, cpu->regs.main.hl, 5); break;
-            case 0x1E: set_rra(cpu, cpu->regs.main.hl, 6); break;
-            case 0x1F: set_rra(cpu, cpu->regs.main.hl, 7); break;
+            case 0x00: sro_rra(cpu, cpu->regs.main.hl, bit_type); break;
+            case 0x01: bit_rra(cpu, cpu->regs.main.hl, bit_type); break;
+            case 0x02: res_rra(cpu, cpu->regs.main.hl, bit_type); break;
+            case 0x03: set_rra(cpu, cpu->regs.main.hl, bit_type); break;
         }
     } else { // bcdehla
         uint8_t *regptr = regs[reg];
 
         switch (op_partial) 
         {
-            case 0x00: sro_r(cpu, regptr, 0); break;
-            case 0x01: sro_r(cpu, regptr, 1); break;
-            case 0x02: sro_r(cpu, regptr, 2); break;
-            case 0x03: sro_r(cpu, regptr, 3); break;
-            case 0x04: sro_r(cpu, regptr, 4); break;
-            case 0x05: sro_r(cpu, regptr, 5); break;
-            case 0x06: sro_r(cpu, regptr, 6); break;
-            case 0x07: sro_r(cpu, regptr, 7); break;
-            // bit
-            case 0x08: bit_r(cpu, *regptr, 0); break;
-            case 0x09: bit_r(cpu, *regptr, 1); break;
-            case 0x0A: bit_r(cpu, *regptr, 2); break;
-            case 0x0B: bit_r(cpu, *regptr, 3); break;
-            case 0x0C: bit_r(cpu, *regptr, 4); break;
-            case 0x0D: bit_r(cpu, *regptr, 5); break;
-            case 0x0E: bit_r(cpu, *regptr, 6); break;
-            case 0x0F: bit_r(cpu, *regptr, 7); break;
-            // res
-            case 0x10: res_r(cpu, regptr, 0); break;
-            case 0x11: res_r(cpu, regptr, 1); break;
-            case 0x12: res_r(cpu, regptr, 2); break;
-            case 0x13: res_r(cpu, regptr, 3); break;
-            case 0x14: res_r(cpu, regptr, 4); break;
-            case 0x15: res_r(cpu, regptr, 5); break;
-            case 0x16: res_r(cpu, regptr, 6); break;
-            case 0x17: res_r(cpu, regptr, 7); break;
-            // set
-            case 0x18: set_r(cpu, regptr, 0); break;
-            case 0x19: set_r(cpu, regptr, 1); break;
-            case 0x1A: set_r(cpu, regptr, 2); break;
-            case 0x1B: set_r(cpu, regptr, 3); break;
-            case 0x1C: set_r(cpu, regptr, 4); break;
-            case 0x1D: set_r(cpu, regptr, 5); break;
-            case 0x1E: set_r(cpu, regptr, 6); break;
-            case 0x1F: set_r(cpu, regptr, 7); break;
+            case 0x00: sro_r(cpu, regptr,  bit_type); break;
+            case 0x01: bit_r(cpu, *regptr, bit_type); break;
+            case 0x02: res_r(cpu, regptr,  bit_type); break;
+            case 0x03: set_r(cpu, regptr,  bit_type); break;
         }
     }
 }
@@ -1977,45 +1916,15 @@ void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     uint8_t reg = op & 7; // op & 0b111
     uint8_t *regptr = regs[reg];
 
-    uint8_t op_partial = op >> 3;
+    uint8_t op_partial = op >> 6;
+    uint8_t bit_type = (op >> 3) & 7;
 
     switch (op_partial)
     {
-        case 0x00: sro_iid_r(cpu, addr, regptr, 0); break;
-        case 0x01: sro_iid_r(cpu, addr, regptr, 1); break;
-        case 0x02: sro_iid_r(cpu, addr, regptr, 2); break;
-        case 0x03: sro_iid_r(cpu, addr, regptr, 3); break;
-        case 0x04: sro_iid_r(cpu, addr, regptr, 4); break;
-        case 0x05: sro_iid_r(cpu, addr, regptr, 5); break;
-        case 0x06: sro_iid_r(cpu, addr, regptr, 6); break;
-        case 0x07: sro_iid_r(cpu, addr, regptr, 7); break;
-        // bit
-        case 0x08: bit_iid(cpu, addr, 0); break;
-        case 0x09: bit_iid(cpu, addr, 1); break;
-        case 0x0A: bit_iid(cpu, addr, 2); break;
-        case 0x0B: bit_iid(cpu, addr, 3); break;
-        case 0x0C: bit_iid(cpu, addr, 4); break;
-        case 0x0D: bit_iid(cpu, addr, 5); break;
-        case 0x0E: bit_iid(cpu, addr, 6); break;
-        case 0x0F: bit_iid(cpu, addr, 7); break;
-        // res
-        case 0x10: res_iid_r(cpu, addr, regptr, 0); break;
-        case 0x11: res_iid_r(cpu, addr, regptr, 1); break;
-        case 0x12: res_iid_r(cpu, addr, regptr, 2); break;
-        case 0x13: res_iid_r(cpu, addr, regptr, 3); break;
-        case 0x14: res_iid_r(cpu, addr, regptr, 4); break;
-        case 0x15: res_iid_r(cpu, addr, regptr, 5); break;
-        case 0x16: res_iid_r(cpu, addr, regptr, 6); break;
-        case 0x17: res_iid_r(cpu, addr, regptr, 7); break;
-        // set
-        case 0x18: set_iid_r(cpu, addr, regptr, 0); break;
-        case 0x19: set_iid_r(cpu, addr, regptr, 1); break;
-        case 0x1A: set_iid_r(cpu, addr, regptr, 2); break;
-        case 0x1B: set_iid_r(cpu, addr, regptr, 3); break;
-        case 0x1C: set_iid_r(cpu, addr, regptr, 4); break;
-        case 0x1D: set_iid_r(cpu, addr, regptr, 5); break;
-        case 0x1E: set_iid_r(cpu, addr, regptr, 6); break;
-        case 0x1F: set_iid_r(cpu, addr, regptr, 7); break;
+        case 0x00: sro_iid_r(cpu, addr, regptr, bit_type); break;
+        case 0x01: bit_iid(cpu, addr, bit_type); break;
+        case 0x02: res_iid_r(cpu, addr, regptr, bit_type); break;
+        case 0x03: set_iid_r(cpu, addr, regptr, bit_type); break;
     }
 }
 
