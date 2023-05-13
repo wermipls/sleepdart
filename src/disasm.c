@@ -42,7 +42,7 @@ static const char *t_im[] = {
 };
 
 static const char *t_x1_z1_q[] = { 
-    "ret", "exx", "jp hl", "ld sp, hl"
+    "ret", "exx", "jp %s", "ld sp, %s"
 };
 
 static const char *t_x3_z3[] = { 
@@ -56,7 +56,7 @@ static const char *t_x0_z7[] = {
 static const char *t_x0_z2[] = { 
     "ld (bc), a",  "ld a, (bc)",
     "ld (de), a",  "ld a, (de)",
-    "ld (%s), hl", "ld hl, (%s)",
+    "ld (%s), %s", "ld %s, (%s)",
     "ld (%s), a",  "ld a, (%s)",
 };
 
@@ -66,6 +66,47 @@ static const char *ed_x1_z7[] = {
     "rrd", "rld",
     "nop*", "nop*" 
 };
+
+static const char *tt_r(uint8_t **data, int i, int prefix)
+{
+    const char *iid[] = { "(ix%+hhd)", "(iy%+hhd)" };
+    const char *ih[]  = { "ixh", "iyh" };
+    const char *il[]  = { "ixl", "iyl" };
+
+    static char buf[128];
+    if (prefix) {
+        if (i == 6) {
+            int8_t offset = **data;
+            *data += 1;
+            snprintf(buf, sizeof(buf), iid[prefix-1], offset);
+            return buf;
+        } else if (i == 4) {
+            return ih[prefix-1];
+        } else if (i == 5) {
+            return il[prefix-1];
+        }
+    }
+
+    return t_r[i];
+}
+
+static const char *tt_rp(int i, int prefix)
+{
+    if (i == 2 && prefix) {
+        return prefix == 1 ? "ix" : "iy";
+    }
+
+    return t_rp[i];
+}
+
+static const char *tt_rp2(int i, int prefix)
+{
+    if (i == 2 && prefix) {
+        return prefix == 1 ? "ix" : "iy";
+    }
+
+    return t_rp2[i];
+}
 
 /* should potentially handle labels and shite
  * NON REENTRANT */
@@ -108,6 +149,30 @@ static int prefix_cb(uint8_t *data, char *buf, size_t buflen)
     }
 
     return 1;
+}
+
+static int prefix_ddfd_cb(uint8_t *data, char *buf, size_t buflen, int prefix)
+{
+    uint8_t op = *data;
+    data++;
+
+    int x = op >> 6;
+    int y = (op >> 3) & 7;
+    int z = op & 7;
+
+    static const char *r[] = {
+        ", b", ", c", ", d", ", e", ", h", ", l", "", ", a"
+    };
+
+    switch (x)
+    {
+    case 0: snprintf(buf, buflen, "%s %s%s", t_sro[y], tt_r(&data, 6, prefix), r[z]); break;
+    case 1: snprintf(buf, buflen, "bit %d, %s", y, tt_r(&data, 6, prefix)); break;
+    case 2: snprintf(buf, buflen, "res %d, %s%s", y, tt_r(&data, 6, prefix), r[z]); break;
+    case 3: snprintf(buf, buflen, "set %d, %s%s", y, tt_r(&data, 6, prefix), r[z]); break;
+    }
+
+    return 2;
 }
 
 static int prefix_ed(uint8_t *data, char *buf, size_t buflen)
@@ -154,7 +219,7 @@ static int prefix_ed(uint8_t *data, char *buf, size_t buflen)
     return len;
 }
 
-char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
+static char *opcode(uint8_t *data, int *len, uint16_t pc, int prefix)
 {
     uint8_t *dorg = data;
     uint8_t op = *data;
@@ -169,6 +234,11 @@ char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
     char buf[128] = "UNHANDLED";
     const size_t buflen = sizeof(buf);
 
+    const char *fmt = "UNHANDLED";
+    const char *s1 = NULL;
+    const char *s2 = NULL;
+    int noprint = 0;
+
     switch (x)
     {
     case 0:
@@ -177,143 +247,127 @@ char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
         case 0:
             switch (y)
             {
-            case 0: strncpy(buf, "nop", buflen); break;
-            case 1: strncpy(buf, "ex af", buflen); break;
-            case 2:
-                snprintf(buf, buflen, "djnz %s", get_addr_str(pc+2 + (int8_t)*data));
-                data++;
-                break;
-            case 3:
-                snprintf(buf, buflen, "jr %s", get_addr_str(pc+2 + (int8_t)*data));
-                data++;
-                break;
+            case 0: fmt = "nop"; break;
+            case 1: fmt = "ex af"; break;
+            case 2: fmt = "djnz %s"; s1 = get_addr_str(pc+2 + (int8_t)*data); data++; break;
+            case 3: fmt = "jr %s";   s1 = get_addr_str(pc+2 + (int8_t)*data); data++; break;
             default:
-                snprintf(buf, buflen, "jr %s, %s", t_cc[y-4], get_addr_str(pc+2 + (int8_t)*data));
+                fmt = "jr %s, %s"; 
+                s1 = t_cc[y-4]; s2 = get_addr_str(pc+2 + (int8_t)*data);
                 data++;
                 break;
             }
             break;
         case 1:
-            if (q) {
-                snprintf(buf, buflen, "add hl, %s", t_rp[p]);
-            } else {
-                snprintf(buf, buflen, "ld %s, %s", t_rp[p], get_paddr_str(data));
-                data += 2;
-            }
+            if (q) { fmt = "add %s, %s"; s1 = tt_rp(2, prefix); s2 = tt_rp(p, prefix); } 
+            else   { fmt = "ld %s, %s",  s1 = tt_rp(p, prefix); s2 = get_paddr_str(data); data += 2; }
             break;
         case 2:
-            if (y < 4) {
-                strncpy(buf, t_x0_z2[y], buflen);
-            } else {
-                snprintf(buf, buflen, t_x0_z2[y], get_paddr_str(data));
+            fmt = t_x0_z2[y];
+            if (y >= 4) {
+                if (y == 5) {
+                    s1 = tt_rp(2, prefix);
+                    s2 = get_paddr_str(data);
+                } else {
+                    s1 = get_paddr_str(data);
+                    s2 = tt_rp(2, prefix);
+                }
                 data += 2;
             }
             break;
-        case 3:
-            if (q) {
-                snprintf(buf, buflen, "dec %s", t_rp[p]);
-            } else {
-                snprintf(buf, buflen, "inc %s", t_rp[p]);
-            }
-            break;
-        case 4:
-            snprintf(buf, buflen, "inc %s", t_r[y]);
-            break;
-        case 5:
-            snprintf(buf, buflen, "dec %s", t_r[y]);
-            break;
-        case 6:
-            snprintf(buf, buflen, "ld %s, %s", t_r[y], get_byte_str(*data));
-            data++;
-            break;
-        case 7:
-            strncpy(buf, t_x0_z7[y], buflen);
-            break;
+        case 3: fmt = q ? "dec %s" : "inc %s"; s1 = tt_rp(p, prefix);break;
+        case 4: fmt = "inc %s"; s1 = tt_r(&data, y, prefix); break;
+        case 5: fmt = "dec %s"; s1 = tt_r(&data, y, prefix); break;
+        case 6: fmt = "ld %s, %s", s1 = tt_r(&data, y, prefix); s2 = get_byte_str(*data); data++; break;
+        case 7: fmt = t_x0_z7[y]; break;
         }
         break;
-    case 1:
-        if (z == 6 && y == 6)
-            strncpy(buf, "halt", buflen);
-        else
-            snprintf(buf, buflen, "ld %s, %s", t_r[y], t_r[z]);
+    case 1: 
+        if (op == 0x76) {
+            fmt = "halt";
+        } else { 
+            fmt = "ld %s, %s";
+            if (y == 6) {
+                s1 = tt_r(&data, y, prefix);
+                s2 = t_r[z];
+            } else if (z == 6) {
+                s1 = t_r[y];
+                s2 = tt_r(&data, z, prefix);
+            } else {
+                s1 = tt_r(&data, y, prefix);
+                s2 = tt_r(&data, z, prefix);
+            }
+        }
         break;
-    case 2:
-        snprintf(buf, buflen, "%s %s", t_alu[y], t_r[z]);
-        break;
+    case 2: fmt = "%s %s"; s1 = t_alu[y]; s2 = tt_r(&data, z, prefix); break;
     case 3:
         switch (z)
         {
-        case 0:
-            snprintf(buf, buflen, "ret %s", t_cc[y]);
-            break;
+        case 0: fmt = "ret %s"; s1 = t_cc[y]; break;
         case 1:
-            if (q)
-                strncpy(buf, t_x1_z1_q[p], buflen);
-            else
-                snprintf(buf, buflen, "pop %s", t_rp2[p]);
+            if (q) { fmt = t_x1_z1_q[p]; s1 = tt_rp(2, prefix); }
+            else   { fmt = "pop %s"; s1 = tt_rp2(p, prefix); }
             break;
-        case 2:
-            snprintf(buf, buflen, "jp %s, %s", t_cc[y], get_paddr_str(data));
-            data += 2;
-            break;
+        case 2: fmt = "jp %s, %s"; s1 = t_cc[y]; s2 = get_paddr_str(data); data += 2; break;
         case 3:
             switch (y)
             {
-            case 0:
-                snprintf(buf, buflen, "jp %s", get_paddr_str(data));
-                data += 2;
-                break;
+            case 0: fmt = "jp %s"; s1 = get_paddr_str(data); data += 2; break;
             case 1:
-                data += prefix_cb(data, buf, buflen);
+                if (prefix) {
+                    data += prefix_ddfd_cb(data, buf, buflen,prefix); 
+                } else {
+                    data += prefix_cb(data, buf, buflen); 
+                }
+                noprint = 1;
                 break;
-            case 2:
-                snprintf(buf, buflen, "out (%s), a", get_byte_str(*data));
-                data++;
-                break;
-            case 3:
-                snprintf(buf, buflen, "in a, (%s)", get_byte_str(*data));
-                data++;
-                break;
+            case 2: fmt = "out (%s), a"; s1 = get_byte_str(*data); data++; break;
+            case 3: fmt = "in a, (%s)";  s1 = get_byte_str(*data); data++; break;
             default:
-                strncpy(buf, t_x3_z3[y-4], buflen);
+                fmt = t_x3_z3[y-4];
             }
             break;
-        case 4:
-            snprintf(buf, buflen, "call %s, %s", t_cc[y], get_paddr_str(data));
-            data += 2;
-            break;
+        case 4: fmt = "call %s, %s"; s1 = t_cc[y]; s2 = get_paddr_str(data); data += 2; break;
         case 5:
             if (q) {
                 switch (p)
                 {
-                case 0:
-                    snprintf(buf, buflen, "call %s", get_byte_str(*data));
-                    data += 2;
-                case 1:
-                    // dd
+                case 0: fmt = "call %s"; s1 = get_byte_str(*data); data += 2; break;
+                case 1: // dd
+                    if (prefix) {
+                        fmt = "nop*";
+                    } else {
+                        return opcode(data, len, pc, 1);
+                    }
                     break;
                 case 2:
-                    data += prefix_ed(data, buf, buflen);
+                    if (prefix) {
+                        fmt = "nop*";
+                        data--;
+                    } else {
+                        data += prefix_ed(data, buf, buflen); noprint = 1;
+                    }
                     break;
-                case 3:
-                    // fd
+                case 3: // fd
+                    if (prefix) {
+                        fmt = "nop*";
+                    } else {
+                        return opcode(data, len, pc, 2);
+                    }
                     break;
                 }
             } else {
-                snprintf(buf, buflen, "push %s", t_rp2[p]);
+                fmt = "push %s"; s1 = tt_rp2(p, prefix);
             }
             break;
-        case 6:
-            snprintf(buf, buflen, "%s %s", t_alu[y], get_byte_str(*data));
-            data++;
-            break;
-        case 7:
-            snprintf(buf, buflen, "rst %s", get_byte_str(y*8));
-            break;
+        case 6: fmt = "%s %s"; s1 = t_alu[y]; s2 = get_byte_str(*data); data++; break;
+        case 7: fmt = "rst %s"; s1 = get_byte_str(y*8); break;
         }
     }
 
-    *len = data - dorg;
+    if (!noprint) snprintf(buf, buflen, fmt, s1, s2);
+
+    *len = data - dorg + !(!prefix);
 
     size_t slen = strlen(buf) + 1;
     char *str = malloc(slen);
@@ -324,4 +378,9 @@ char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
     str[slen-1] = 0;
 
     return str;
+}
+
+char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
+{
+    return opcode(data, len, pc, 0);
 }
