@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "memory.h"
-#include "log.h"
 
 static const char *t_r[] = {
     "b", "c", "d", "e", "h", "l", "(hl)", "a"
