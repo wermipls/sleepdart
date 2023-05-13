@@ -151,8 +151,8 @@ static int prefix_cb(uint8_t *data, char *buf, size_t buflen)
 
 static int prefix_ddfd_cb(uint8_t *data, char *buf, size_t buflen, int prefix)
 {
+    const char *iid = tt_r(&data, 6, prefix);
     uint8_t op = *data;
-    data++;
 
     int x = op >> 6;
     int y = (op >> 3) & 7;
@@ -164,10 +164,10 @@ static int prefix_ddfd_cb(uint8_t *data, char *buf, size_t buflen, int prefix)
 
     switch (x)
     {
-    case 0: snprintf(buf, buflen, "%s %s%s", t_sro[y], tt_r(&data, 6, prefix), r[z]); break;
-    case 1: snprintf(buf, buflen, "bit %d, %s", y, tt_r(&data, 6, prefix)); break;
-    case 2: snprintf(buf, buflen, "res %d, %s%s", y, tt_r(&data, 6, prefix), r[z]); break;
-    case 3: snprintf(buf, buflen, "set %d, %s%s", y, tt_r(&data, 6, prefix), r[z]); break;
+    case 0: snprintf(buf, buflen, "%s %s%s", t_sro[y], iid, r[z]); break;
+    case 1: snprintf(buf, buflen, "bit %d, %s", y, iid); break;
+    case 2: snprintf(buf, buflen, "res %d, %s%s", y, iid, r[z]); break;
+    case 3: snprintf(buf, buflen, "set %d, %s%s", y, iid, r[z]); break;
     }
 
     return 2;
