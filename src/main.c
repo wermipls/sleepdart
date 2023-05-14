@@ -117,8 +117,7 @@ int main(int argc, char *argv[])
 
     config_set_int(&g_config, "window-scale", video_sdl_get_scale());
     config_set_int(&g_config, "limit-fps", video_sdl_get_fps_limit());
-    char **palette_list = palette_list_get();
-    config_set_str(&g_config, "palette", palette_list[palette_get_index()]);
+    config_set_str(&g_config, "palette", palette_get_name());
 
     config_save();
 
