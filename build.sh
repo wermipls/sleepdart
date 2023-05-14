@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
 
-FILES="src/*.c ayumi/ayumi.c"
-FLAGS="-std=gnu11 -Wall -Wextra -Wpedantic -lz -lm `sdl2-config --libs`"
+FILES="src/*.c ayumi/ayumi.c microui/src/microui.c"
+FLAGS="-std=gnu11 -Wall -Wextra -Wpedantic -lz -lm \
+      `sdl2-config --libs` -I microui/src \
+      `pkg-config --cflags --libs freetype2`"
 FLAGS_DEBUG="-Og -ggdb"
 FLAGS_RELEASE="-O3 -ffast-math -flto -fwhole-program"
 RELEASE_FILES="sleepdart* rom/* palettes/*"
