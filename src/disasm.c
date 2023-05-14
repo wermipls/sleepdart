@@ -378,7 +378,7 @@ static char *opcode(uint8_t *data, int *len, uint16_t pc, int prefix)
     return str;
 }
 
-char *disassemble_opcode(uint8_t *data, int *len, uint16_t pc)
+char *disasm_opcode(uint8_t *data, int *len, uint16_t pc)
 {
     return opcode(data, len, pc, 0);
 }
