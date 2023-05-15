@@ -32,27 +32,34 @@ int input_sdl_update()
     int quit = 0;
 
     SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        int handled = 0;
+    SDL_Event events[1024];
+    int count = SDL_PeepEvents(events, 1024, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+    for (int i = 0; i < count; i++) {
+        e = events[i];
         switch (e.type)
         {
         case SDL_QUIT:
-            handled = 1;
             quit = 1;
             break;
         case SDL_DROPFILE:
-            handled = 1;
             machine_open_file(e.drop.file);
             SDL_free(e.drop.file);
             break;
         }
-
-        if (!handled) {
-            SDL_PushEvent(&e);
-        }
     }
 
     return quit;
+}
+
+void input_sdl_pump_events()
+{
+    SDL_PumpEvents();
+}
+
+void input_sdl_flush_events()
+{
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 }
 
 void input_sdl_copy_old_state()

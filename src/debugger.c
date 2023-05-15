@@ -6,6 +6,7 @@
 #include "z80.h"
 #include "disasm.h"
 #include "vector.h"
+#include "input_sdl.h"
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_events.h>
 
@@ -15,9 +16,11 @@ static Machine_t *machine;
 struct Disasm
 {
     int breakpoint;
-    uint16_t pcval;
-    char *pc;
-    char *bytes;
+    uint16_t pc;
+    int len;
+    int dirty;
+    char *pcstr;
+    char *bytestr;
     char *instr;
 };
 
@@ -89,6 +92,69 @@ static void remove_breakpoint(uint16_t pc)
     }
 }
 
+static int disasm_update(struct Disasm *d, uint16_t pc)
+{
+    *d = (struct Disasm) { 0 };
+    d->pc = pc;
+
+    char buf[256];
+
+    int index = 0;
+    int len = 1;
+    char *op = disasm_opcode(&machine->memory.bus[pc], &len, pc);
+    d->len = len;
+
+    snprintf(
+        buf, sizeof(buf),
+        "%04x", pc);
+    size_t size = strlen(buf)+1;
+    d->pcstr = malloc(size);
+    if (d->pcstr == NULL) {
+        free(op);
+        return -1;
+    }
+    memcpy(d->pcstr, buf, size-1);
+    d->pcstr[size-1] = 0;
+
+    uint16_t i = pc;
+    while (len--) {
+        index += snprintf(
+            buf+index, sizeof(buf)-index,
+            "%02x ", machine->memory.bus[i]);
+        i++;
+    }
+
+    size = strlen(buf)+1;
+    d->bytestr = malloc(size);
+    if (d->bytestr == NULL) {
+        free(d->pcstr);
+        free(op);
+        return -2;
+    }
+    memcpy(d->bytestr, buf, size-1);
+    d->bytestr[size-1] = 0;
+
+    d->instr = op;
+    return 0;
+}
+
+static void disasm_free(struct Disasm *d)
+{
+    if (d->bytestr) { free(d->bytestr); d->bytestr = NULL; }
+    if (d->instr) { free(d->instr); d->instr = NULL; }
+    if (d->pcstr) { free(d->pcstr); d->pcstr = NULL; }
+}
+
+void debugger_mark_dirty(uint16_t addr)
+{
+    if (!debugger_enabled) return;
+
+    disasm[addr--].dirty = true;
+    disasm[addr--].dirty = true;
+    disasm[addr--].dirty = true;
+    disasm[addr--].dirty = true;
+}
+
 static void update_regs()
 {
     struct Z80Regs *r = &machine->cpu.regs;
@@ -116,7 +182,7 @@ static void disasm_window(mu_Context *ctx) {
         pc = machine->cpu.regs.pc;
 
         mu_layout_row(ctx, 4, (int[]) { 70, -200, -100, -1 }, 25);
-        if (mu_button(ctx, "Pause")) {
+        if (mu_button(ctx, "Pause") && break_on == DBG_BREAKPOINT) {
             break_on = DBG_STEPINTO;
         };
         if (mu_button(ctx, "Continue")) {
@@ -131,31 +197,38 @@ static void disasm_window(mu_Context *ctx) {
         mu_begin_panel(ctx, "disassembly");
         mu_Container *panel = mu_get_current_container(ctx);
         int line_h = render_text_height(0) + 4;
-        int pci = 0;
-        for (size_t i = 0; i < vector_len(disasm); i++) {
+        int disasm_lines = 0;
+        int pclines = 0;
+        int i = machine->cpu.regs.pc - 32;
+        i = i < 0 ? 0 : i;
+        for (; i < vector_len(disasm) && disasm_lines < 64;) {
             struct Disasm *d = &disasm[i];
-            int icon = d->breakpoint ? DBGICON_BREAKPOINT : 0;
-            if (d->pcval == machine->cpu.regs.pc) {
-                icon = DBGICON_CURRENT;
-                pci = i;
+            if (d->dirty) {
+                disasm_free(d);
+                disasm_update(d, i);
             }
             mu_layout_row(ctx, 4, (int[]) { line_h, 32, 100, -1 }, line_h);
+            int icon = d->breakpoint ? DBGICON_BREAKPOINT : 0;
+            if (d->pc == machine->cpu.regs.pc) {
+                icon = DBGICON_CURRENT;
+                pclines = disasm_lines;
+            }
             if (mu_button_ex_id(ctx, NULL, 1+i, icon, MU_OPT_NOFRAME)) {
                 d->breakpoint ^= 1;
-                if (d->breakpoint) add_breakpoint(d->pcval);
-                else remove_breakpoint(d->pcval);
+                if (d->breakpoint) add_breakpoint(d->pc);
+                else remove_breakpoint(d->pc);
             }
-            mu_label(ctx, d->pc);
-            mu_label(ctx, d->bytes);
+            mu_label(ctx, d->pcstr);
+            mu_label(ctx, d->bytestr);
             mu_label(ctx, d->instr);
+
+            disasm_lines++;
+            i += d->len;
         }
         if (pc_changed) {
-            int curline_y = (line_h + ctx->style->spacing) * pci;
-            int offset = curline_y - panel->scroll.y;
-            if (offset < 100 || offset > (panel->body.h - 100)) {
-                panel->scroll.y = curline_y - panel->body.h / 2;
-                if (panel->scroll.y < 0) panel->scroll.y = 0;
-            }
+            int curline_y = (line_h + ctx->style->spacing) * pclines;
+            panel->scroll.y = curline_y - panel->body.h / 2;
+            if (panel->scroll.y < 0) panel->scroll.y = 0;
         }
         mu_end_panel(ctx);
 
@@ -202,26 +275,29 @@ static void process_frame(mu_Context *ctx) {
     mu_end(ctx);
 }
 
-static int window_loop(mu_Context *ctx)
+static int window_loop(mu_Context *ctx, int flush_events)
 {
     SDL_Event e;
-    SDL_PumpEvents();
-    while (SDL_PollEvent(&e)) {
-        int handled = 0;
+    SDL_Event events[1024];
+    if (flush_events) SDL_PumpEvents();
+    int count = SDL_PeepEvents(events, 1024, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+    for (int i = 0; i < count; i++) {
+        e = events[i];
         switch (e.type)
         {
         case SDL_MOUSEMOTION:
             if (e.motion.windowID != render_get_window_id()) break;
             mu_input_mousemove(ctx, e.motion.x, e.motion.y);
-            handled = 1; break;
+            break;
         case SDL_MOUSEBUTTONDOWN:
             if (e.button.windowID != render_get_window_id()) break;
             mu_input_mousedown(ctx, e.button.x, e.button.y, e.button.button);
-            handled = 1; break;
+            break;
         case SDL_MOUSEBUTTONUP:
             if (e.button.windowID != render_get_window_id()) break;
             mu_input_mouseup(ctx, e.button.x, e.button.y, e.button.button);
-            handled = 1; break;
+            break;
         case SDL_WINDOWEVENT:
             if (e.window.windowID != render_get_window_id()) break;
             if (e.window.event == SDL_WINDOWEVENT_CLOSE) {
@@ -229,11 +305,17 @@ static int window_loop(mu_Context *ctx)
                 break_on = DBG_NONE;
                 return 0;
             }
+            break;
+        case SDL_MOUSEWHEEL:
+            if (e.wheel.windowID != render_get_window_id()) break;
+            mu_input_scroll(ctx, 0, e.wheel.y * -30);
+            break;
         }
+    }
 
-        if (!handled) {
-            SDL_PushEvent(&e);
-        }
+    if (flush_events) {
+        input_sdl_update();
+        SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
     }
 
     process_frame(ctx);
@@ -276,12 +358,14 @@ void debugger_handle()
     case DBG_STEPINTO:
         is_break = true;
         break;
+    default:
+        break;
     }
 
     if (is_break) {
         break_on = DBG_NONE;
         update_regs();
-        while (window_loop(&context));
+        while (window_loop(&context, true));
     }
 }
 
@@ -290,7 +374,7 @@ void debugger_update_window()
     if (!debugger_enabled) return;
 
     update_regs();
-    window_loop(&context);
+    window_loop(&context, false);
 }
 
 void debugger_open(Machine_t *m)
@@ -309,59 +393,20 @@ void debugger_open(Machine_t *m)
 
     memset(breakpoints, 0, sizeof(breakpoints));
 
-    char buf[1024];
-
     machine = m;
 
-    uint8_t *pmem = machine->memory.bus;
-    uint16_t pc = 0;
-    for (; pc < 0x4000;) {
+    int pc = 0;
+    for (; pc < 0x10000;) {
         struct Disasm d = { 0 };
-        d.pcval = pc;
-
-        int index = 0;
-        int len = 1;
-        char *op = disasm_opcode(pmem, &len, pc);
-
-        snprintf(
-            buf, sizeof(buf),
-            "%04x", pc);
-        size_t size = strlen(buf)+1;
-        d.pc = malloc(size);
-        if (d.pc == NULL) {
-            free(op);
-            break;
-        }
-        memcpy(d.pc, buf, size-1);
-        d.pc[size-1] = 0;
-
-        while (len--) {
-            index += snprintf(
-                buf+index, sizeof(buf)-index,
-                "%02x ", *pmem);
-            pmem++;
-            pc++;
-        }
-
-        size = strlen(buf)+1;
-        d.bytes = malloc(size);
-        if (d.bytes == NULL) {
-            free(d.pc);
-            free(op);
-            break;
-        }
-        memcpy(d.bytes, buf, size-1);
-        d.bytes[size-1] = 0;
-
-        d.instr = op;
+        disasm_update(&d, pc);
         vector_add(disasm, d);
+
+        pc++;
     }
 
     update_regs();
 
     debugger_enabled = true;
-
-    debugger_update_window();
 }
 
 void debugger_close()

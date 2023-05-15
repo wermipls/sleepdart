@@ -6,6 +6,7 @@
 #include "log.h"
 #include "ula.h"
 #include "machine.h"
+#include "debugger.h"
 
 /* Initializes the DRAM to a pseudo-random state it would have on initial power-on. */
 void memory_init(Memory_t *mem)
@@ -58,6 +59,8 @@ uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
         // 0x8000 - 0xFFFF -> RAM
         ctx->memory.bus[addr] = value;
     }
+
+    debugger_mark_dirty(addr);
 
     return 0;
 }

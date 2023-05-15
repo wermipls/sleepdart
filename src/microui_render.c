@@ -2,6 +2,7 @@
 
 #include "microui.h"
 #include "file.h"
+#include "log.h"
 #include <SDL2/SDL.h>
 #include <zlib.h>
 #include <freetype2/ft2build.h>
@@ -177,18 +178,21 @@ int render_init()
 
     int err = FT_Init_FreeType(&ft);
     if (err) {
-      return -4;
+        dlog(LOG_ERR, "%s: failed to initialize FreeType", __func__);
+        return -4;
     }
 
     char buf[2048];
     file_path_append(buf, file_get_basedir(), "assets/font.ttf", sizeof(buf));
     err = FT_New_Face(ft, buf, 0, &face);
     if (err) {
+        dlog(LOG_ERR, "%s: failed to load face \"%s\"", __func__, buf);
         return -5;
     }
 
     err = FT_Set_Char_Size(face, 0, 12*64, 72, 72);
     if (err) {
+        dlog(LOG_ERR, "%s: failed to set character size", __func__);
         return -6;
     }
 
@@ -198,6 +202,7 @@ int render_init()
         width, height, 0);
 
     if (!window) {
+        dlog(LOG_ERR, "%s: failed to create window", __func__);
         return -2;
     }
 
@@ -206,6 +211,7 @@ int render_init()
     renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer) {
         SDL_DestroyWindow(window);
+        dlog(LOG_ERR, "%s: failed to create renderer", __func__, buf);
         return -3;
     }
 
@@ -217,6 +223,9 @@ int render_init()
 
     file_path_append(buf, file_get_basedir(), "assets/icons.raw.zlib", sizeof(buf));
     icons_atlas = load_rgba32_zlib_texture(buf, 1024, 64);
+    if (!icons_atlas) {
+        dlog(LOG_WARN, "%s: failed to load \"%s\"", __func__, buf);
+    }
 
     for (int i = 1; i < 1024/64; i++) {
         icons[i].src = (SDL_Rect) { (i-1)*64, 0, 64, 64 };
@@ -270,6 +279,11 @@ void render_draw_icon(int id, mu_Rect rect, mu_Color c)
     };
 
     c = colors[!(!colors[1].a)];
+
+    if (!icons_atlas) {
+        render_draw_rect(rect, c);
+        return;
+    }
 
     SDL_SetTextureColorMod(icons_atlas, c.r, c.g, c.b);
     SDL_SetTextureAlphaMod(icons_atlas, c.a);

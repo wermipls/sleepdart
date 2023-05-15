@@ -5,6 +5,8 @@
 void input_sdl_init();
 void input_sdl_deinit();
 int input_sdl_update();
+void input_sdl_pump_events();
+void input_sdl_flush_events();
 void input_sdl_copy_old_state();
 uint8_t input_sdl_get_key(uint16_t scancode);
 uint8_t input_sdl_get_key_pressed(uint16_t scancode);

@@ -219,11 +219,15 @@ int machine_do_cycles()
 
             keyboard_macro_process();
 
+            input_sdl_copy_old_state();
+            input_sdl_pump_events();
+    
             debugger_update_window();
 
-            input_sdl_copy_old_state();
             int quit = input_sdl_update();
             if (quit) return -2;
+
+            input_sdl_flush_events();
 
             hotkeys_process();
             machine_process_events();
