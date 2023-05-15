@@ -20,7 +20,8 @@ done
 
 if [[ $PLATFORM == "WIN32" ]] || [[ $PLATFORM == "win32" ]]; then
     WIN32_FILES="src/win32/*.c src/win32/*.o"
-    WIN32_FLAGS="-DPLATFORM_WIN32 -static `sdl2-config --static-libs`"
+    WIN32_FLAGS="-DPLATFORM_WIN32 -static `sdl2-config --static-libs` \
+                `pkg-config --libs --static freetype2` -lstdc++"
     FILES="$FILES $WIN32_FILES"
     FLAGS="$FLAGS $WIN32_FLAGS"
 
