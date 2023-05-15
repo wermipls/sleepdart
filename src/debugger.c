@@ -12,15 +12,9 @@
 static mu_Context context;
 static Machine_t *machine;
 
-const char *icons[] = {
-    "",
-    "()",
-    "->",
-};
-
 struct Disasm
 {
-    int icon;
+    int breakpoint;
     uint16_t pcval;
     char *pc;
     char *bytes;
@@ -33,8 +27,18 @@ struct Breakpoint
     uint16_t pc;
 };
 
+enum Condition
+{
+    DBG_NONE,
+    DBG_STEPINTO,
+    DBG_STEPOVER,
+    DBG_BREAKPOINT,
+};
+
 static struct Breakpoint breakpoints[256];
 static char registers[1024];
+static enum Condition break_on = DBG_STEPINTO;
+static bool debugger_enabled = false;
 
 struct Disasm *disasm = NULL;
 
@@ -94,42 +98,33 @@ static void update_regs()
         "BC  %04x    BC` %04x\n"
         "DE  %04x    DE` %04x\n"
         "HL  %04x    HL` %04x\n"
-        "IX  %04x    IY  %04x\n",
+        "IX  %04x    IY  %04x\n\n"
+        "cycles: %05lld/%05u",
         r->pc,      r->sp,
         r->main.af, r->alt.af,
         r->main.bc, r->alt.bc,
         r->main.de, r->alt.de,
         r->main.hl, r->alt.hl,
-        r->ix,      r->iy);
+        r->ix,      r->iy,
+        machine->cpu.cycles, machine->timing.t_frame);
 }
-
-int dbg_continue = 0;
 
 static void disasm_window(mu_Context *ctx) {
     if (mu_begin_window_ex(ctx, "Debugger", mu_rect(0, 0, 400, 600), MU_OPT_NOCLOSE)) {
-        int pc_changed = 0;
-        
-        mu_layout_row(ctx, 3, (int[]) { -200, -100, -1 }, 25);
-        if (mu_button(ctx, "Continue") || dbg_continue) {
-            dbg_continue = 1;
-            int timeout = 70000; // hack
-            uint16_t pc = machine->cpu.regs.pc;
-            do {
-                cpu_do_cycles(&machine->cpu);
-                if (is_breakpoint(machine->cpu.regs.pc)) {
-                    dbg_continue = 0;
-                    break;
-                }
-            } while (timeout--);
-            update_regs();
-            pc_changed = 1;
+        static int pc = -1;
+        int pc_changed = (machine->cpu.regs.pc != pc);
+        pc = machine->cpu.regs.pc;
+
+        mu_layout_row(ctx, 4, (int[]) { 70, -200, -100, -1 }, 25);
+        if (mu_button(ctx, "Pause")) {
+            break_on = DBG_STEPINTO;
+        };
+        if (mu_button(ctx, "Continue")) {
+            break_on = DBG_BREAKPOINT;
         };
         mu_button(ctx, "Step over");
         if (mu_button(ctx, "Step into")) {
-            uint16_t pc = machine->cpu.regs.pc;
-            cpu_do_cycles(&machine->cpu);
-            update_regs();
-            pc_changed = (machine->cpu.regs.pc != pc);
+             break_on = DBG_STEPINTO;
         };
         
         mu_layout_row(ctx, 1, (int[]) { -1 }, -1);
@@ -139,15 +134,15 @@ static void disasm_window(mu_Context *ctx) {
         int pci = 0;
         for (size_t i = 0; i < vector_len(disasm); i++) {
             struct Disasm *d = &disasm[i];
-            int icon = d->icon;
+            int icon = d->breakpoint ? DBGICON_BREAKPOINT : 0;
             if (d->pcval == machine->cpu.regs.pc) {
-                icon = 2;
+                icon = DBGICON_CURRENT;
                 pci = i;
             }
-            mu_layout_row(ctx, 4, (int[]) { 16, 32, 100, -1 }, line_h);
-            if (mu_button_ex_id(ctx, icons[icon], 1+i, 0, MU_OPT_NOFRAME)) {
-                d->icon ^= 1;
-                if (d->icon) add_breakpoint(d->pcval);
+            mu_layout_row(ctx, 4, (int[]) { line_h, 32, 100, -1 }, line_h);
+            if (mu_button_ex_id(ctx, NULL, 1+i, icon, MU_OPT_NOFRAME)) {
+                d->breakpoint ^= 1;
+                if (d->breakpoint) add_breakpoint(d->pcval);
                 else remove_breakpoint(d->pcval);
             }
             mu_label(ctx, d->pc);
@@ -170,9 +165,32 @@ static void disasm_window(mu_Context *ctx) {
 
 static void regs_window(mu_Context *ctx)
 {
-    if (mu_begin_window(ctx, "Registers", mu_rect(400, 0, 200, 200))) {
-        mu_layout_row(ctx, 1, (int[]) { -1 }, -1);
+    if (mu_begin_window(ctx, "Registers", mu_rect(400, 0, 200, 400))) {
+        mu_layout_row(ctx, 1, (int[]) { -1 }, 220);
         mu_text(ctx, registers);
+
+        mu_layout_row(ctx, 8, (int[]) { 16, 16, 16, 16, 16, 16, 16, 16 }, 16);
+        static const char *flag_label[8] = {
+            "C", "N", "PV", "X", "H", "Y", "Z", "S"
+        };
+        for (int i = 7; i >= 0; i--) {
+            mu_draw_control_text(
+                ctx, flag_label[i], mu_layout_next(ctx), 
+                MU_COLOR_TEXT, MU_OPT_ALIGNCENTER);
+        }
+        int flags[8];
+        int clicked = 0;
+        for (int i = 7; i >= 0; i--) {
+            flags[i] = machine->cpu.regs.main.f & (1<<i);
+            clicked |= mu_checkbox(ctx, NULL, &flags[i]);
+        }
+        if (clicked) {
+            uint8_t f = 0;
+            for (int i = 0; i < 8; i++) {
+                f |= (1<<i) * !(!flags[i]);
+            }
+            machine->cpu.regs.main.f = f;
+        }
         mu_end_window(ctx);
     }
 }
@@ -189,22 +207,32 @@ static int window_loop(mu_Context *ctx)
     SDL_Event e;
     SDL_PumpEvents();
     while (SDL_PollEvent(&e)) {
+        int handled = 0;
         switch (e.type)
         {
         case SDL_MOUSEMOTION:
+            if (e.motion.windowID != render_get_window_id()) break;
             mu_input_mousemove(ctx, e.motion.x, e.motion.y);
-            break;
+            handled = 1; break;
         case SDL_MOUSEBUTTONDOWN:
+            if (e.button.windowID != render_get_window_id()) break;
             mu_input_mousedown(ctx, e.button.x, e.button.y, e.button.button);
-            break;
+            handled = 1; break;
         case SDL_MOUSEBUTTONUP:
+            if (e.button.windowID != render_get_window_id()) break;
             mu_input_mouseup(ctx, e.button.x, e.button.y, e.button.button);
-            break;
+            handled = 1; break;
         case SDL_WINDOWEVENT:
-            switch (e.window.event)
-            {
-            case SDL_WINDOWEVENT_CLOSE: return 0; break;
-            } 
+            if (e.window.windowID != render_get_window_id()) break;
+            if (e.window.event == SDL_WINDOWEVENT_CLOSE) {
+                debugger_close();
+                break_on = DBG_NONE;
+                return 0;
+            }
+        }
+
+        if (!handled) {
+            SDL_PushEvent(&e);
         }
     }
 
@@ -218,16 +246,57 @@ static int window_loop(mu_Context *ctx)
         {
         case MU_COMMAND_TEXT: render_text(cmd->text.font, cmd->text.str, cmd->text.pos, cmd->text.color); break;
         case MU_COMMAND_RECT: render_draw_rect(cmd->rect.rect, cmd->rect.color); break;
+        case MU_COMMAND_CLIP: render_clip_rect(cmd->rect.rect); break;
+        case MU_COMMAND_ICON: render_draw_icon(cmd->icon.id, cmd->icon.rect, cmd->icon.color); break;
         }
     }
     render_present();
 
+    if (break_on != DBG_NONE) {
+        return 0;
+    }
+
     return 1;
 }
 
+void debugger_handle()
+{
+    if (!debugger_enabled) return;
+
+    bool is_break = false;
+
+    switch (break_on)
+    {
+    case DBG_BREAKPOINT:
+        if (is_breakpoint(machine->cpu.regs.pc)) {
+            is_break = true;
+        }
+        break;
+    case DBG_STEPOVER:
+    case DBG_STEPINTO:
+        is_break = true;
+        break;
+    }
+
+    if (is_break) {
+        break_on = DBG_NONE;
+        update_regs();
+        while (window_loop(&context));
+    }
+}
+
+void debugger_update_window()
+{
+    if (!debugger_enabled) return;
+
+    update_regs();
+    window_loop(&context);
+}
 
 void debugger_open(Machine_t *m)
 {
+    if (debugger_enabled) return;
+
     mu_init(&context);
     context.text_height = render_text_height;
     context.text_width = render_text_width;
@@ -290,9 +359,18 @@ void debugger_open(Machine_t *m)
 
     update_regs();
 
-    while (window_loop(&context));
+    debugger_enabled = true;
+
+    debugger_update_window();
+}
+
+void debugger_close()
+{
+    if (!debugger_enabled) return;
 
     render_deinit();
     vector_free(disasm);
+
+    debugger_enabled = false;
 }
 

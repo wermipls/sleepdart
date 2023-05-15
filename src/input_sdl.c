@@ -33,15 +33,22 @@ int input_sdl_update()
 
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
+        int handled = 0;
         switch (e.type)
         {
         case SDL_QUIT:
+            handled = 1;
             quit = 1;
             break;
         case SDL_DROPFILE:
+            handled = 1;
             machine_open_file(e.drop.file);
             SDL_free(e.drop.file);
             break;
+        }
+
+        if (!handled) {
+            SDL_PushEvent(&e);
         }
     }
 

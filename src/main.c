@@ -16,6 +16,8 @@
 #include "sleepdart_info.h"
 #include "config.h"
 
+#include "debugger.h"
+
 int main(int argc, char *argv[])
 {
     char *errsilent = getenv("SLEEPDART_ERRSILENT");
@@ -27,6 +29,7 @@ int main(int argc, char *argv[])
     argparser_add_arg(parser, "file", 0, 0, true, "tape or snapshot file to be loaded");
     argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");
     argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, "run in fullscreen mode");
+    argparser_add_arg(parser, "--debugger", 'd', ARG_STORE_TRUE, 0, "open the debugger");
     argparser_add_arg(parser, "--test", 0, ARG_STRING, 0, "perform an automated regression test");
 
     dlog(LOG_INFO, 
@@ -107,6 +110,10 @@ int main(int argc, char *argv[])
     audio_sdl_init(sample_rate);
 
     machine_process_events();
+
+    if (argparser_get(parser, "debugger")) {
+        debugger_open(&m);
+    }
 
     for (;;) {
         int err = machine_do_cycles();

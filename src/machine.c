@@ -11,6 +11,7 @@
 #include "audio_sdl.h"
 #include "dsp.h"
 #include "hotkeys.h"
+#include "debugger.h"
 
 static Machine_t *m_cur = NULL;
 static bool file_open;
@@ -198,6 +199,7 @@ int machine_do_cycles()
 
         machine_process_hooks(m_cur);
         machine_test_iterate(m_cur);
+        debugger_handle();
 
         cpu_do_cycles(&m_cur->cpu);
 
@@ -216,6 +218,8 @@ int machine_do_cycles()
             video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
 
             keyboard_macro_process();
+
+            debugger_update_window();
 
             input_sdl_copy_old_state();
             int quit = input_sdl_update();
