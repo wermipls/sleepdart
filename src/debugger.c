@@ -199,8 +199,8 @@ static void disasm_window(mu_Context *ctx) {
         int line_h = render_text_height(0) + 4;
         int disasm_lines = 0;
         int pclines = 0;
-        int i = machine->cpu.regs.pc - 32;
-        i = i < 0 ? 0 : i;
+        size_t i = machine->cpu.regs.pc;
+        i = i > 32 ? i - 32 : 0;
         for (; i < vector_len(disasm) && disasm_lines < 64;) {
             struct Disasm *d = &disasm[i];
             if (d->dirty) {
@@ -255,7 +255,7 @@ static void regs_window(mu_Context *ctx)
         int clicked = 0;
         for (int i = 7; i >= 0; i--) {
             flags[i] = machine->cpu.regs.main.f & (1<<i);
-            clicked |= mu_checkbox(ctx, NULL, &flags[i]);
+            clicked |= mu_checkbox(ctx, "", &flags[i]);
         }
         if (clicked) {
             uint8_t f = 0;
@@ -263,6 +263,7 @@ static void regs_window(mu_Context *ctx)
                 f |= (1<<i) * !(!flags[i]);
             }
             machine->cpu.regs.main.f = f;
+            update_regs();
         }
         mu_end_window(ctx);
     }

@@ -71,8 +71,9 @@ static int cache_glyph(FT_Face f, char c)
     }
 
     uint32_t *px = buf;
+    int size = bitmap->pitch*bitmap->rows;
 
-    for (int i = 0; i < bitmap->pitch*bitmap->rows; i++) {
+    for (int i = 0; i < size; i++) {
         px[i] = 0xFFFFFF00 | bitmap->buffer[i];
     }
 
@@ -110,11 +111,11 @@ SDL_Texture *load_rgba32_zlib_texture(const char *path, int width, int height)
 
     if (!tex) return NULL;
 
-    uint8_t *buf;
+    void *buf;
     int pitch;
 
     SDL_LockTexture(tex, NULL, &buf, &pitch);
-    size_t len = pitch * height;
+    uLongf len = pitch * height;
 
     uncompress(buf, &len, src, fsize);
     SDL_UnlockTexture(tex);
@@ -147,7 +148,7 @@ int render_text_height(mu_Font font)
 
 void render_text(mu_Font font, const char *text, mu_Vec2 pos, mu_Color color)
 {
-    if (!text) return 0;
+    if (!text) return;
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     pos.y += face->size->metrics.ascender / 64;

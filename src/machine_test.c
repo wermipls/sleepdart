@@ -376,7 +376,7 @@ static void finish_print()
     remove(tmp);
 }
 
-static void test_finish(struct Machine *m) {
+static void test_finish() {
     if (test.docflags) {
         finish_hash(test.docflags, "docflags");
     }
@@ -437,8 +437,10 @@ int machine_test_iterate(struct Machine *m)
     }
 
     if (test_condition(m)) {
-        test_finish(m);
+        test_finish();
     }
+
+    return 0;
 }
 
 void machine_test_close()
