@@ -101,7 +101,13 @@ static int disasm_update(struct Disasm *d, uint16_t pc)
 
     int index = 0;
     int len = 1;
-    char *op = disasm_opcode(&machine->memory.bus[pc], &len, pc);
+    uint8_t opbuf[4];
+    opbuf[0] = machine->memory.bus[(uint16_t)(pc+0)];
+    opbuf[1] = machine->memory.bus[(uint16_t)(pc+1)];
+    opbuf[2] = machine->memory.bus[(uint16_t)(pc+2)];
+    opbuf[3] = machine->memory.bus[(uint16_t)(pc+3)];
+
+    char *op = disasm_opcode(opbuf, &len, pc);
     d->len = len;
 
     snprintf(
