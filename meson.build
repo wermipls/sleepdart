@@ -43,7 +43,7 @@ deps = [
 
 add_project_link_arguments('-lstdc++', language: 'c')
 
-executable(
+exe = executable(
   'sleepdart',
   'src/main.c',
   'src/argparser.c',
@@ -84,3 +84,13 @@ executable(
   win_subsystem: 'windows',
   link_args: '-lm',
 )
+
+# a lil hacky...
+dest = meson.project_source_root()
+custom_target(
+  'finalize',
+  depends: exe,
+  input: exe,
+  output: 'fake',
+  command: ['cp', '@INPUT@', dest],
+  build_by_default : true)
