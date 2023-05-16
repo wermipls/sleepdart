@@ -17,6 +17,8 @@ static FILE *out_stream = NULL;
 
 static void putc_zx(uint8_t ch, FILE *f)
 {
+    if (!f) return;
+
     char *s = NULL;
     switch (ch)
     {
