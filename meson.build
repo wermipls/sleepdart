@@ -2,8 +2,8 @@ project('sleepdart', 'c', default_options: ['buildtype=release'])
 
 release_args = ['-ffast-math', '-flto', '-fwhole-program']
 if get_option('buildtype') == 'release'
-  add_project_arguments(release_args, language : 'c')
-  add_project_link_arguments(release_args, language : 'c')
+  add_project_arguments(release_args, language: 'c')
+  add_project_link_arguments(release_args, language: 'c')
 endif
 
 includes = include_directories('microui/src')
@@ -21,8 +21,17 @@ if target_machine.system() == 'windows'
   extra_obj = [
     'src/win32/resource.o',
   ]
-  add_project_arguments('-DPLATFORM_WIN32', language : 'c')
+  add_project_arguments('-DPLATFORM_WIN32', language: 'c')
   static_libs = true
+endif
+
+git = find_program('git', required: false)
+if git.found()
+  gitargs = ['describe', '--tags', '--dirty', '--always']
+  describe = run_command(git, gitargs, check: false).stdout().strip()
+  if describe != ''
+    add_project_arguments('-DGIT_DESCRIBE="' + describe + '"', language: 'c')
+  endif
 endif
 
 deps = [
