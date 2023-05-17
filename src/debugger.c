@@ -9,6 +9,7 @@
 #include "input_sdl.h"
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_events.h>
+#include "log.h"
 
 static mu_Context context;
 static Machine_t *machine;
@@ -19,6 +20,7 @@ struct Disasm
     uint16_t pc;
     int len;
     int dirty;
+    int prev_offset;
     char *pcstr;
     char *bytestr;
     char *instr;
@@ -94,7 +96,8 @@ static void remove_breakpoint(uint16_t pc)
 
 static int disasm_update(struct Disasm *d, uint16_t pc)
 {
-    *d = (struct Disasm) { 0 };
+    d->prev_offset = 0;
+    d->dirty = 0;
     d->pc = pc;
 
     char buf[256];
@@ -151,6 +154,25 @@ static void disasm_free(struct Disasm *d)
     if (d->pcstr) { free(d->pcstr); d->pcstr = NULL; }
 }
 
+static void update_dirty(uint16_t pc)
+{
+    int org_pc = pc;
+    int offset = 0;
+    do {
+        struct Disasm *d = &disasm[org_pc];
+        offset = d->prev_offset;
+        disasm_free(d);
+        disasm_update(d, d->pc);
+        org_pc -= offset;
+    } while (offset && disasm[(uint16_t)org_pc].dirty);
+
+    while (org_pc <= pc) {
+        int b = disasm[(uint16_t)org_pc].len;
+        org_pc += b;
+        disasm[(uint16_t)org_pc].prev_offset = b;
+    }
+}
+
 void debugger_mark_dirty(uint16_t addr)
 {
     if (!debugger_enabled) return;
@@ -181,12 +203,94 @@ static void update_regs()
         machine->cpu.cycles, machine->timing.t_frame);
 }
 
+static disasm_row(mu_Context *ctx, struct Disasm *d, int id, int line_h)
+{
+    if (d->dirty) {
+        update_dirty(d->pc);
+    }
+    mu_layout_row(ctx, 4, (int[]) { line_h, 32, 100, -1 }, line_h);
+    int icon = d->breakpoint ? DBGICON_BREAKPOINT : 0;
+    if (d->pc == machine->cpu.regs.pc) {
+        icon = DBGICON_CURRENT;
+    }
+    if (mu_button_ex_id(ctx, NULL, 1+id, icon, MU_OPT_NOFRAME)) {
+        d->breakpoint ^= 1;
+        if (d->breakpoint) add_breakpoint(d->pc);
+        else remove_breakpoint(d->pc);
+    }
+    mu_label(ctx, d->pcstr);
+    mu_label(ctx, d->bytestr);
+    mu_label(ctx, d->instr);
+}
+
+static uint16_t find_prev_pc(uint16_t pc)
+{
+    if (disasm[pc].dirty) {
+        update_dirty(pc);
+    }
+    pc -= disasm[pc].prev_offset;
+    return pc;
+}
+
+static disasm_panel(mu_Context *ctx)
+{
+    int line_h = (render_text_height(0) + 5) & ~1;
+    static int pc = -1;
+    static uint16_t abs_scroll_line = 0;
+    int pc_changed = (machine->cpu.regs.pc != pc);
+    pc = machine->cpu.regs.pc;
+    abs_scroll_line = pc_changed ? pc : abs_scroll_line;
+
+    mu_begin_panel_ex(ctx, "disassembly", MU_OPT_NOSCROLL);
+    mu_Container *panel = mu_get_current_container(ctx);
+
+    const int range = 64;
+    int up_offset = range / 2;
+    uint16_t line_start = abs_scroll_line;
+    do {
+        uint16_t old = line_start;
+        line_start = find_prev_pc(line_start);
+        if (line_start == old) {
+            break;
+        }
+    } while (--up_offset);
+
+    for (int i = range; i--; ) {
+        disasm_row(ctx, &disasm[line_start], i, line_h);
+        line_start += disasm[line_start].len;
+    }
+
+    if (mu_mouse_over(ctx, panel->body)) { ctx->scroll_target = panel; }
+
+    int line_h_actual = line_h + ctx->style->spacing;
+    int target_center_scroll = ((range / 2 - up_offset) * line_h_actual) - (panel->body.h / 2);
+    if (pc_changed) panel->scroll.y = target_center_scroll;
+
+    int offset = target_center_scroll - panel->scroll.y;
+    int offset_line = offset / line_h_actual;
+    if (offset_line < -5) {
+        do {
+            abs_scroll_line += disasm[abs_scroll_line].len;
+            offset_line++;
+            panel->scroll.y -= line_h_actual;
+        } while (offset_line < -5);
+    } else if (offset_line > 5) {
+        do {
+            uint16_t prev = find_prev_pc(abs_scroll_line);
+            if (prev == abs_scroll_line) {
+                break;
+            }
+            abs_scroll_line = prev;
+            offset_line--;
+            panel->scroll.y += line_h_actual;
+        } while (offset_line > 5);
+    }
+
+    mu_end_panel(ctx);
+}
+
 static void disasm_window(mu_Context *ctx) {
     if (mu_begin_window_ex(ctx, "Debugger", mu_rect(0, 0, 400, 600), MU_OPT_NOCLOSE)) {
-        static int pc = -1;
-        int pc_changed = (machine->cpu.regs.pc != pc);
-        pc = machine->cpu.regs.pc;
-
         mu_layout_row(ctx, 4, (int[]) { 70, -200, -100, -1 }, 25);
         if (mu_button(ctx, "Pause") && break_on == DBG_BREAKPOINT) {
             break_on = DBG_STEPINTO;
@@ -198,45 +302,9 @@ static void disasm_window(mu_Context *ctx) {
         if (mu_button(ctx, "Step into")) {
              break_on = DBG_STEPINTO;
         };
-        
-        mu_layout_row(ctx, 1, (int[]) { -1 }, -1);
-        mu_begin_panel(ctx, "disassembly");
-        mu_Container *panel = mu_get_current_container(ctx);
-        int line_h = render_text_height(0) + 4;
-        int disasm_lines = 0;
-        int pclines = 0;
-        size_t i = machine->cpu.regs.pc;
-        i = i > 32 ? i - 32 : 0;
-        for (; i < vector_len(disasm) && disasm_lines < 64;) {
-            struct Disasm *d = &disasm[i];
-            if (d->dirty) {
-                disasm_free(d);
-                disasm_update(d, i);
-            }
-            mu_layout_row(ctx, 4, (int[]) { line_h, 32, 100, -1 }, line_h);
-            int icon = d->breakpoint ? DBGICON_BREAKPOINT : 0;
-            if (d->pc == machine->cpu.regs.pc) {
-                icon = DBGICON_CURRENT;
-                pclines = disasm_lines;
-            }
-            if (mu_button_ex_id(ctx, NULL, 1+i, icon, MU_OPT_NOFRAME)) {
-                d->breakpoint ^= 1;
-                if (d->breakpoint) add_breakpoint(d->pc);
-                else remove_breakpoint(d->pc);
-            }
-            mu_label(ctx, d->pcstr);
-            mu_label(ctx, d->bytestr);
-            mu_label(ctx, d->instr);
 
-            disasm_lines++;
-            i += d->len;
-        }
-        if (pc_changed) {
-            int curline_y = (line_h + ctx->style->spacing) * pclines;
-            panel->scroll.y = curline_y - panel->body.h / 2;
-            if (panel->scroll.y < 0) panel->scroll.y = 0;
-        }
-        mu_end_panel(ctx);
+        mu_layout_row(ctx, 1, (int[]) { -1 }, -1);
+        disasm_panel(ctx);
 
         mu_end_window(ctx);
     }
@@ -409,6 +477,12 @@ void debugger_open(Machine_t *m)
         vector_add(disasm, d);
 
         pc++;
+    }
+
+    for (pc = 0; pc < 0x10000;) {
+        int b = disasm[(uint16_t)(pc)].len;
+        pc += b;
+        disasm[(uint16_t)(pc)].prev_offset = b;
     }
 
     update_regs();
