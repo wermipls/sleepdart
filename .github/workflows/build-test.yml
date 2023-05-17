@@ -39,7 +39,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         release: false
-        install: mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf git mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash
+        install: mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf git mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash mingw-w64-x86_64-freetype
     - run: git config --global core.autocrlf input
       shell: bash
     - uses: actions/checkout@v3
