@@ -9,6 +9,7 @@
 #include "input_sdl.h"
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_timer.h>
 #include "log.h"
 
 static mu_Context context;
@@ -241,7 +242,7 @@ static disasm_panel(mu_Context *ctx)
     pc = machine->cpu.regs.pc;
     abs_scroll_line = pc_changed ? pc : abs_scroll_line;
 
-    mu_begin_panel_ex(ctx, "disassembly", MU_OPT_NOSCROLL);
+    mu_begin_panel_ex(ctx, "disassembly", MU_OPT_INFSCROLLY);
     mu_Container *panel = mu_get_current_container(ctx);
 
     const int range = 64;
@@ -259,8 +260,6 @@ static disasm_panel(mu_Context *ctx)
         disasm_row(ctx, &disasm[line_start], i, line_h);
         line_start += disasm[line_start].len;
     }
-
-    if (mu_mouse_over(ctx, panel->body)) { ctx->scroll_target = panel; }
 
     int line_h_actual = line_h + ctx->style->spacing;
     int target_center_scroll = ((range / 2 - up_offset) * line_h_actual) - (panel->body.h / 2);
@@ -393,8 +392,14 @@ static int window_loop(mu_Context *ctx, int flush_events)
         SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
     }
 
+    static uint64_t ticks_old = 0;
+    uint64_t ticks = SDL_GetTicks64();
+    ctx->delta_ms = ticks - ticks_old;
+
     process_frame(ctx);
     process_frame(ctx);
+
+    ticks_old = ticks;
 
     render_clear(mu_color(0, 0, 0, 255));
     mu_Command *cmd = NULL;
