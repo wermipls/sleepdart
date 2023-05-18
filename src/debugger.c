@@ -160,7 +160,7 @@ static void update_dirty(uint16_t pc)
     int org_pc = pc;
     int offset = 0;
     do {
-        struct Disasm *d = &disasm[org_pc];
+        struct Disasm *d = &disasm[(uint16_t)org_pc];
         offset = d->prev_offset;
         disasm_free(d);
         disasm_update(d, d->pc);
