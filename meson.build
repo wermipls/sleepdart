@@ -69,7 +69,6 @@ exe = executable(
   'src/ula.c',
   'src/video_sdl.c',
   'src/z80.c',
-  'microui/src/microui.c',
   'ayumi/ayumi.c',
   extra_src,
   dependencies: deps,
