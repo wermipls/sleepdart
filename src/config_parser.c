@@ -231,7 +231,7 @@ int config_get_float(CfgData_t *cfg, const char *key, float *dest)
     return 0;
 }
 
-void config_set_str(CfgData_t *cfg, const char *key, char *value)
+void config_set_str(CfgData_t *cfg, const char *key, const char *value)
 {
     if (value == NULL) {
         return;

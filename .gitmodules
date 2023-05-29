@@ -1,3 +1,6 @@
 [submodule "ayumi"]
 	path = ayumi
 	url = https://github.com/wermipls/ayumi
+[submodule "microui"]
+	path = microui
+	url = https://github.com/wermipls/microui

@@ -32,7 +32,11 @@ int input_sdl_update()
     int quit = 0;
 
     SDL_Event e;
-    while (SDL_PollEvent(&e)) {
+    SDL_Event events[1024];
+    int count = SDL_PeepEvents(events, 1024, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+
+    for (int i = 0; i < count; i++) {
+        e = events[i];
         switch (e.type)
         {
         case SDL_QUIT:
@@ -46,6 +50,16 @@ int input_sdl_update()
     }
 
     return quit;
+}
+
+void input_sdl_pump_events()
+{
+    SDL_PumpEvents();
+}
+
+void input_sdl_flush_events()
+{
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 }
 
 void input_sdl_copy_old_state()

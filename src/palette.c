@@ -148,6 +148,10 @@ void palette_set_by_index(size_t index)
 
 void palette_set_by_name(const char *name)
 {
+    if (palette_list == NULL) {
+        return;
+    }
+
     for (size_t i = 0; palette_list[i] != NULL; i++) {
         int result = strcmp(name, palette_list[i]);
         if (result == 0) {
@@ -169,6 +173,15 @@ void palette_set_default()
 size_t palette_get_index()
 {
     return palette_current;
+}
+
+const char *palette_get_name()
+{
+    if (palette_list == NULL) {
+        return NULL;
+    }
+
+    return palette_list[palette_current];
 }
 
 bool palette_has_changed()
