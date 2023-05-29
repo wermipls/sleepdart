@@ -27,22 +27,11 @@ Clone the repository, including submodules:
 git clone --recursive https://github.com/wermipls/sleepdart
 ```
 
-### Windows
-
-Use MSYS2 (MinGW 64-bit) with following packages installed:
-* `mingw-w64-x86_64-SDL2`
-* `zlib`
+### Windows (MSYS2 MinGW 64-bit)
 
 ```sh
-# -d parameter produces a build optimized for debugging (-Og, gdb symbols)
-# -p <platform> includes platform-specific features (win32 ui in this case)
+pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash
 
-./build.sh -p win32
-```
-
-### Fedora 38
-
-```sh
-sudo dnf install gcc SDL2-devel zlib-devel
-./build.sh
+meson setup build # add "-Dbuildtype=debug" for a debug build
+meson compile -C build
 ```
