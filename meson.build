@@ -38,7 +38,6 @@ deps = [
   dependency('zlib', static: static_libs),
   dependency('sdl2', static: static_libs),
   dependency('libxxhash', static: static_libs),
-  dependency('freetype2', static: static_libs),
 ]
 
 add_project_link_arguments('-lstdc++', language: 'c')
@@ -52,8 +51,6 @@ exe = executable(
   'src/beeper.c',
   'src/config.c',
   'src/config_parser.c',
-  'src/debugger.c',
-  'src/disasm.c',
   'src/dsp.c',
   'src/file.c',
   'src/hotkeys.c',
@@ -66,7 +63,6 @@ exe = executable(
   'src/machine_hooks.c',
   'src/machine_test.c',
   'src/memory.c',
-  'src/microui_render.c',
   'src/palette.c',
   'src/parser_helpers.c',
   'src/szx_file.c',
