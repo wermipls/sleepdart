@@ -106,7 +106,7 @@ uint8_t ula_get_contention_cycles(uint64_t cycle)
     cycle -= timing.t_firstpx;
 
     uint16_t line = cycle / timing.t_scanline;
-    if (line > 192) return 0;
+    if (line >= 192) return 0;
 
     uint16_t linecyc = cycle % timing.t_scanline;
     if (linecyc >= timing.t_screen) return 0;
