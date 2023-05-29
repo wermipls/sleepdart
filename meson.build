@@ -6,8 +6,6 @@ if get_option('buildtype') == 'release'
   add_project_link_arguments(release_args, language: 'c')
 endif
 
-includes = include_directories('microui/src')
-
 extra_src = []
 extra_obj = []
 static_libs = false
@@ -74,7 +72,6 @@ exe = executable(
   'microui/src/microui.c',
   'ayumi/ayumi.c',
   extra_src,
-  include_directories: includes,
   dependencies: deps,
   objects: extra_obj,
   win_subsystem: 'windows',
