@@ -23,14 +23,11 @@ if target_machine.system() == 'windows'
   static_libs = true
 endif
 
-git = find_program('git', required: false)
-if git.found()
-  gitargs = ['describe', '--tags', '--dirty', '--always']
-  describe = run_command(git, gitargs, check: false).stdout().strip()
-  if describe != ''
-    add_project_arguments('-DGIT_DESCRIBE="' + describe + '"', language: 'c')
-  endif
-endif
+git = find_program('git')
+sleepdart_info = vcs_tag(
+  command: [git, 'describe', '--tags', '--dirty', '--always'],
+  input: 'src/sleepdart_info.h.in',
+  output: 'sleepdart_info.h')
 
 deps = [
   dependency('zlib', static: static_libs),
@@ -71,6 +68,7 @@ exe = executable(
   'src/z80.c',
   'ayumi/ayumi.c',
   extra_src,
+  sleepdart_info,
   dependencies: deps,
   objects: extra_obj,
   win_subsystem: 'windows',
