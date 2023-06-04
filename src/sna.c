@@ -40,7 +40,7 @@ int sna_state_load(char *path, Machine_t *m)
         file_size = SNA_SIZE_48K;
     }
 
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
     if (f == NULL) {
         dlog(LOG_ERRSILENT, "Failed to open file for reading");
         return -1;

@@ -6,6 +6,7 @@
 #include "../machine.h"
 #include "../palette.h"
 #include "../file.h"
+#include "../unicode.h"
 
 static WNDPROC sdl_wndproc;
 static HMENU menu = NULL;
@@ -92,8 +93,8 @@ void menu_palette_init()
 
 void on_file_open(HWND hwnd)
 {
-    OPENFILENAME ofn;
-    char file[260];
+    OPENFILENAMEW ofn;
+    wchar_t file[2048];
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -101,22 +102,29 @@ void on_file_open(HWND hwnd)
     ofn.lpstrFile = file;
     ofn.lpstrFile[0] = 0;
     ofn.nMaxFile = sizeof(file);
-    ofn.lpstrFilter = "All supported files\0*.tap;*.szx*\0";
+    ofn.lpstrFilter = L"All supported files\0*.tap;*.szx*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileName(&ofn) == TRUE) {
-        machine_open_file(ofn.lpstrFile);
+    if (GetOpenFileNameW(&ofn) != TRUE) {
+        return;
     }
+
+    char *str = utf16_to_utf8(ofn.lpstrFile, NULL);
+    if (str == NULL) {
+        return;
+    }
+    machine_open_file(str);
+    free(str);
 }
 
 void on_file_save(HWND hwnd)
 {
-    OPENFILENAME ofn;
-    char file[260];
+    OPENFILENAMEW ofn;
+    wchar_t file[2048];
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -124,17 +132,24 @@ void on_file_save(HWND hwnd)
     ofn.lpstrFile = file;
     ofn.lpstrFile[0] = 0;
     ofn.nMaxFile = sizeof(file);
-    ofn.lpstrFilter = "SZX state\0*.szx\0";
-    ofn.lpstrDefExt = "szx";
+    ofn.lpstrFilter = L"SZX state\0*.szx\0";
+    ofn.lpstrDefExt = L"szx";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
 
-    if (GetSaveFileName(&ofn) == TRUE) {
-        machine_save_file(ofn.lpstrFile);
+    if (GetSaveFileNameW(&ofn) != TRUE) {
+        return;
     }
+
+    char *str = utf16_to_utf8(ofn.lpstrFile, NULL);
+    if (str == NULL) {
+        return;
+    }
+    machine_save_file(str);
+    free(str);
 }
 
 LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)

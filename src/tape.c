@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "log.h"
+#include "file.h"
 
 struct StandardTapeHeader
 {
@@ -35,7 +36,7 @@ Tape_t *tape_load_from_tap(char *path)
     // followed by the actual block data (in standard Spectrum ROM format).
     // e.g. 13 00 [19 data bytes] 00 01 [256 data bytes] ...
 
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
 
     if (f == NULL) {
         goto error_fopen;

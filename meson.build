@@ -67,6 +67,7 @@ exe = executable(
   'src/szx_state.c',
   'src/tape.c',
   'src/ula.c',
+  'src/unicode.c',
   'src/video_sdl.c',
   'src/z80.c',
   'ayumi/ayumi.c',

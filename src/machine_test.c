@@ -63,7 +63,7 @@ static struct MachineTest test = { 0 };
 
 static KeyboardMacro_t *parse_macro(const char *path)
 {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen_utf8(path, "r");
     if (f == NULL) {
         return NULL;
     }
@@ -242,7 +242,7 @@ int machine_test_open(const char *path)
     }
     if (test.test_print) {
         file_path_append(buf, path, "print.txt.tmp", sizeof(buf));
-        test.print = fopen(buf, "wb+");
+        test.print = fopen_utf8(buf, "wb+");
         if (test.print == NULL) {
             dlog(LOG_ERR, "Failed to open file \"%s\" for write", buf);
             return -8;
@@ -292,10 +292,10 @@ static void finish_hash(XXH64_state_t *s, const char *name)
     uint64_t expected;
     char buf[2048];
     file_path_append(buf, test.dir, name, sizeof(buf));
-    FILE *f = fopen(buf, "rb");
+    FILE *f = fopen_utf8(buf, "rb");
     if (f == NULL) {
         dlog(LOG_WARN, "Failed to open hash file \"%s\", attempting to create", name);
-        f = fopen(buf, "wb");
+        f = fopen_utf8(buf, "wb");
         if (f == NULL) {
             dlog(LOG_ERRSILENT, "Failed to open hash file \"%s\" for write!", name);
             return;
@@ -326,7 +326,7 @@ static void finish_print()
     file_path_append(exp, test.dir, "print.txt", sizeof(exp));
     file_path_append(tmp, test.dir, "print.txt.tmp", sizeof(tmp));
 
-    FILE *expected = fopen(exp, "rb");
+    FILE *expected = fopen_utf8(exp, "rb");
     if (expected == NULL) {
         dlog(LOG_WARN, "Failed to open print file \"%s\", attempting to create", exp);
         fclose(test.print);

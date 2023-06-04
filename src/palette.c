@@ -31,7 +31,7 @@ Palette_t *palette_load(const char *path)
 
     size_t colors = size / 3;
 
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
     if (f == NULL) {
         return NULL;
     }

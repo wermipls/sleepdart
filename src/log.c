@@ -5,6 +5,8 @@
 #include <time.h>
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     #include <Windows.h>
+    #include <stdlib.h>
+    #include "unicode.h"
 #endif
 
 static const char prefix_err[] = "err: ";
@@ -48,7 +50,12 @@ void dlog(enum LogLevel l, char fmt[], ...)
     
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     if (l == LOG_ERR && !force_errsilent) {
-        MessageBoxA(GetActiveWindow(), msg, "Error", MB_OK | MB_ICONERROR);
+        wchar_t *str = utf8_to_utf16(msg, NULL);
+        if (str == NULL) {
+            return;
+        }
+        MessageBoxW(GetActiveWindow(), str, L"Error", MB_OK | MB_ICONERROR);
+        free(str);
     }
 #endif
 }

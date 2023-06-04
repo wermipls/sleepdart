@@ -6,6 +6,7 @@
 #include "log.h"
 #include "ula.h"
 #include "machine.h"
+#include "file.h"
 
 /* Initializes the DRAM to a pseudo-random state it would have on initial power-on. */
 void memory_init(Memory_t *mem)
@@ -27,7 +28,7 @@ void memory_init(Memory_t *mem)
  * Returns zero on success, non-zero otherwise. */
 int memory_load_rom_16k(Memory_t *mem, char path[])
 {
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
     if (!f) {
         dlog(LOG_ERR, "Failed to load ROM \"%s\"", path);
         return -1;

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "file.h"
 
 #define U32_FROM_STR(str) (*((uint32_t *)(str)))
 
@@ -9,7 +10,7 @@ const char expected_magic[4] = "ZXST";
 
 bool szx_is_valid_file(char *path)
 {
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
     if (f == NULL) {
         return false;
     }
@@ -47,7 +48,7 @@ void szx_free(SZX_t *szx) {
 
 SZX_t *szx_load_file(char *path)
 {
-    FILE *f = fopen(path, "rb");
+    FILE *f = fopen_utf8(path, "rb");
     if (f == NULL) {
         return NULL;
     }
@@ -149,7 +150,7 @@ SZX_t *szx_load_file(char *path)
 
 int szx_save_file(SZX_t *szx, char *path)
 {
-    FILE *f = fopen(path, "wb");
+    FILE *f = fopen_utf8(path, "wb");
     if (f == NULL) {
         return -1;
     }
