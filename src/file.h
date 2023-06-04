@@ -20,4 +20,10 @@ void file_free_list(char *list[]);
 char **file_list_directory_files(char *path);
 enum FileType file_detect_type(char *path);
 char *file_read_line(FILE *f);
-FILE *fopen_utf8(const char *path, const char *mode);
+
+#ifdef _WIN32
+    FILE *fopen_utf8_win32(const char *path, const wchar_t *mode);
+    #define fopen_utf8(path, mode) fopen_utf8_win32(path, L ## mode)
+#else
+    #define fopen_utf8(path, mode) fopen(path, mode)
+#endif

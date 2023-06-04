@@ -258,25 +258,20 @@ char *file_read_line(FILE *f)
     return str;
 }
 
-// Lifted from https://github.com/Photosounder/fopen_utf8
+// Lifted and adapted from https://github.com/Photosounder/fopen_utf8
 // "[...] just put it in your code, who cares where it came from". I do :')
-FILE *fopen_utf8(const char *path, const char *mode)
-{
 #ifdef _WIN32
-    wchar_t *wpath, wmode[8];
+FILE *fopen_utf8_win32(const char *path, const wchar_t *mode)
+{
+    wchar_t *wpath;
     FILE *file;
-
-    if (utf8_to_utf16(mode, (uint16_t *)wmode) == NULL)
-        return NULL;
 
     wpath = utf8_to_utf16(path, NULL);
     if (wpath == NULL)
         return NULL;
 
-    file = _wfopen(wpath, wmode);
+    file = _wfopen(wpath, mode);
     free(wpath);
     return file;
-#else
-    return fopen(path, mode);
-#endif
 }
+#endif
