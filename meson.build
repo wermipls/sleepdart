@@ -11,13 +11,10 @@ extra_obj = []
 static_libs = false
 
 if target_machine.system() == 'windows'
-  windres = find_program('windres')
-  run_command(windres, 'src/win32/resource.rc', 'src/win32/resource.o')
+  winmod = import('windows')
   extra_src = [
-    'src/win32/gui_windows.c',
-  ]
-  extra_obj = [
-    'src/win32/resource.o',
+    'src/win32/gui_windows.c', 
+    winmod.compile_resources('src/win32/resource.rc')
   ]
   add_project_arguments('-DPLATFORM_WIN32', language: 'c')
   static_libs = true
@@ -29,10 +26,12 @@ sleepdart_info = vcs_tag(
   input: 'src/sleepdart_info.h.in',
   output: 'sleepdart_info.h')
 
+cc = meson.get_compiler('c')
 deps = [
   dependency('zlib', static: static_libs),
   dependency('sdl2', static: static_libs),
   dependency('libxxhash', static: static_libs),
+  cc.find_library('m', required: false),
 ]
 
 add_project_link_arguments('-lstdc++', language: 'c')
@@ -73,7 +72,6 @@ exe = executable(
   dependencies: deps,
   objects: extra_obj,
   win_subsystem: 'windows',
-  link_args: '-lm',
 )
 
 # a lil hacky...
