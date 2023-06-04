@@ -185,6 +185,10 @@ void render_buffer(TapePlayer_t *p);
 
 TapePlayer_t *tape_player_from_tape(Tape_t *tape)
 {
+    if (tape == NULL) {
+        return NULL;
+    }
+
     TapePlayer_t *p = tape_player_allocate(4096);
     if (p == NULL) {
         return NULL;
