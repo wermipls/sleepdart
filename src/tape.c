@@ -33,7 +33,7 @@ Tape_t *tape_load_from_tap(char *path)
     // It consists of an arbitrary amount of blocks
     // beginning with a uint16le field indicating the data size in bytes,
     // followed by the actual block data (in standard Spectrum ROM format).
-    // e.g. 13 00 [19 data bytes] 00 10 [256 data bytes] ...
+    // e.g. 13 00 [19 data bytes] 00 01 [256 data bytes] ...
 
     FILE *f = fopen(path, "rb");
 
@@ -185,6 +185,10 @@ void render_buffer(TapePlayer_t *p);
 
 TapePlayer_t *tape_player_from_tape(Tape_t *tape)
 {
+    if (tape == NULL) {
+        return NULL;
+    }
+
     TapePlayer_t *p = tape_player_allocate(4096);
     if (p == NULL) {
         return NULL;

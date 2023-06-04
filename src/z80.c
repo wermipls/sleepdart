@@ -2673,14 +2673,25 @@ int cpu_do_cycles(Z80_t *cpu)
             cpu->halted = false;
             cpu->regs.pc++;
         }
-        // FIXME: COMPLETELY INACCURATE TIMINGS FOR EVERYTHING
         switch (cpu->regs.im)
         {
-        case 0: // IM 0 is irrel on speccy, don't care
+        case 0: // IM 0 is irrel on speccy beyond 0xFF (rst 38) under typical circumstances
+            cpu->regs.iff1 = 0;
+            cpu->regs.iff2 = 0;
+            cpu->cycles += 6;
+            cpu->regs.sp--;
+            cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
+            cpu->cycles += 3;
+            cpu->regs.sp--;
+            cpu_write(cpu, cpu->regs.sp, LOW8(cpu->regs.pc));
+            cpu->cycles += 3;
+            cpu->regs.pc = 0x38;
+            cpu->regs.memptr = cpu->regs.pc;
+            break;
         case 1:
             cpu->regs.iff1 = 0;
             cpu->regs.iff2 = 0;
-            cpu->cycles += 5;
+            cpu->cycles += 7;
             cpu->regs.sp--;
             cpu_write(cpu, cpu->regs.sp, HIGH8(cpu->regs.pc));
             cpu->cycles += 3;

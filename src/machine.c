@@ -5,6 +5,7 @@
 #include "keyboard_macro.h"
 #include "file.h"
 #include "szx_state.h"
+#include "sna.h"
 #include "log.h"
 #include "input_sdl.h"
 #include "video_sdl.h"
@@ -21,7 +22,7 @@ static char file_save_path[2048];
 const struct MachineTiming machine_timing_zx48k = {
     .clock_hz = 3500000,
 
-    .t_firstpx = 14336,
+    .t_firstpx = 14335,
     .t_scanline = 224,
     .t_screen = 128,
     .t_frame = 224 * 312,
@@ -113,6 +114,11 @@ void machine_process_events()
             if (szx != NULL) {
                 szx_state_load(szx, m_cur);
                 szx_free(szx);
+            }
+            break;
+        case FTYPE_SNA:
+            if (sna_state_load(file_open_path, m_cur)) {
+                dlog(LOG_ERR, "Failed to open .sna file \"%s\"", file_open_path);
             }
             break;
         default:

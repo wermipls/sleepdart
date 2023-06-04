@@ -11,31 +11,30 @@ extra_obj = []
 static_libs = false
 
 if target_machine.system() == 'windows'
-  windres = find_program('windres')
-  run_command(windres, 'src/win32/resource.rc', 'src/win32/resource.o')
+  winmod = import('windows')
   extra_src = [
-    'src/win32/gui_windows.c',
-  ]
-  extra_obj = [
-    'src/win32/resource.o',
+    'src/win32/gui_windows.c', 
+    winmod.compile_resources('src/win32/resource.rc')
   ]
   add_project_arguments('-DPLATFORM_WIN32', language: 'c')
   static_libs = true
 endif
 
-git = find_program('git', required: false)
-if git.found()
-  gitargs = ['describe', '--tags', '--dirty', '--always']
-  describe = run_command(git, gitargs, check: false).stdout().strip()
-  if describe != ''
-    add_project_arguments('-DGIT_DESCRIBE="' + describe + '"', language: 'c')
-  endif
-endif
+# workaround for ancient version of meson in ubuntu-latest repos
+# after updating to 0.63, can be replaced with:
+#   git = find_program('git')
+git = 'git'
+sleepdart_info = vcs_tag(
+  command: [git, 'describe', '--tags', '--dirty', '--always'],
+  input: 'src/sleepdart_info.h.in',
+  output: 'sleepdart_info.h')
 
+cc = meson.get_compiler('c')
 deps = [
   dependency('zlib', static: static_libs),
   dependency('sdl2', static: static_libs),
   dependency('libxxhash', static: static_libs),
+  cc.find_library('m', required: false),
 ]
 
 add_project_link_arguments('-lstdc++', language: 'c')
@@ -63,6 +62,7 @@ exe = executable(
   'src/memory.c',
   'src/palette.c',
   'src/parser_helpers.c',
+  'src/sna.c',
   'src/szx_file.c',
   'src/szx_state.c',
   'src/tape.c',
@@ -71,10 +71,10 @@ exe = executable(
   'src/z80.c',
   'ayumi/ayumi.c',
   extra_src,
+  sleepdart_info,
   dependencies: deps,
   objects: extra_obj,
   win_subsystem: 'windows',
-  link_args: '-lm',
 )
 
 # a lil hacky...
