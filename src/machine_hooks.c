@@ -62,6 +62,10 @@ void machine_process_hooks(struct Machine *m)
     static bool inside_tape_routine = false;
     static bool tape_macro_handled = false;
 
+    if (m->cpu.interrupt_pending) {
+        return;
+    }
+
     uint16_t pc = m->cpu.regs.pc;
 
     if (pc == 0x15DE && m->player != NULL && m->player->position == 0) {
