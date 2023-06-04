@@ -9,6 +9,7 @@ enum FileType {
     FTYPE_UNKNOWN = -1,
     FTYPE_TAP,
     FTYPE_SZX,
+    FTYPE_SNA,
 };
 
 int64_t file_get_size(const char *path);

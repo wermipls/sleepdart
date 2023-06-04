@@ -5,6 +5,7 @@
 #include "keyboard_macro.h"
 #include "file.h"
 #include "szx_state.h"
+#include "sna.h"
 #include "log.h"
 #include "input_sdl.h"
 #include "video_sdl.h"
@@ -113,6 +114,11 @@ void machine_process_events()
             if (szx != NULL) {
                 szx_state_load(szx, m_cur);
                 szx_free(szx);
+            }
+            break;
+        case FTYPE_SNA:
+            if (sna_state_load(file_open_path, m_cur)) {
+                dlog(LOG_ERR, "Failed to open .sna file \"%s\"", file_open_path);
             }
             break;
         default:

@@ -60,6 +60,7 @@ exe = executable(
   'src/memory.c',
   'src/palette.c',
   'src/parser_helpers.c',
+  'src/sna.c',
   'src/szx_file.c',
   'src/szx_state.c',
   'src/tape.c',

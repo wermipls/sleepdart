@@ -213,6 +213,10 @@ enum FileType file_detect_type(char *path)
         if (strncmp(ext_lower, "tap", 3) == 0) {
             return FTYPE_TAP;
         }
+
+        if (strncmp(ext_lower, "sna", 3) == 0) {
+            return FTYPE_SNA;
+        }
     }
 
     if (szx_is_valid_file(path)) {
