@@ -20,7 +20,10 @@ if target_machine.system() == 'windows'
   static_libs = true
 endif
 
-git = find_program('git')
+# workaround for ancient version of meson in ubuntu-latest repos
+# after updating to 0.63, can be replaced with:
+#   git = find_program('git')
+git = 'git'
 sleepdart_info = vcs_tag(
   command: [git, 'describe', '--tags', '--dirty', '--always'],
   input: 'src/sleepdart_info.h.in',
