@@ -86,7 +86,7 @@ keyval_cleanup:
 
 int config_load_file(CfgData_t *cfg, char *path)
 {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen_utf8(path, "r");
     if (f == NULL) {
         return -1;
     }
@@ -138,7 +138,7 @@ int config_load_file(CfgData_t *cfg, char *path)
 
 int config_save_file(CfgData_t *cfg, char *path)
 {
-    FILE *f = fopen(path, "w");
+    FILE *f = fopen_utf8(path, "w");
     if (f == NULL) {
         return -1;
     }

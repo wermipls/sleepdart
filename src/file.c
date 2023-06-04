@@ -1,5 +1,6 @@
 #include "file.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
@@ -8,6 +9,7 @@
 #include "szx_file.h"
 #include "vector.h"
 #include "log.h"
+#include "unicode.h"
 
 static char basedir[4096] = { 0 };
 
@@ -254,4 +256,27 @@ char *file_read_line(FILE *f)
     }
 
     return str;
+}
+
+// Lifted from https://github.com/Photosounder/fopen_utf8
+// "[...] just put it in your code, who cares where it came from". I do :')
+FILE *fopen_utf8(const char *path, const char *mode)
+{
+#ifdef _WIN32
+    wchar_t *wpath, wmode[8];
+    FILE *file;
+
+    if (utf8_to_utf16((const uint8_t *)mode, (uint16_t *)wmode) == NULL)
+        return NULL;
+
+    wpath = (wchar_t *)utf8_to_utf16((const uint8_t *)path, NULL);
+    if (wpath == NULL)
+        return NULL;
+
+    file = _wfopen(wpath, wmode);
+    free(wpath);
+    return file;
+#else
+    return fopen(path, mode);
+#endif
 }
