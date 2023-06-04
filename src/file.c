@@ -266,10 +266,10 @@ FILE *fopen_utf8(const char *path, const char *mode)
     wchar_t *wpath, wmode[8];
     FILE *file;
 
-    if (utf8_to_utf16((const uint8_t *)mode, (uint16_t *)wmode) == NULL)
+    if (utf8_to_utf16(mode, (uint16_t *)wmode) == NULL)
         return NULL;
 
-    wpath = (wchar_t *)utf8_to_utf16((const uint8_t *)path, NULL);
+    wpath = utf8_to_utf16(path, NULL);
     if (wpath == NULL)
         return NULL;
 

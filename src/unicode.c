@@ -28,13 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-int utf8_char_size(const uint8_t *c)
+int utf8_char_size(const char *c)
 {
-    const uint8_t m0x     = 0x80, c0x     = 0x00,
-                  m10x    = 0xC0, c10x    = 0x80,
-                  m110x   = 0xE0, c110x   = 0xC0,
-                  m1110x  = 0xF0, c1110x  = 0xE0,
-                  m11110x = 0xF8, c11110x = 0xF0;
+    const char m0x     = 0x80, c0x     = 0x00,
+               m10x    = 0xC0, c10x    = 0x80,
+               m110x   = 0xE0, c110x   = 0xC0,
+               m1110x  = 0xF0, c1110x  = 0xE0,
+               m11110x = 0xF8, c11110x = 0xF0;
 
     if ((c[0] & m0x) == c0x)
         return 1;
@@ -70,11 +70,11 @@ int codepoint_utf8_size(const uint32_t c)
     return 0;
 }
 
-uint32_t utf8_to_unicode32(const uint8_t *c, size_t *index)
+uint32_t utf8_to_unicode32(const char *c, size_t *index)
 {
     uint32_t v;
     size_t size;
-    const uint8_t m6 = 63, m5 = 31, m4 = 15, m3 = 7;
+    const char m6 = 63, m5 = 31, m4 = 15, m3 = 7;
 
     if (c == NULL)
         return 0;
@@ -115,13 +115,13 @@ uint32_t utf8_to_unicode32(const uint8_t *c, size_t *index)
 }
 
 // str must be able to hold 1 to 5 bytes and will be null-terminated by this function
-uint8_t *sprint_unicode(uint8_t *str, uint32_t c)
+char *sprint_unicode(char *str, uint32_t c)
 {
-    const uint8_t m6 = 63;
-    const uint8_t c10x    = 0x80,
-                  c110x   = 0xC0,
-                  c1110x  = 0xE0,
-                  c11110x = 0xF0;
+    const char m6 = 63;
+    const char c10x    = 0x80,
+               c110x   = 0xC0,
+               c1110x  = 0xE0,
+               c11110x = 0xF0;
 
     if (c < 0x0080) {
         str[0] = c;
@@ -155,7 +155,7 @@ uint8_t *sprint_unicode(uint8_t *str, uint32_t c)
     return str;
 }
 
-int find_prev_utf8_char(const uint8_t *str, int pos)
+int find_prev_utf8_char(const char *str, size_t pos)
 {
     if (pos > 0) {
         do {
@@ -166,7 +166,7 @@ int find_prev_utf8_char(const uint8_t *str, int pos)
     return pos;
 }
 
-int find_next_utf8_char(const uint8_t *str, int pos)
+int find_next_utf8_char(const char *str, size_t pos)
 {
     int il;
 
@@ -264,7 +264,7 @@ uint16_t *sprint_utf16(uint16_t *str, uint32_t c)
     return str;
 }
 
-size_t strlen_utf8_to_utf16(const uint8_t *str)
+size_t strlen_utf8_to_utf16(const char *str)
 {
     size_t i, count;
     uint32_t c;
@@ -292,7 +292,7 @@ size_t strlen_utf16_to_utf8(const uint16_t *str)
     }
 }
 
-uint16_t *utf8_to_utf16(const uint8_t *utf8, uint16_t *utf16)
+uint16_t *utf8_to_utf16(const char *utf8, uint16_t *utf16)
 {
     size_t i, j;
     uint32_t c;
@@ -300,11 +300,12 @@ uint16_t *utf8_to_utf16(const uint8_t *utf8, uint16_t *utf16)
     if (utf8 == NULL)
         return NULL;
 
-    if (utf16 == NULL)
+    if (utf16 == NULL) {
         utf16 = calloc(strlen_utf8_to_utf16(utf8) + 1, sizeof(uint16_t));
+        if (utf16 == NULL) return NULL; 
+    }
 
-    for (i = 0, j = 0, c = 1; c; i++)
-    {
+    for (i = 0, j = 0, c = 1; c; i++) {
         c = utf8_to_unicode32(&utf8[i], &i);
         sprint_utf16(&utf16[j], c);
         j += codepoint_utf16_size(c);
@@ -313,7 +314,7 @@ uint16_t *utf8_to_utf16(const uint8_t *utf8, uint16_t *utf16)
     return utf16;
 }
 
-uint8_t *utf16_to_utf8(const uint16_t *utf16, uint8_t *utf8)
+char *utf16_to_utf8(const uint16_t *utf16, char *utf8)
 {
     size_t i, j;
     uint32_t c;
@@ -321,11 +322,12 @@ uint8_t *utf16_to_utf8(const uint16_t *utf16, uint8_t *utf8)
     if (utf16 == NULL)
         return NULL;
 
-    if (utf8 == NULL)
-        utf8 = calloc(strlen_utf16_to_utf8(utf16) + 1, sizeof(uint8_t));
+    if (utf8 == NULL) {
+        utf8 = calloc(strlen_utf16_to_utf8(utf16) + 1, sizeof(char));
+        if (utf8 == NULL) return NULL; 
+    }
 
-    for (i = 0, j = 0, c = 1; c; i++)
-    {
+    for (i = 0, j = 0, c = 1; c; i++) {
         c = utf16_to_unicode32(&utf16[i], &i);
         sprint_unicode(&utf8[j], c);
         j += codepoint_utf8_size(c);
