@@ -22,7 +22,7 @@ static char file_save_path[2048];
 const struct MachineTiming machine_timing_zx48k = {
     .clock_hz = 3500000,
 
-    .t_firstpx = 14336,
+    .t_firstpx = 14335,
     .t_scanline = 224,
     .t_screen = 128,
     .t_frame = 224 * 312,
