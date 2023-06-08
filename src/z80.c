@@ -2730,9 +2730,9 @@ int cpu_do_cycles(Z80_t *cpu)
         cpu->last_ei = false;
         switch (cpu->prefix_state) 
         {
-            case STATE_DD: do_ddfd(cpu, false); break;
-            case STATE_FD: do_ddfd(cpu, true); break;
-            default: do_opcode(cpu); break;
+        case STATE_DD: do_ddfd(cpu, false); break;
+        case STATE_FD: do_ddfd(cpu, true); break;
+        default: do_opcode(cpu); break;
         }
     }
 
