@@ -2669,6 +2669,7 @@ int cpu_do_cycles(Z80_t *cpu)
     cpu->regs.q = false;
 
     if (cpu->interrupt_pending && cpu_can_process_interrupts(cpu)) {
+        inc_refresh(cpu);
         if (cpu->halted) {
             cpu->halted = false;
             cpu->regs.pc++;
@@ -2721,6 +2722,10 @@ int cpu_do_cycles(Z80_t *cpu)
             cpu->cycles += 3;
             break;
         }
+    } else if (cpu->halted) {
+        inc_refresh(cpu);
+        cpu_read(cpu, cpu->regs.pc+1);
+        cpu->cycles += 4;
     } else {
         cpu->last_ei = false;
         switch (cpu->prefix_state) 
@@ -2729,11 +2734,6 @@ int cpu_do_cycles(Z80_t *cpu)
             case STATE_FD: do_ddfd(cpu, true); break;
             default: do_opcode(cpu); break;
         }
-    }
-
-    if (cpu->halted) {
-        cpu_read(cpu, cpu->regs.pc+1);
-        cpu->cycles += 4;
     }
 
     cpu->interrupt_pending = false;
