@@ -1896,7 +1896,6 @@ static void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     cpu->cycles += 3;
     cpu->regs.pc++;
     uint8_t op = cpu_read(cpu, cpu->regs.pc);
-    inc_refresh(cpu);
 
     uint8_t reg = op & 7; // op & 0b111
     uint8_t *regptr = regs[reg];
