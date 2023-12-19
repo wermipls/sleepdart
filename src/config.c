@@ -4,9 +4,13 @@
 #include "log.h"
 
 static struct CfgField fields[] = {
-    {"window-scale",    CFG_INT, NULL },
-    {"limit-fps",       CFG_INT, NULL },
-    {"palette",         CFG_STR, NULL },
+    {"window-scale",        CFG_INT, NULL },
+    {"limit-fps",           CFG_INT, NULL },
+    {"palette",             CFG_STR, NULL },
+    {"ay-pan-a",            CFG_FLOAT, NULL },
+    {"ay-pan-b",            CFG_FLOAT, NULL },
+    {"ay-pan-c",            CFG_FLOAT, NULL },
+    {"ay-pan-equal-power",  CFG_INT, NULL },
 };
 
 CfgData_t g_config = {
@@ -21,6 +25,10 @@ void config_defaults()
     config_set_int(&g_config, "window-scale", 2);
     config_set_int(&g_config, "limit-fps", 1);
     config_set_str(&g_config, "palette", "loni");
+    config_set_float(&g_config, "ay-pan-a", 0.25);
+    config_set_float(&g_config, "ay-pan-b", 0.5);
+    config_set_float(&g_config, "ay-pan-c", 0.75);
+    config_set_int(&g_config, "ay-pan-equal-power", 1);
 }
 
 void config_init()

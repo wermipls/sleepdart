@@ -52,6 +52,22 @@ void ay_deinit(AY_t *ay)
     free(ay);
 }
 
+static inline double clamp(double a, double min, double max)
+{
+    a = (a < min) ? min : a;
+    a = (a > max) ? max : a;
+    return a;
+}
+
+void ay_set_pan(AY_t *ay, double a, double b, double c, int equal_power)
+{
+    if (ay == NULL) return;
+
+    ayumi_set_pan(&ay->ayumi, 0, clamp(a, 0.0, 1.0), equal_power);
+    ayumi_set_pan(&ay->ayumi, 1, clamp(b, 0.0, 1.0), equal_power);
+    ayumi_set_pan(&ay->ayumi, 2, clamp(c, 0.0, 1.0), equal_power);
+}
+
 void ay_reset(AY_t *ay)
 {
     if (ay == NULL) return;

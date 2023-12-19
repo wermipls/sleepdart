@@ -103,6 +103,15 @@ int main(int argc, char *argv[])
     int sample_rate = 44100;
 
     m.ay = ay_init(&m, sample_rate, 1750000);
+    float pan_a, pan_b, pan_c;
+    config_get_float(&g_config, "ay-pan-a", &pan_a);
+    config_get_float(&g_config, "ay-pan-b", &pan_b);
+    config_get_float(&g_config, "ay-pan-c", &pan_c);
+    int pan_equal_power;
+
+    config_get_int(&g_config, "ay-pan-equal-power", &pan_equal_power);
+    ay_set_pan(m.ay, pan_a, pan_b, pan_c, pan_equal_power);
+
     beeper_init(&m.beeper, &m, sample_rate);
     audio_sdl_init(sample_rate);
 
