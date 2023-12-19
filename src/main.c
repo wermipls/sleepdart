@@ -112,6 +112,10 @@ int main(int argc, char *argv[])
     config_get_int(&g_config, "ay-pan-equal-power", &pan_equal_power);
     ay_set_pan(m.ay, pan_a, pan_b, pan_c, pan_equal_power);
 
+    int ay_hq;
+    config_get_int(&g_config, "ay-high-quality", &ay_hq);
+    ay_set_quality(m.ay, ay_hq);
+
     beeper_init(&m.beeper, &m, sample_rate);
     audio_sdl_init(sample_rate);
 

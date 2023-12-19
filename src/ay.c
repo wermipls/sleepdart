@@ -4,6 +4,15 @@
 
 static void ay_process_sample(AY_t *ay)
 {
+    ayumi_process(&ay->ayumi);
+    ayumi_remove_dc(&ay->ayumi);
+    ay->buf[ay->buf_pos] = 0.3 * ay->ayumi.left;
+    ay->buf[ay->buf_pos+1] = 0.3 * ay->ayumi.right;
+    ay->buf_pos += 2;
+}
+
+static void ay_process_sample_fast(AY_t *ay)
+{
     ayumi_process_fast(&ay->ayumi);
     ayumi_remove_dc(&ay->ayumi);
     ay->buf[ay->buf_pos] = 0.3 * ay->ayumi.left;
@@ -68,6 +77,13 @@ void ay_set_pan(AY_t *ay, double a, double b, double c, int equal_power)
     ayumi_set_pan(&ay->ayumi, 2, clamp(c, 0.0, 1.0), equal_power);
 }
 
+void ay_set_quality(AY_t *ay, int high_quality)
+{
+    if (ay == NULL) return;
+
+    ay->is_hq = high_quality;
+}
+
 void ay_reset(AY_t *ay)
 {
     if (ay == NULL) return;
@@ -130,8 +146,15 @@ void ay_write_data(AY_t *ay, uint8_t value)
     }
 
     uint64_t write = ay->ctx->cpu.cycles / ay->samples_ratio;
-    for ( ; ay->last_write < write; ay->last_write++) {
-        ay_process_sample(ay);
+
+    if (ay->is_hq) {
+        for ( ; ay->last_write < write; ay->last_write++) {
+            ay_process_sample(ay);
+        }
+    } else {
+        for ( ; ay->last_write < write; ay->last_write++) {
+            ay_process_sample_fast(ay);
+        }
     }
 }
 
@@ -146,8 +169,14 @@ void ay_process_frame(AY_t *ay)
 {
     if (ay == NULL) return;
 
-    for ( ; ay->last_write < ay->samples_frame; ay->last_write++) {
-        ay_process_sample(ay);
+    if (ay->is_hq) {
+        for ( ; ay->last_write < ay->samples_frame; ay->last_write++) {
+            ay_process_sample(ay);
+        }
+    } else {
+        for ( ; ay->last_write < ay->samples_frame; ay->last_write++) {
+            ay_process_sample_fast(ay);
+        }
     }
 
     ay->last_write = 0;

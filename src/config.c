@@ -11,6 +11,7 @@ static struct CfgField fields[] = {
     {"ay-pan-b",            CFG_FLOAT, NULL },
     {"ay-pan-c",            CFG_FLOAT, NULL },
     {"ay-pan-equal-power",  CFG_INT, NULL },
+    {"ay-high-quality",     CFG_INT, NULL },
 };
 
 CfgData_t g_config = {
@@ -29,6 +30,7 @@ void config_defaults()
     config_set_float(&g_config, "ay-pan-b", 0.5);
     config_set_float(&g_config, "ay-pan-c", 0.75);
     config_set_int(&g_config, "ay-pan-equal-power", 1);
+    config_set_int(&g_config, "ay-high-quality", 0);
 }
 
 void config_init()
