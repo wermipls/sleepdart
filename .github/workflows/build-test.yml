@@ -14,7 +14,9 @@ jobs:
       with: 
         submodules: recursive
     - name: set up packages
-      run: sudo apt install meson ninja-build gcc libsdl2-dev libxxhash-dev
+      run: |
+          sudo apt-get update
+          sudo apt install meson ninja-build gcc libsdl2-dev libxxhash-dev
     - name: build release
       run: |
         meson setup build
