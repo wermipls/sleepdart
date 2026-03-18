@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
     argparser_add_arg(parser, "--scale", 's', ARG_INT, 0, "integer window scale");
     argparser_add_arg(parser, "--fullscreen", 'f', ARG_STORE_TRUE, 0, "run in fullscreen mode");
     argparser_add_arg(parser, "--test", 0, ARG_STRING, 0, "perform an automated regression test");
+    argparser_add_arg(parser, "--headless", 0, ARG_STORE_TRUE, 0, "run without a graphics backend");
 
     dlog(LOG_INFO, 
         SLEEPDART_NAME " version " SLEEPDART_VERSION ", built on " __DATE__ "\n");
@@ -56,14 +57,16 @@ int main(int argc, char *argv[])
         config_get_int(&g_config, "window-scale", &scale);
     }
 
-    int err = video_sdl_init(
-        "third (sixth) iteration of sleepdart, the",
-        BUFFER_WIDTH, BUFFER_HEIGHT, 
-        scale);
-
-    if (err) {
-        dlog(LOG_ERR, "Failed to initialize video backend!");
-        return 1;
+    if (!argparser_get(parser, "headless")) {
+        int err = video_sdl_init(
+            "third (sixth) iteration of sleepdart, the",
+            BUFFER_WIDTH, BUFFER_HEIGHT, 
+            scale);
+    
+        if (err) {
+            dlog(LOG_ERR, "Failed to initialize video backend!");
+            return 1;
+        }
     }
 
     if (argparser_get(parser, "fullscreen")) {

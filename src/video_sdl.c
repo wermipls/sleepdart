@@ -19,9 +19,9 @@ int window_width, window_height;
 int buffer_width, buffer_height;
 int window_scale;
 
-SDL_Window *window;
-SDL_Renderer *renderer;
-SDL_Texture *texture;
+SDL_Window *window = NULL;
+SDL_Renderer *renderer = NULL;
+SDL_Texture *texture = NULL;
 
 char title_base[256];
 char title_buf[256];
@@ -54,6 +54,7 @@ void video_sdl_set_scale(int scale)
     window_width = buffer_width * scale;
     window_height = buffer_height * scale;
 
+    if (!window) return;
     SDL_SetWindowSize(window, window_width, window_height);
 }
 
@@ -65,6 +66,8 @@ int video_sdl_get_scale()
 void video_sdl_toggle_window_mode()
 {
     fullscreen = !fullscreen;
+
+    if (!window) return;
     SDL_SetWindowFullscreen(window, fullscreen);
 }
 
@@ -75,6 +78,8 @@ bool video_sdl_is_fullscreen()
 
 void sdl_set_window_title_fps()
 {
+    if (!window) return;
+
     static struct Frametime h[5] = { 0 };
     static const uint16_t update_interval = 1000;
     static uint16_t frames = 0;
@@ -111,6 +116,9 @@ void sdl_set_window_title_fps()
 
 void sdl_synchronize_fps()
 {
+    // unclear if running headless should also make it run uncapped by default. probably yes.
+    if (!window) return;
+
     static uint64_t ticks_next = 0;
     static double error = 0;
     int ticks_frame_flr = floor(target_ticks_frame);
@@ -208,6 +216,8 @@ int video_sdl_init(const char *title, int width, int height, int scale)
 
 int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
 {
+    if (!window) return 0;
+
     if (!SDL_RenderClear(renderer)) {
         sdl_log_error("SDL_RenderClear");
     }

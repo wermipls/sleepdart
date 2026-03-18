@@ -6,7 +6,7 @@ failed=0
 function run_test() {
     ((total++))
     echo "Running test $1..."
-    ./sleepdart --test "$1" || ((failed++))
+    ./sleepdart --test "$1" --headless || ((failed++))
 }
 
 for test in tests/*/; do
