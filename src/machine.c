@@ -217,7 +217,7 @@ int machine_do_cycles()
 
             audio_sdl_queue(m_cur->ay->buf, m_cur->ay->buf_len * sizeof(float));
 
-            ula_draw_frame(m_cur);
+            ula_draw_frame();
 
             video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
 
