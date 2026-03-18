@@ -1,4 +1,4 @@
-project('sleepdart', 'c', default_options: ['buildtype=release'])
+project('sleepdart', 'c', default_options: ['buildtype=release', 'default_library=static'])
 
 release_args = ['-ffast-math', '-flto', '-fwhole-program']
 if get_option('buildtype') == 'release'
@@ -8,7 +8,6 @@ endif
 
 extra_src = []
 extra_obj = []
-static_libs = false
 
 if target_machine.system() == 'windows'
   winmod = import('windows')
@@ -17,13 +16,9 @@ if target_machine.system() == 'windows'
     winmod.compile_resources('src/win32/resource.rc')
   ]
   add_project_arguments('-DPLATFORM_WIN32', language: 'c')
-  static_libs = true
 endif
 
-# workaround for ancient version of meson in ubuntu-latest repos
-# after updating to 0.63, can be replaced with:
-#   git = find_program('git')
-git = 'git'
+git = find_program('git')
 sleepdart_info = vcs_tag(
   command: [git, 'describe', '--tags', '--dirty', '--always'],
   input: 'src/sleepdart_info.h.in',
@@ -31,9 +26,9 @@ sleepdart_info = vcs_tag(
 
 cc = meson.get_compiler('c')
 deps = [
-  dependency('zlib', static: static_libs),
-  dependency('sdl3', static: static_libs),
-  dependency('libxxhash', static: static_libs),
+  dependency('zlib', static: true),
+  dependency('sdl3', static: true),
+  dependency('libxxhash', static: true),
   cc.find_library('m', required: false),
 ]
 
