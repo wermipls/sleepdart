@@ -37,6 +37,6 @@ int config_get_int(CfgData_t *cfg, const char *key, int *dest);
  * config value gets copied to dest */
 int config_get_float(CfgData_t *cfg, const char *key, float *dest);
 
-void config_set_str(CfgData_t *cfg, const char *key, char *value);
+void config_set_str(CfgData_t *cfg, const char *key, const char *value);
 void config_set_int(CfgData_t *cfg, const char *key, int value);
 void config_set_float(CfgData_t *cfg, const char *key, float value);
