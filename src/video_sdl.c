@@ -195,12 +195,11 @@ int video_sdl_init(const char *title, int width, int height, int scale)
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_PIXELART);
 
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
-    SDL_SysWMinfo info;
-    SDL_VERSION(&info.version);
-    if (SDL_GetWindowWMInfo(window, &info)) {
-        gui_windows_hook_window(info.info.win.window);
+    HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    if (hwnd) {
+        gui_windows_hook_window(hwnd);
     } else {
-        sdl_log_error("SDL_GetWindowWMInfo");
+        sdl_log_error("Failed to get HWND of the window");
     }
 #endif
     
