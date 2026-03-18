@@ -409,9 +409,9 @@ static void test_finish(struct Machine *m) {
     }
 }
 
-int machine_test_iterate(struct Machine *m)
+void machine_test_iterate(struct Machine *m)
 {
-    if (!test_running) return 0;
+    if (!test_running) return;
 
     if (test.cycles) {
         XXH64_update(test.cycles, &m->cpu.cycles, sizeof(m->cpu.cycles));

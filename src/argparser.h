@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef void (*ArgCallback_t)(void *value);
-
 enum ArgumentType
 {
     ARG_STRING = 0,
@@ -23,7 +21,6 @@ struct Argument
     bool positional;
     const char *help;
     void *result;
-    ArgCallback_t callback;
 };
 
 typedef struct ArgParser {
