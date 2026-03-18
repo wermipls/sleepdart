@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include "log.h"
 #include "machine.h"
@@ -7,10 +6,6 @@
 #include "video_sdl.h"
 #include "input_sdl.h"
 #include "audio_sdl.h"
-#include "tape.h"
-#include "io.h"
-#include "file.h"
-#include "szx.h"
 #include "palette.h"
 #include "argparser.h"
 #include "sleepdart_info.h"
