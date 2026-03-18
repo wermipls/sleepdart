@@ -20,7 +20,7 @@ jobs:
         meson setup build
         meson compile -C build
     - name: upload build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sleepdart-linux
         path: sleepdart
@@ -50,7 +50,7 @@ jobs:
         meson setup build
         meson compile -C build
     - name: upload build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sleepdart-windows
         path: sleepdart.exe
