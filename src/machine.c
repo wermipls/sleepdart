@@ -150,7 +150,7 @@ void machine_process_events()
     }
 }
 
-void machine_open_file(char *path)
+void machine_open_file(const char *path)
 {
     if (path == NULL) return;
     
@@ -159,7 +159,7 @@ void machine_open_file(char *path)
     file_open = true;
 }
 
-void machine_save_file(char *path)
+void machine_save_file(const char *path)
 {
     if (path == NULL) return;
     

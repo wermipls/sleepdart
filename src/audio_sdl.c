@@ -1,29 +1,36 @@
 #include "audio_sdl.h"
-#include <SDL2/SDL.h>
+#include "src/log.h"
+#include <SDL3/SDL.h>
 
-static SDL_AudioDeviceID device;
-static SDL_AudioSpec device_spec;
+static SDL_AudioStream *stream = NULL;
 
 void audio_sdl_init(int sample_rate)
 {
     SDL_Init(SDL_INIT_AUDIO);
 
-    SDL_AudioSpec desired = { 0 };
-    desired.channels = 2;
-    desired.format = AUDIO_F32SYS;
-    desired.freq = sample_rate;
-    desired.samples = 2048;
-    desired.callback = NULL;
+    SDL_AudioSpec spec = { 0 };
+    spec.channels = 2;
+    spec.format = SDL_AUDIO_F32;
+    spec.freq = sample_rate;
 
-    device = SDL_OpenAudioDevice(NULL, 0, &desired, &device_spec, 0);
-    SDL_PauseAudioDevice(device, 0);
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    if (!stream) {
+        dlog(LOG_ERR, "Failed to open audio device: %s", SDL_GetError());
+        return;
+    }
+    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(stream));
 }
 
 void audio_sdl_queue(float *buf, size_t bytes)
 {
-    uint32_t queue = SDL_GetQueuedAudioSize(device);
+    if (!stream) return;
+
+    SDL_AudioSpec spec;
+    int frames;
+    SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &spec, &frames);
+    uint32_t queued = SDL_GetAudioStreamQueued(stream);
     // data too old (uncapped fps? a/v desync?), drop it
-    if (queue < device_spec.size*2 + bytes) {
-        SDL_QueueAudio(device, buf, bytes);
+    if (queued < frames * (spec.channels * 4) + bytes) {
+        SDL_PutAudioStreamData(stream, buf, bytes);
     }
 }

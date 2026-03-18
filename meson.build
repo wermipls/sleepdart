@@ -32,7 +32,7 @@ sleepdart_info = vcs_tag(
 cc = meson.get_compiler('c')
 deps = [
   dependency('zlib', static: static_libs),
-  dependency('sdl2', static: static_libs),
+  dependency('sdl3', static: static_libs),
   dependency('libxxhash', static: static_libs),
   cc.find_library('m', required: false),
 ]

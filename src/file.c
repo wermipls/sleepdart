@@ -4,14 +4,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include <SDL2/SDL_filesystem.h>
+#include <SDL3/SDL_filesystem.h>
 #include <dirent.h>
 #include "szx_file.h"
 #include "vector.h"
 #include "log.h"
 #include "unicode.h"
-
-static char basedir[4096] = { 0 };
 
 int64_t file_get_size(const char *path)
 {
@@ -93,19 +91,7 @@ char *file_get_extension(char *path)
 
 const char *file_get_basedir()
 {
-    if (basedir[0]) {
-        return basedir;
-    }
-
-    char *dir = SDL_GetBasePath();
-    if (!dir) {
-        return NULL;
-    }
-    strncpy(basedir, dir, sizeof(basedir)-1);
-    SDL_free(dir);
-    basedir[sizeof(basedir)-1] = 0;
-
-    return basedir;
+    return SDL_GetBasePath();
 }
 
 int file_path_append(char *dst, const char *a, const char *b, size_t len)

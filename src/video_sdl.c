@@ -1,9 +1,9 @@
 #include "video_sdl.h"
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
+#include <SDL3/SDL.h>
 #include <math.h>
 #include "log.h"
+#include <stdio.h>
 
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     #include "win32/gui_windows.h"
@@ -65,11 +65,7 @@ int video_sdl_get_scale()
 void video_sdl_toggle_window_mode()
 {
     fullscreen = !fullscreen;
-    if (fullscreen) {
-        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    } else {
-        SDL_SetWindowFullscreen(window, 0);
-    }
+    SDL_SetWindowFullscreen(window, fullscreen);
 }
 
 bool video_sdl_is_fullscreen()
@@ -83,7 +79,7 @@ void sdl_set_window_title_fps()
     static const uint16_t update_interval = 1000;
     static uint16_t frames = 0;
     static uint64_t ticks_old = 0;
-    uint64_t ticks = SDL_GetTicks64();
+    uint64_t ticks = SDL_GetTicks();
 
     frames++;
     uint16_t time = ticks - ticks_old;
@@ -118,7 +114,7 @@ void sdl_synchronize_fps()
     static uint64_t ticks_next = 0;
     static double error = 0;
     int ticks_frame_flr = floor(target_ticks_frame);
-    uint64_t ticks = SDL_GetTicks64();
+    uint64_t ticks = SDL_GetTicks();
 
     if (!limit_fps || (ticks_next < ticks - ticks_frame_flr - 1)) {
         ticks_next = ticks;
@@ -152,9 +148,8 @@ void sdl_log_error(const char msg[])
 
 int video_sdl_init(const char *title, int width, int height, int scale)
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-    {
-        sdl_log_error("SDL_Init");
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        sdl_log_error("Failed to initialize the video subsystem");
         return 1;
     }
 
@@ -167,33 +162,21 @@ int video_sdl_init(const char *title, int width, int height, int scale)
 
     strncpy(title_base, title, sizeof(title_base)-1);
 
-    window = SDL_CreateWindow(
-        title, 
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-        window_width, window_height, 
-        SDL_WINDOW_SHOWN);
-
-    if (window == NULL)
-    {
-        sdl_log_error("SDL_CreateWindow");
+    if (!SDL_CreateWindowAndRenderer(
+        title,
+        window_width,
+        window_height,
+        SDL_WINDOW_HIGH_PIXEL_DENSITY,
+        &window,
+        &renderer
+    )) {
+        sdl_log_error("Failed to create window");
         SDL_Quit();
         return 2;
     }
 
-    renderer = SDL_CreateRenderer(
-        window,
-        -1, // rendering driver index
-        0);
-
-    if (renderer == NULL)
-    {
-        sdl_log_error("SDL_CreateRenderer");
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 3;
-    }
-
-    SDL_RenderSetLogicalSize(renderer, buffer_width, buffer_height);
+    SDL_SetRenderLogicalPresentation(
+        renderer, buffer_width, buffer_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     texture = SDL_CreateTexture(
         renderer, 
@@ -201,14 +184,15 @@ int video_sdl_init(const char *title, int width, int height, int scale)
         SDL_TEXTUREACCESS_STREAMING,
         buffer_width, buffer_height);
 
-    if (texture == NULL)
-    {
-        sdl_log_error("SDL_CreateTextureFromSurface");
+    if (!texture) {
+        sdl_log_error("Failed to create texture");
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 4;
     }
+
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_PIXELART);
 
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     SDL_SysWMinfo info;
@@ -225,22 +209,24 @@ int video_sdl_init(const char *title, int width, int height, int scale)
 
 int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
 {
-    int err = SDL_RenderClear(renderer);
-    if (err) sdl_log_error("SDL_RenderClear");
+    if (!SDL_RenderClear(renderer)) {
+        sdl_log_error("SDL_RenderClear");
+    }
 
     void *pixels;
     int pitch; 
 
     static uint64_t ticks_last = 0;
-    uint64_t ticks = SDL_GetTicks64();
+    uint64_t ticks = SDL_GetTicks();
     if (ticks - ticks_last >= 10) {
         // i think it's fairly safe to assume no one truly needs
         // the mf window to update more often than every 100hz
         // with uncapped fps lol
         ticks_last = ticks;
 
-        err = SDL_LockTexture(texture, NULL, &pixels, &pitch);
-        if (err) sdl_log_error("SDL_LockTexture");
+        if (!SDL_LockTexture(texture, NULL, &pixels, &pitch)) {
+            sdl_log_error("SDL_LockTexture");
+        }
 
         size_t dstbytes = 3*buffer_height*buffer_width;
         if (dstbytes != bytes) {
@@ -251,8 +237,9 @@ int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
         memcpy(pixels, pixeldata, dstbytes);
         SDL_UnlockTexture(texture);
 
-        err = SDL_RenderCopy(renderer, texture, NULL, NULL);
-        if (err) sdl_log_error("SDL_RenderCopy");
+        if (!SDL_RenderTexture(renderer, texture, NULL, NULL)) {
+            sdl_log_error("SDL_RenderCopy");
+        }
 
         SDL_RenderPresent(renderer);
     }

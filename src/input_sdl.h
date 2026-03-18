@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL2/SDL_scancode.h>
+#include <SDL3/SDL_scancode.h>
 
 void input_sdl_init();
 void input_sdl_deinit();

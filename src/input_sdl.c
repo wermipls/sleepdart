@@ -1,18 +1,18 @@
 #include "input_sdl.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <stdlib.h>
 #include <string.h>
 #include "machine.h"
 
-static uint8_t *keyboard_state_old = NULL;
-static const uint8_t *keyboard_state;
+static bool *keyboard_state_old = NULL;
+static const bool *keyboard_state;
 static int keyboard_state_size;
 
 void input_sdl_init()
 {
     keyboard_state = SDL_GetKeyboardState(&keyboard_state_size);
     if (keyboard_state_old == NULL) {
-        keyboard_state_old = malloc(keyboard_state_size);
+        keyboard_state_old = malloc(keyboard_state_size * sizeof(*keyboard_state));
     }
 
     input_sdl_update();
@@ -35,12 +35,11 @@ int input_sdl_update()
     while (SDL_PollEvent(&e)) {
         switch (e.type)
         {
-        case SDL_QUIT:
+        case SDL_EVENT_QUIT:
             quit = 1;
             break;
-        case SDL_DROPFILE:
-            machine_open_file(e.drop.file);
-            SDL_free(e.drop.file);
+        case SDL_EVENT_DROP_FILE:
+            machine_open_file(e.drop.data);
             break;
         }
     }
@@ -51,7 +50,7 @@ int input_sdl_update()
 void input_sdl_copy_old_state()
 {
     if (keyboard_state_old != NULL) {
-        memcpy(keyboard_state_old, keyboard_state, keyboard_state_size);
+        memcpy(keyboard_state_old, keyboard_state, keyboard_state_size * sizeof(*keyboard_state));
     }
 }
 

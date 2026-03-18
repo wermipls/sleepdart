@@ -1,6 +1,6 @@
 #include "gui_windows.h"
 #include "resource.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "../sleepdart_info.h"
 #include "../video_sdl.h"
 #include "../machine.h"
@@ -37,7 +37,7 @@ void fullscreen_update_check()
 void on_file_quit()
 {
     SDL_Event e;
-    e.type = SDL_QUIT;
+    e.type = SDL_EVENT_QUIT;
     SDL_PushEvent(&e);
 }
 

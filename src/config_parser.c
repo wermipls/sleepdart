@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <float.h>
-#include <SDL2/SDL_assert.h>
+#include <SDL3/SDL_assert.h>
 #include <limits.h>
 #include "log.h"
 #include "parser_helpers.h"

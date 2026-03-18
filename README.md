@@ -30,7 +30,7 @@ git clone --recursive https://github.com/wermipls/sleepdart
 ### Windows (MSYS2 MinGW 64-bit)
 
 ```sh
-pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 zlib mingw-w64-x86_64-xxhash
+pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-sdl3 zlib mingw-w64-x86_64-xxhash
 
 meson setup build # add "-Dbuildtype=debug" for a debug build
 meson compile -C build
