@@ -6,3 +6,7 @@
 /*.szx
 /*.zip
 /tests/_*
+
+# exclude downloaded wraps, but keep the .wrap files.
+/subprojects/*
+!/subprojects/*.wrap
