@@ -50,11 +50,26 @@ void video_sdl_set_fps(double fps)
 
 void video_sdl_set_scale(int scale)
 {
+    if (!window) return;
+
+    int max_scale = 5;
+    SDL_Rect rect;
+    if (SDL_GetDisplayBounds(SDL_GetDisplayForWindow(window), &rect)) {
+        const int max_scale_x = rect.w / buffer_width;
+        const int max_scale_y = rect.h / buffer_height;
+        max_scale = max_scale_x < max_scale_y ? max_scale_x : max_scale_y;
+    } else {
+        dlog(LOG_WARN, "failed to get display bounds :( %s\nfalling back to %dx max scale...", SDL_GetError(), max_scale);
+    }
+
+    if (scale < 1) scale = 1;
+    if (scale > max_scale) scale = max_scale;
+
+    if (window_scale == scale) return;
     window_scale = scale;
     window_width = buffer_width * scale;
     window_height = buffer_height * scale;
 
-    if (!window) return;
     SDL_SetWindowSize(window, window_width, window_height);
 }
 
