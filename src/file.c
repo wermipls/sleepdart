@@ -5,7 +5,6 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <SDL3/SDL_filesystem.h>
-#include <dirent.h>
 #include "szx_file.h"
 #include "vector.h"
 #include "log.h"
@@ -129,7 +128,7 @@ int file_path_append(char *dst, const char *a, const char *b, size_t len)
     return 0;
 }
 
-void file_free_list(char *list[])
+void file_free_list(char **list)
 {
     if (list == NULL) {
         return;
@@ -144,44 +143,53 @@ void file_free_list(char *list[])
     vector_free(list);
 }
 
+static SDL_EnumerationResult list_directory_files_cb(void *userdata, const char *dirname, const char *fname)
+{
+    char ***pvec = userdata;
+    char **files = *pvec;
+
+    size_t len_fname = strlen(fname);
+    size_t len_dirname = strlen(dirname);
+
+    size_t fullpath_len = len_dirname + len_fname + 1;
+    char *fullpath = malloc(fullpath_len);
+    if (!fullpath) {
+        return SDL_ENUM_FAILURE;
+    }
+
+    int err = file_path_append(fullpath, dirname, fname, fullpath_len);
+    if (err) {
+        free(fullpath);
+        return SDL_ENUM_FAILURE;
+    }
+
+    if (!file_is_regular_file(fullpath)) {
+        free(fullpath);
+        return SDL_ENUM_CONTINUE;
+    }
+
+    free(fullpath);
+
+    char *p = malloc(len_fname+1);
+    if (!p) {
+        return SDL_ENUM_FAILURE;
+    }
+    strncpy(p, fname, len_fname+1);
+    vector_add(files, p);
+    // vector ptr may have changed because of reallocation.
+    *pvec = files;
+
+    return SDL_ENUM_CONTINUE;
+}
+
 char **file_list_directory_files(char *path)
 {
-    DIR* dir = opendir(path);
-    if (dir == NULL) {
-        return NULL;
-    }
-
     char **files = vector_create();
-    if (files == NULL) {
+    if (!SDL_EnumerateDirectory(path, list_directory_files_cb, &files)) {
+        dlog(LOG_ERRSILENT, "failed to enumerate files in directory: %s", SDL_GetError());
+        vector_free(files);
         return NULL;
     }
-
-    struct dirent *e;
-    while ((e = readdir(dir)) != NULL) {
-        char buf[4096];
-        int err = file_path_append(buf, path, e->d_name, sizeof(buf));
-        if (err) {
-            file_free_list(files);
-            return NULL;
-        }
-        if (!file_is_regular_file(buf)) {
-            continue;
-        }
-
-        size_t len = strlen(e->d_name);
-        char *p = malloc(len+1);
-        if (p == NULL) {
-            file_free_list(files);
-            return NULL;
-        }
-        strncpy(p, e->d_name, len);
-        p[len] = 0;
-        vector_add(files, p);
-    }
-
-    vector_add(files, NULL);
-
-    closedir(dir);
     return files;
 }
 
