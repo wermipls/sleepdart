@@ -1,6 +1,6 @@
 project('sleepdart', 'c', default_options: ['buildtype=release', 'default_library=static'])
 
-release_args = ['-ffast-math', '-flto', '-fwhole-program']
+release_args = ['-flto', '-fwhole-program']
 if get_option('buildtype') == 'release'
   add_project_arguments(release_args, language: 'c')
   add_project_link_arguments(release_args, language: 'c')
