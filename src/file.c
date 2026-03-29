@@ -190,6 +190,8 @@ char **file_list_directory_files(char *path)
         vector_free(files);
         return NULL;
     }
+
+    vector_add(files, NULL);
     return files;
 }
 
