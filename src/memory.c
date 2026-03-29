@@ -6,7 +6,7 @@
 #include "log.h"
 #include "ula.h"
 #include "machine.h"
-#include "file.h"
+#include <physfs.h>
 
 /* Initializes the DRAM to a pseudo-random state it would have on initial power-on. */
 void memory_init(Memory_t *mem)
@@ -28,13 +28,13 @@ void memory_init(Memory_t *mem)
  * Returns zero on success, non-zero otherwise. */
 int memory_load_rom_16k(Memory_t *mem, char path[])
 {
-    FILE *f = fopen_utf8(path, "rb");
+    PHYSFS_File *f = PHYSFS_openRead(path);
     if (!f) {
         dlog(LOG_ERR, "Failed to load ROM \"%s\"", path);
         return -1;
     }
-    size_t bytes = fread(mem->bus, 1, 0x4000, f);
-    fclose(f);
+    size_t bytes = PHYSFS_readBytes(f, mem->bus, 0x4000);
+    PHYSFS_close(f);
     dlog(LOG_INFO, "Loaded %d bytes from \"%s\"", bytes, path);
     return 0;
 }

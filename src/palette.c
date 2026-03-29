@@ -1,8 +1,8 @@
 #include "palette.h"
-#include "file.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <physfs.h>
 
 char **palette_list = NULL;
 size_t palette_current = 0;
@@ -14,73 +14,35 @@ Palette_t *palette_load(const char *path)
         return NULL;
     }
 
-    int64_t size = file_get_size(path);
-    if (size <= 0) {
+    PHYSFS_File *f = PHYSFS_openRead(path);
+    if (!f) {
         return NULL;
     }
 
-    // its just a palette bro...
-    if (size > 4096) {
+    Palette_t *p = malloc(sizeof(Palette_t));
+    if (!p) {
+        PHYSFS_close(f);
         return NULL;
     }
 
-    // not rgb24
-    if ((size % 3) != 0) {
+    p->colors = 16;
+    p->color = malloc(sizeof(struct PaletteColor) * p->colors);
+    if (!p->color) {
+        PHYSFS_close(f);
         return NULL;
     }
 
-    size_t colors = size / 3;
-
-    FILE *f = fopen_utf8(path, "rb");
-    if (f == NULL) {
-        return NULL;
-    }
-
-    Palette_t p;
-    p.colors = colors;
-    p.color = malloc(sizeof(struct PaletteColor) * colors);
-    if (p.color == NULL) {
-        fclose(f);
-        return NULL;
-    }
-
-    for (size_t i = 0; i < colors; i++) {
-        struct PaletteColor c;
-
-        size_t bytes = fread(&c.r, 1, 1, f);
-        if (bytes == 0) {
-            free(p.color);
-            fclose(f);
+    for (size_t i = 0; i < p->colors; i++) {
+        PHYSFS_uint64 bytes = PHYSFS_readBytes(f, &p->color[i], 3);
+        if (bytes != 3) {
+            palette_free(p);
+            PHYSFS_close(f);
             return NULL;
         }
-
-        bytes = fread(&c.g, 1, 1, f);
-        if (bytes == 0) {
-            free(p.color);
-            fclose(f);
-            return NULL;
-        }
-
-        bytes = fread(&c.b, 1, 1, f);
-        if (bytes == 0) {
-            free(p.color);
-            fclose(f);
-            return NULL;
-        }
-
-        p.color[i] = c;
     }
 
-    fclose(f);
-
-    Palette_t *result = malloc(sizeof(Palette_t));
-    if (result == NULL) {
-        free(p.color);
-        return NULL;
-    }
-
-    *result = p;
-    return result;
+    PHYSFS_close(f);
+    return p;
 }
 
 Palette_t *palette_load_current()
@@ -90,21 +52,9 @@ Palette_t *palette_load_current()
     }
 
     char path[2048];
-    int err = file_path_append(path, file_get_basedir(), "palettes", sizeof(path));
-    if (err) {
-        return NULL;
-    }
-    err = file_path_append(path, path, palette_list[palette_current], sizeof(path));
-    if (err) {
-        return NULL;
-    }
+    snprintf(path, sizeof(path), "palettes/%s", palette_list[palette_current]);
 
-    Palette_t *p = palette_load(path);
-    if (p == NULL) {
-        return NULL;
-    }
-
-    return p;
+    return palette_load(path);
 }
 
 void palette_free(Palette_t *palette)
@@ -119,18 +69,13 @@ void palette_free(Palette_t *palette)
 
 void palette_list_init()
 {
-    char path[2048];
-    int err = file_path_append(path, file_get_basedir(), "palettes", sizeof(path));
-    if (err) {
-        return;
-    }
-    palette_list = file_list_directory_files(path);
+    palette_list = PHYSFS_enumerateFiles("palettes/");
 }
 
 void palette_list_free()
 {
     if (palette_list) {
-        file_free_list(palette_list);
+        PHYSFS_freeList(palette_list);
         palette_list = NULL;
     }
 }

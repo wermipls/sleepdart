@@ -10,6 +10,7 @@
 #include "argparser.h"
 #include "sleepdart_info.h"
 #include "config.h"
+#include "file.h"
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +30,10 @@ int main(int argc, char *argv[])
         SLEEPDART_NAME " version " SLEEPDART_VERSION ", built on " __DATE__ "\n");
 
     if (argparser_parse(parser, argc, argv)) {
+        return -1;
+    }
+
+    if (!file_init(argv[0])) {
         return -1;
     }
 

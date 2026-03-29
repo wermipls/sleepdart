@@ -12,9 +12,12 @@ enum FileType {
     FTYPE_SNA,
 };
 
+bool file_init(const char *argv0);
+bool file_exists(const char *path);
 int64_t file_get_size(const char *path);
 char *file_get_extension(char *path);
 const char *file_get_basedir();
+const char *file_get_prefdir();
 int file_path_append(char *dst, const char *a, const char *b, size_t len);
 void file_free_list(char **list);
 char **file_list_directory_files(char *path);

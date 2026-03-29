@@ -49,10 +49,7 @@ int machine_init(Machine_t *machine, enum MachineType type)
     machine->timing = machine_timing_zx48k;
 
     memory_init(&machine->memory);
-
-    char path[2048];
-    file_path_append(path, file_get_basedir(), "rom/48.rom", sizeof(path));
-    memory_load_rom_16k(&machine->memory, path);
+    memory_load_rom_16k(&machine->memory, "rom/48.rom");
 
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);
@@ -172,7 +169,7 @@ static char *get_quicksave_path()
 {
     static char buf[2048] = { 0 };
     if (buf[0] == 0) {
-        file_path_append(buf, file_get_basedir(), "quicksave.szx", sizeof(buf));
+        file_path_append(buf, file_get_prefdir(), "quicksave.szx", sizeof(buf));
     }
     return buf;
 }

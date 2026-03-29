@@ -8,7 +8,54 @@
 #include "szx_file.h"
 #include "vector.h"
 #include "log.h"
+#include <physfs.h>
+#include "sleepdart_info.h"
+#include "sleepdart_assets.h"
 #include "unicode.h"
+
+static const char *file_pref_dir = NULL;
+
+static const char *physfs_error()
+{
+    PHYSFS_ErrorCode err = PHYSFS_getLastErrorCode();
+    return (err) ? PHYSFS_getErrorByCode(err) : "unknown error";
+}
+
+bool file_init(const char *argv0)
+{
+    if (!PHYSFS_init(argv0)) {
+        dlog(LOG_ERR, "Failed to init PhysicsFS: %s", physfs_error());
+        return false;
+    }
+
+    bool portable_mode = false;
+    char path[2048];
+    int err = file_path_append(path, file_get_basedir(), "config.ini", sizeof(path));
+    if (!err && file_exists(path)) {
+        dlog(LOG_INFO, "Config file found in program directory, running in portable mode.");
+        portable_mode = true;
+    }
+
+    file_pref_dir = portable_mode ? file_get_basedir() : PHYSFS_getPrefDir(SLEEPDART_ORG, SLEEPDART_NAME);
+    PHYSFS_setWriteDir(file_pref_dir);
+    PHYSFS_mountMemory(sleepdart_assets, sizeof(sleepdart_assets), NULL, "__assets.zip", NULL, 0);
+    PHYSFS_mount("./", NULL, 0);
+    PHYSFS_mount(file_pref_dir, NULL, 0);
+
+    return true;
+}
+
+bool file_exists(const char *path)
+{
+    if (!path) return false;
+
+    struct stat s;
+    if (stat(path, &s)) {
+        return false;
+    }
+
+    return true;
+}
 
 int64_t file_get_size(const char *path)
 {
@@ -91,6 +138,11 @@ char *file_get_extension(char *path)
 const char *file_get_basedir()
 {
     return SDL_GetBasePath();
+}
+
+const char *file_get_prefdir()
+{
+    return file_pref_dir;
 }
 
 int file_path_append(char *dst, const char *a, const char *b, size_t len)

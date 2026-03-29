@@ -38,7 +38,7 @@ void config_init()
     config_defaults();
 
     file_path_append(
-        config_path, file_get_basedir(), "config.ini", sizeof(config_path));
+        config_path, file_get_prefdir(), "config.ini", sizeof(config_path));
 
     config_load_file(&g_config, config_path);
 }
