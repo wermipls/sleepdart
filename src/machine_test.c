@@ -144,13 +144,17 @@ int machine_test_open(const char *path)
 
     machine_test_close();
 
-    char buf[2048];
-    file_path_append(buf, path, "sleepdart-test.ini", sizeof(buf));
-    int err = config_load_file(&testcfg, buf);
+    char *config_path = file_path_append(NULL, path, "sleepdart-test.ini");
+    if (!config_path) {
+        dlog(LOG_ERRSILENT, "%s: path append fail", __func__);
+        return -1;
+    }
+    int err = config_load_file(&testcfg, config_path);
     if (err) {
-        dlog(LOG_ERRSILENT, "Failed to open test file \"%s\"", buf);
+        dlog(LOG_ERRSILENT, "Failed to open test file \"%s\"", config_path);
         return -2;
     }
+    free(config_path);
 
     size_t dir_len = strlen(path) + 1;
     char *dir = malloc(dir_len);
@@ -164,15 +168,16 @@ int machine_test_open(const char *path)
 
     char *file = config_get_str(&testcfg, "file");
     if (file) {
-        file_path_append(buf, path, file, sizeof(buf));
-        machine_open_file(buf);
+        char *file_path = file_path_append(NULL, path, file);
+        machine_open_file(file_path);
         free(file);
+        free(file_path);
     }
 
     char *condition = config_get_str(&testcfg, "stop-condition");
 
     if (condition == NULL) {
-        dlog(LOG_ERRSILENT, "Missing stop-condition parameter in \"%s\"", buf);
+        dlog(LOG_ERRSILENT, "Missing stop-condition parameter in config file");
         return -4;
     }
 
@@ -241,26 +246,38 @@ int machine_test_open(const char *path)
         XXH64_reset(test.cycles, 0);
     }
     if (test.test_print) {
-        file_path_append(buf, path, "print.txt.tmp", sizeof(buf));
-        test.print = fopen_utf8(buf, "wb+");
+        char *print_path = file_path_append(NULL, path, "print.txt.tmp");
+        if (!print_path) {
+            dlog(LOG_ERRSILENT, "%s: path append fail", __func__);
+            return -1;
+        }
+        test.print = fopen_utf8(print_path, "wb+");
         if (test.print == NULL) {
-            dlog(LOG_ERR, "Failed to open file \"%s\" for write", buf);
+            dlog(LOG_ERR, "Failed to open file \"%s\" for write", print_path);
+            free(print_path);
             return -8;
         }
         machine_set_print_stream(test.print);
+        free(print_path);
     }
 
     char *macro = config_get_str(&testcfg, "macro");
     if (macro) {
-        file_path_append(buf, path, macro, sizeof(buf));
+        char *macro_path = file_path_append(NULL, path, macro);
         free(macro);
-        test.macro = parse_macro(buf);
-        if (test.macro == NULL) {
-            dlog(LOG_WARN, "Failed to parse macro file \"%s\"", buf);
-            return -8;
-        } else {
-            keyboard_macro_play(test.macro, vector_len(test.macro));
+        if (!macro_path) {
+            dlog(LOG_ERRSILENT, "%s: path append fail", __func__);
+            return -1;
         }
+
+        test.macro = parse_macro(macro_path);
+        if (test.macro == NULL) {
+            dlog(LOG_WARN, "Failed to parse macro file \"%s\"", macro_path);
+            free(macro_path);
+            return -8;
+        }
+        keyboard_macro_play(test.macro, vector_len(test.macro));
+        free(macro_path);
     }
 
     test_running = true;
@@ -290,21 +307,24 @@ static void finish_hash(XXH64_state_t *s, const char *name)
     XXH64_hash_t hash = XXH64_digest(s);
     dlog(LOG_INFO, "%s hash: %016llx", name, hash);
     uint64_t expected;
-    char buf[2048];
-    file_path_append(buf, test.dir, name, sizeof(buf));
-    FILE *f = fopen_utf8(buf, "rb");
+    char *hash_path = file_path_append(NULL, test.dir, name);
+    FILE *f = fopen_utf8(hash_path, "rb");
     if (f == NULL) {
         dlog(LOG_WARN, "Failed to open hash file \"%s\", attempting to create", name);
-        f = fopen_utf8(buf, "wb");
+        f = fopen_utf8(hash_path, "wb");
         if (f == NULL) {
             dlog(LOG_ERRSILENT, "Failed to open hash file \"%s\" for write!", name);
+            free(hash_path);
             return;
         }
 
         fwrite(&hash, sizeof(hash), 1, f);
         fclose(f);
+        free(hash_path);
         return;
     }
+
+    free(hash_path);
 
     size_t size = fread(&expected, sizeof(expected), 1, f);
     if (!size) {
@@ -321,19 +341,26 @@ static void finish_hash(XXH64_state_t *s, const char *name)
 
 static void finish_print()
 {
-    char exp[2048];
-    char tmp[2048];
-    file_path_append(exp, test.dir, "print.txt", sizeof(exp));
-    file_path_append(tmp, test.dir, "print.txt.tmp", sizeof(tmp));
+    char *exp_path = file_path_append(NULL, test.dir, "print.txt");
+    char *tmp_path = file_path_append(NULL, test.dir, "print.txt.tmp");
 
-    FILE *expected = fopen_utf8(exp, "rb");
+    if (!exp_path || !tmp_path) {
+        dlog(LOG_ERRSILENT, "%s: path append fail", __func__);
+        free(exp_path);
+        free(tmp_path);
+        return;
+    }
+
+    FILE *expected = fopen_utf8(exp_path, "rb");
     if (expected == NULL) {
-        dlog(LOG_WARN, "Failed to open print file \"%s\", attempting to create", exp);
+        dlog(LOG_WARN, "Failed to open print file \"%s\", attempting to create", exp_path);
         fclose(test.print);
-        int err = rename(tmp, exp);
+        int err = rename(tmp_path, exp_path);
         if (err) {
             dlog(LOG_ERRSILENT, "Failed to rename print file!");
         }
+        free(exp_path);
+        free(tmp_path);
         return;
     }
 
@@ -373,7 +400,10 @@ static void finish_print()
     fclose(test.print);
     fclose(expected);
 
-    remove(tmp);
+    remove(tmp_path);
+
+    free(exp_path);
+    free(tmp_path);
 }
 
 static void test_finish(struct Machine *m) {

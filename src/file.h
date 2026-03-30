@@ -18,7 +18,13 @@ int64_t file_get_size(const char *path);
 char *file_get_extension(char *path);
 const char *file_get_basedir();
 const char *file_get_prefdir();
-int file_path_append(char *dst, const char *a, const char *b, size_t len);
+
+/* Joins `a` and `b` into a single path. Returns the path or NULL on error.
+ * Returned path is allocated on the heap and must be freed with `free()`.
+ * If `dst` is provided, it MUST point to memory allocated with `malloc()`.
+ * `dst` and `a` can be the same pointer. */
+char *file_path_append(char *dst, const char *a, const char *b);
+
 void file_free_list(char **list);
 char **file_list_directory_files(char *path);
 enum FileType file_detect_type(char *path);

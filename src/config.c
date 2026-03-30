@@ -1,5 +1,4 @@
 #include "config.h"
-#include <stdlib.h>
 #include "file.h"
 #include "log.h"
 
@@ -19,7 +18,7 @@ CfgData_t g_config = {
     .len = sizeof(fields) / sizeof(struct CfgField),
 };
 
-static char config_path[2048] = { 0 };
+static char *config_path = NULL;
 
 void config_defaults()
 {
@@ -37,8 +36,7 @@ void config_init()
 {
     config_defaults();
 
-    file_path_append(
-        config_path, file_get_prefdir(), "config.ini", sizeof(config_path));
+    config_path = file_path_append(NULL, file_get_prefdir(), "config.ini");
 
     config_load_file(&g_config, config_path);
 }

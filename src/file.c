@@ -29,12 +29,12 @@ bool file_init(const char *argv0)
     }
 
     bool portable_mode = false;
-    char path[2048];
-    int err = file_path_append(path, file_get_basedir(), "config.ini", sizeof(path));
-    if (!err && file_exists(path)) {
+    char *path = file_path_append(NULL, file_get_basedir(), "config.ini");
+    if (path && file_exists(path)) {
         dlog(LOG_INFO, "Config file found in program directory, running in portable mode.");
         portable_mode = true;
     }
+    free(path);
 
     file_pref_dir = portable_mode ? file_get_basedir() : PHYSFS_getPrefDir(SLEEPDART_ORG, SLEEPDART_NAME);
     PHYSFS_setWriteDir(file_pref_dir);
@@ -145,29 +145,40 @@ const char *file_get_prefdir()
     return file_pref_dir;
 }
 
-int file_path_append(char *dst, const char *a, const char *b, size_t len)
+char *file_path_append(char *dst, const char *a, const char *b)
 {
-    if (!dst || !a || !b || !len) {
-        return -1;
+    if (!a || !b) {
+        return NULL;
     }
 
-    const char *p = a;
-    bool has_dir_separator = false;
-    while (*p) {
-        p++;
-    }
-    if (p > a) {
-        p--;
-        has_dir_separator = file_is_directory_separator(*p);
+    size_t len_a = strlen(a);
+    size_t len_b = strlen(b);
+
+    bool has_dir_separator = file_is_directory_separator(a[len_a - 1]);
+
+    size_t len_dst = len_a + len_b + 1;
+    if (!has_dir_separator) {
+        // account for extra dir separator.
+        len_dst += 1;
     }
 
-    // FIXME: should use PathAppend on win32, probably?
+    bool append_in_place = (dst == a);
+    dst = realloc(dst, len_dst);
+    if (!dst) {
+        return NULL;
+    }
+
+    if (!append_in_place) {
+        strncpy(dst, a, len_a);
+    }
+
     if (has_dir_separator) {
-        snprintf(dst, len, "%s%s", a, b);
+        strncpy(&dst[len_a], b, len_b + 1);
     } else {
-        snprintf(dst, len, "%s/%s", a, b);
+        dst[len_a] = '/';
+        strncpy(&dst[len_a+1], b, len_b + 1);
     }
-
+    
 #ifdef _WIN32
     char *dp = dst;
     while (*dp != 0) {
@@ -177,7 +188,7 @@ int file_path_append(char *dst, const char *a, const char *b, size_t len)
         dp++;
     }
 #endif
-    return 0;
+    return dst;
 }
 
 void file_free_list(char **list)
@@ -200,18 +211,8 @@ static SDL_EnumerationResult list_directory_files_cb(void *userdata, const char 
     char ***pvec = userdata;
     char **files = *pvec;
 
-    size_t len_fname = strlen(fname);
-    size_t len_dirname = strlen(dirname);
-
-    size_t fullpath_len = len_dirname + len_fname + 1;
-    char *fullpath = malloc(fullpath_len);
+    char *fullpath = file_path_append(NULL, dirname, fname);
     if (!fullpath) {
-        return SDL_ENUM_FAILURE;
-    }
-
-    int err = file_path_append(fullpath, dirname, fname, fullpath_len);
-    if (err) {
-        free(fullpath);
         return SDL_ENUM_FAILURE;
     }
 
@@ -222,6 +223,7 @@ static SDL_EnumerationResult list_directory_files_cb(void *userdata, const char 
 
     free(fullpath);
 
+    size_t len_fname = strlen(fname);
     char *p = malloc(len_fname+1);
     if (!p) {
         return SDL_ENUM_FAILURE;

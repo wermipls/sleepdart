@@ -167,11 +167,11 @@ void machine_save_file(const char *path)
 
 static char *get_quicksave_path()
 {
-    static char buf[2048] = { 0 };
-    if (buf[0] == 0) {
-        file_path_append(buf, file_get_prefdir(), "quicksave.szx", sizeof(buf));
+    static char *quicksave_path = NULL;
+    if (!quicksave_path) {
+        quicksave_path = file_path_append(NULL, file_get_prefdir(), "quicksave.szx");
     }
-    return buf;
+    return quicksave_path;
 }
 
 void machine_save_quick()
