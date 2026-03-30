@@ -65,7 +65,6 @@ void video_sdl_set_scale(int scale)
     if (scale < 1) scale = 1;
     if (scale > max_scale) scale = max_scale;
 
-    if (window_scale == scale) return;
     window_scale = scale;
     window_width = buffer_width * scale;
     window_height = buffer_height * scale;
