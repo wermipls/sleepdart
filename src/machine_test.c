@@ -222,7 +222,9 @@ int machine_test_open(const char *path)
             } else if (strcmp("print", token) == 0) {
                 test.test_print = true;
             } else {
-                dlog(LOG_WARN, "Unknown test scope \"%s\"", token);
+                dlog(LOG_ERRSILENT, "Unknown test scope \"%s\"", token);
+                free(scope);
+                return -7;
             }
             str = NULL;
         }
