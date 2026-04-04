@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include <SDL3/SDL_stdinc.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -40,7 +41,7 @@ void dlog(enum LogLevel l, char fmt[], ...)
     va_start(argv, fmt);
 
     char *msg;
-    vasprintf(&msg, fmt, argv);
+    SDL_vasprintf(&msg, fmt, argv);
 
     va_end(argv);
 
@@ -58,5 +59,5 @@ void dlog(enum LogLevel l, char fmt[], ...)
         free(str);
     }
 #endif
-    free(msg);
+    SDL_free(msg);
 }
