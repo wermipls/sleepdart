@@ -2,10 +2,9 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <time.h>
+#include <stdlib.h>
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     #include <Windows.h>
-    #include <stdlib.h>
     #include "unicode.h"
 #endif
 
@@ -40,8 +39,8 @@ void dlog(enum LogLevel l, char fmt[], ...)
     va_list argv;
     va_start(argv, fmt);
 
-    char msg[1024];
-    vsnprintf(msg, 1024, fmt, argv);
+    char *msg;
+    vasprintf(&msg, fmt, argv);
 
     va_end(argv);
 
@@ -52,10 +51,12 @@ void dlog(enum LogLevel l, char fmt[], ...)
     if (l == LOG_ERR && !force_errsilent) {
         wchar_t *str = utf8_to_utf16(msg, NULL);
         if (str == NULL) {
+            free(msg);
             return;
         }
         MessageBoxW(GetActiveWindow(), str, L"Error", MB_OK | MB_ICONERROR);
         free(str);
     }
 #endif
+    free(msg);
 }
