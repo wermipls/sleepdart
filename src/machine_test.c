@@ -203,30 +203,39 @@ int machine_test_open(const char *path)
 
     char *scope = config_get_str(&testcfg, "scope");
     if (scope == NULL) {
-        test.test_docflags = true;
-        test.test_registers = true;
-        test.test_cycles = true;
+        dlog(LOG_ERRSILENT, "Test scope not defined");
+        return -1;
     } else {
         char *last;
         char *token;
         char *str = scope;
+        bool scope_defined = false;
         while ((token = strtok_r(str, " ", &last)) != NULL) {
             if (strcmp("docflags", token) == 0) {
                 test.test_docflags = true;
+                scope_defined = true;
             } else if (strcmp("allflags", token) == 0) {
                 test.test_allflags = true;
+                scope_defined = true;
             } else if (strcmp("registers", token) == 0) {
                 test.test_registers = true;
+                scope_defined = true;
             } else if (strcmp("cycles", token) == 0) {
                 test.test_cycles = true;
+                scope_defined = true;
             } else if (strcmp("print", token) == 0) {
                 test.test_print = true;
+                scope_defined = true;
             } else {
                 dlog(LOG_ERRSILENT, "Unknown test scope \"%s\"", token);
                 free(scope);
                 return -7;
             }
             str = NULL;
+        }
+        if (!scope_defined) {
+            dlog(LOG_ERRSILENT, "Test scope not defined");
+            return -1;
         }
         free(scope);
     }
