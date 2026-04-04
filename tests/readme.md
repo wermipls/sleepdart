@@ -30,7 +30,12 @@ stop-value=42
 # The "print" scope hooks into the ROM character print routine, then compares
 # the text output with the expected one. This is a very useful option for running
 # various test programs which print out the results, such as Patrik Rak's Z80 tests.
-scope=docflags allflags registers cycles print
+#
+# The "screenshot" scope creates screenshots on frames listed in "screenshot-frames"
+# field, then compares screen contents to expected result. This is useful for 
+# e.g. ULA tests, or tests that do not use the ROM character print routine.
+scope=docflags allflags registers cycles print screenshot
+screenshot-frames=6 7 2137
 
 # Specifies a macro file to be used.
 # Used to automate keyboard inputs, useful for running applications

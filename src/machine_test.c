@@ -11,6 +11,38 @@
 #include "parser_helpers.h"
 #include "vector.h"
 #include "video_sdl.h"
+#include <zlib.h>
+
+#define CC_NO_SHORT_NAMES
+#include "../external/cc.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_WINDOWS_UTF8
+#define STBI_ONLY_PNG
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#include "../external/stb_image.h"
+#pragma GCC diagnostic pop
+
+unsigned char *stbiw_custom_compress(unsigned char *data, int data_len, int *out_len, int quality)
+{
+    unsigned long sz = compressBound(data_len);
+    unsigned char *buf = malloc(sz);
+    if (buf) {
+        if (compress2(buf, &sz, data, data_len, quality) != Z_OK) {
+            free(buf);
+            return NULL;
+        }
+        *out_len = sz;
+    }
+
+    return buf;
+}
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STBIW_WINDOWS_UTF8
+#define STBIW_ZLIB_COMPRESS stbiw_custom_compress
+#include "../external/stb_image_write.h"
 
 #define XXH_INLINE_ALL
 #include <xxhash.h>
@@ -26,6 +58,11 @@ const char *condition_str[] = {
     "frame",
 };
 
+struct Screenshot {
+    int width, height;
+    uint8_t *data;
+};
+
 struct MachineTest
 {
     char *dir;
@@ -36,20 +73,25 @@ struct MachineTest
     bool test_registers;
     bool test_cycles;
     bool test_print;
+    bool test_screenshot;
     XXH64_state_t *docflags;
     XXH64_state_t *allflags;
     XXH64_state_t *registers;
     XXH64_state_t *cycles;
     FILE *print;
+    cc_map(uint64_t, struct Screenshot) screenshots;
+    cc_set(uint64_t) screenshot_frames;
+
     KeyboardMacro_t *macro;
 };
 
 static struct CfgField test_fields[] = {
-    { "file",           CFG_STR, NULL },
-    { "stop-condition", CFG_STR, NULL },
-    { "stop-value",     CFG_INT, NULL },
-    { "scope",          CFG_STR, NULL },
-    { "macro",          CFG_STR, NULL },
+    { "file",              CFG_STR, NULL },
+    { "stop-condition",    CFG_STR, NULL },
+    { "stop-value",        CFG_INT, NULL },
+    { "scope",             CFG_STR, NULL },
+    { "macro",             CFG_STR, NULL },
+    { "screenshot-frames", CFG_STR, NULL },
 };
 
 static CfgData_t testcfg = {
@@ -138,11 +180,12 @@ static KeyboardMacro_t *parse_macro(const char *path)
 
 int machine_test_open(const char *path)
 {
+    cc_init(&test.screenshot_frames);
+    cc_init(&test.screenshots);
+
     if (path == NULL) {
         return -1;
     }
-
-    machine_test_close();
 
     char *config_path = file_path_append(NULL, path, "sleepdart-test.ini");
     if (!config_path) {
@@ -226,6 +269,9 @@ int machine_test_open(const char *path)
             } else if (strcmp("print", token) == 0) {
                 test.test_print = true;
                 scope_defined = true;
+            } else if (strcmp("screenshot", token) == 0) {
+                test.test_screenshot = true;
+                scope_defined = true;
             } else {
                 dlog(LOG_ERRSILENT, "Unknown test scope \"%s\"", token);
                 free(scope);
@@ -271,6 +317,32 @@ int machine_test_open(const char *path)
         machine_set_print_stream(test.print);
         free(print_path);
     }
+    if (test.test_screenshot) {
+        char *frames_str = config_get_str(&testcfg, "screenshot-frames");
+        if (!frames_str) {
+            dlog(LOG_ERRSILENT, "Screenshot scope enabled but no frames specified");
+            return -1;
+        }
+
+        bool frames_defined = false;
+
+        char *last;
+        char *token;
+        char *str = frames_str;
+        while ((token = strtok_r(str, " ", &last)) != NULL) {
+            uint64_t frame = strtoull(token, NULL, 10);
+            if (frame) {
+                cc_insert(&test.screenshot_frames, frame);
+                frames_defined = true;
+            }
+            str = NULL;
+        }
+        
+        if (!frames_defined) {
+            dlog(LOG_ERRSILENT, "Screenshot scope enabled but no frames specified");
+            return -1;
+        }
+    }
 
     char *macro = config_get_str(&testcfg, "macro");
     if (macro) {
@@ -293,6 +365,9 @@ int machine_test_open(const char *path)
 
     test_running = true;
     video_sdl_set_fps_limit(false);
+
+    // we must enforce a specific palette, otherwise screenshot tests may fail.
+    palette_set_by_name("default.raw");
 
     return 0;
 }
@@ -417,6 +492,63 @@ static void finish_print()
     free(tmp_path);
 }
 
+static void finish_screenshot()
+{
+    cc_for_each(&test.screenshot_frames, el) {
+        uint64_t frame_n = *el;
+        struct Screenshot *screenshot = cc_get(&test.screenshots, frame_n);
+        if (!screenshot) {
+            dlog(LOG_INFO, "FAIL, screenshot expected on frame %lu but none was made", frame_n);
+            test_passed = false;
+            continue;
+        }
+
+        char exp_name[128];
+        snprintf(exp_name, sizeof(exp_name), "screen%05lu.png", frame_n);
+        char *exp_path = file_path_append(NULL, test.dir, exp_name);
+        if (!exp_path) {
+            dlog(LOG_ERRSILENT, "%s: path append fail", __func__);
+            test_passed = false;
+            continue;
+        }
+
+        struct Screenshot exp_screenshot;
+        exp_screenshot.data = stbi_load(exp_path, &exp_screenshot.width, &exp_screenshot.height, NULL, 3);
+        if (!exp_screenshot.data) {
+            dlog(LOG_WARN, "Failed to open reference screenshot \"%s\", attempting to create", exp_path);
+            if (!stbi_write_png(exp_path, screenshot->width, screenshot->height, 3, screenshot->data, 0)) {
+                dlog(LOG_ERRSILENT, "Failed to write image \"%s\"", exp_path);
+            }
+            free(exp_path);
+            continue;
+        }
+        free(exp_path);
+
+        if (screenshot->width != exp_screenshot.width || screenshot->height != exp_screenshot.height) {
+            dlog(LOG_INFO, "FAIL, screenshot resolution mismatch - frame %lu is %dx%d, reference is %dx%d",
+                 frame_n, screenshot->width, screenshot->height, exp_screenshot.width, exp_screenshot.height);
+            test_passed = false;
+            free(exp_screenshot.data);
+            continue;
+        }
+
+        if (memcmp(screenshot->data, exp_screenshot.data, screenshot->width*screenshot->height*3)) {
+            dlog(LOG_INFO, "FAIL, screenshot frame %lu does not match", frame_n);
+            test_passed = false;
+
+            char fail_name[128];
+            snprintf(fail_name, sizeof(fail_name), "screen%05lu.FAIL.png", frame_n);
+            char *fail_path = file_path_append(NULL, test.dir, fail_name);
+            if (fail_path && stbi_write_png(fail_path, screenshot->width, screenshot->height, 3, screenshot->data, 0)) {
+                dlog(LOG_INFO, "  screenshot saved to \"%s\"", fail_path);
+                free(fail_path);
+            }
+        }
+
+        free(exp_screenshot.data);
+    } 
+}
+
 static void test_finish(struct Machine *m) {
     if (test.docflags) {
         finish_hash(test.docflags, "docflags");
@@ -432,6 +564,9 @@ static void test_finish(struct Machine *m) {
     }
     if (test.print) {
         finish_print();
+    }
+    if (test.test_screenshot) {
+        finish_screenshot();
     }
 
     machine_set_print_stream(NULL);
@@ -482,6 +617,23 @@ void machine_test_iterate(struct Machine *m)
     }
 }
 
+void machine_test_iterate_frame(struct Machine *m)
+{
+    if (!test_running) return;
+
+    if (test.test_screenshot && cc_get(&test.screenshot_frames, m->frames)) {
+        struct Screenshot screenshot = {0};
+        screenshot.data = malloc(BUFFER_LEN*3);
+        if (screenshot.data) {
+            screenshot.width  = BUFFER_WIDTH;
+            screenshot.height = BUFFER_HEIGHT;
+            static_assert(BUFFER_LEN*3 == sizeof(ula_buffer), "ula buffer must be 24bpp.");
+            memcpy(screenshot.data, ula_buffer, BUFFER_LEN * 3);
+            cc_insert(&test.screenshots, m->frames, screenshot);
+        }
+    }
+}
+
 void machine_test_close()
 {
     if (test.dir) {
@@ -493,6 +645,13 @@ void machine_test_close()
         vector_free(test.macro);
         test.macro = NULL;
     }
+
+    cc_for_each(&test.screenshots, screenshot) {
+        free(screenshot->data);
+    }
+
+    cc_cleanup(&test.screenshots);
+    cc_cleanup(&test.screenshot_frames);
 
     test_running = false;
 }

@@ -226,6 +226,8 @@ int machine_do_cycles()
 
             hotkeys_process();
             machine_process_events();
+
+            machine_test_iterate_frame(m_cur);
             return 0;
         }
     }
