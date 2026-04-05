@@ -138,6 +138,4 @@ int main(int argc, char *argv[])
     config_save();
 
     argparser_free(parser);
-
-    machine_test_close();
 }
