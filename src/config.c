@@ -24,7 +24,7 @@ void config_defaults()
 {
     config_set_int(&g_config, "window-scale", 2);
     config_set_int(&g_config, "limit-fps", 1);
-    config_set_str(&g_config, "palette", "loni");
+    config_set_str(&g_config, "palette", "loni.raw");
     config_set_float(&g_config, "ay-pan-a", 0.25);
     config_set_float(&g_config, "ay-pan-b", 0.5);
     config_set_float(&g_config, "ay-pan-c", 0.75);
