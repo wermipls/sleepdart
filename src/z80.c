@@ -512,7 +512,7 @@ static void ldxr(Z80_t *cpu, int8_t increment)
         cpu->regs.pc -= 2;
         cpu->regs.memptr = cpu->regs.pc;
         // de:1 x5
-        cpu_memory_stall(cpu, cpu->regs.main.de, 5);
+        cpu_memory_stall(cpu, cpu->regs.main.de-increment, 5);
     }
 }
 
@@ -523,12 +523,13 @@ static void cpx(Z80_t *cpu, int8_t increment)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
+    
+    // hl:1 x5
+    cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
+
     cpu->regs.main.bc--;
     cpu->regs.main.hl += increment;
     cpu->regs.memptr += increment;
-
-    // hl:1 x5
-    cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
 
     bool c = cpu->regs.main.flags.c;
     alo(cpu, value, 7);
@@ -549,7 +550,7 @@ static void cpxr(Z80_t *cpu, int8_t increment)
         cpu->regs.pc -= 2;
         cpu->regs.memptr = cpu->regs.pc + 1;
         // hl:1 x5
-        cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
+        cpu_memory_stall(cpu, cpu->regs.main.hl-increment, 5);
     }
 }
 
@@ -624,7 +625,7 @@ static void inxr(Z80_t *cpu, int8_t increment)
     if (cpu->regs.main.b != 0) {
         cpu->regs.pc -= 2;
         // hl:1 x5
-        cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
+        cpu_memory_stall(cpu, cpu->regs.main.hl-increment, 5);
     }
 }
 
