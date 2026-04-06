@@ -1,0 +1,2 @@
+Version 0.3 from https://github.com/redcode/ZXSpectrum/wiki/Timing-Test
+Converted to .szx from the original .tap using Spectaculator 8.0.
