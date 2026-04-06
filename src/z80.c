@@ -395,8 +395,9 @@ static void retn(Z80_t *cpu)
 
 static void reti(Z80_t *cpu)
 {
-    // don't care about correct behavior since it's irrelevant on speccy
+    // reti is the same as retn. it's all lies
     pop(cpu, &cpu->regs.pc);
+    cpu->regs.iff1 = cpu->regs.iff2;
 }
 
 static void push(Z80_t *cpu, uint16_t value)
