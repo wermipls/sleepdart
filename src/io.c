@@ -86,12 +86,36 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
                 *dest |= (1<<6);
             }
         }
-    } else {
-        *dest = 0xFF;
-    }
-
-    if (addr == 0xFFFD || addr == 0xBFFD) {
+    } else if (addr == 0xFFFD || addr == 0xBFFD) {
         *dest = ay_read_data(ctx->ay); 
+    } else {
+        // floating bus.
+        // the byte spat out will be either whatever ULA is reading, or 0xFF.
+        // more info: https://sinclair.wiki.zxnet.co.uk/wiki/Floating_bus
+        *dest = 0xFF;
+
+        if (ctx->cpu.cycles >= ctx->timing.t_firstpx) {
+            uint64_t cycle = ctx->cpu.cycles - ctx->timing.t_firstpx;
+            int cyc_x = cycle % ctx->timing.t_scanline;
+            int y = cycle / ctx->timing.t_scanline;
+
+            if (y < 192 && cyc_x < ctx->timing.t_screen) {
+                uint16_t pix_offset = 0x4000
+                                    | ((y & 7) << 8)     // bits 0-2
+                                    | ((y & 0x38) << 2)  // bits 3-5
+                                    | ((y & 0xC0) << 5); // bits 6-7
+
+                uint16_t attrib_offset = 0x5800 | ((y >> 3) << 5);
+
+                int x_offset = (cyc_x / 8) * 2;
+                switch (cyc_x & 7) {
+                    case 0: *dest = memory_bus_peek(ctx->memory.bus, pix_offset + x_offset); break;
+                    case 1: *dest = memory_bus_peek(ctx->memory.bus, attrib_offset + x_offset); break;
+                    case 2: *dest = memory_bus_peek(ctx->memory.bus, pix_offset + x_offset + 1); break;
+                    case 3: *dest = memory_bus_peek(ctx->memory.bus, attrib_offset+ x_offset + 1); break;
+                }
+            }
+        }
     }
 
     return io_handle_contention(addr, ctx->cpu.cycles);
