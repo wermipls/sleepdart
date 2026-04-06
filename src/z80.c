@@ -182,11 +182,11 @@ static void ld_rra_n(Z80_t *cpu, uint16_t addr)
 /* ld i, a */
 static void ld_i_a(Z80_t *cpu, uint8_t *dest)
 {
-    *dest = cpu->regs.main.a;
     cpu->regs.pc++;
     cpu->cycles += 4;
     cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
     cpu->cycles += 1;
+    *dest = cpu->regs.main.a;
 }
 
 /* ld a, i */
