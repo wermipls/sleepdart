@@ -511,6 +511,8 @@ static void ldxr(Z80_t *cpu, int8_t increment)
     if (cpu->regs.main.bc != 0) {
         cpu->regs.pc -= 2;
         cpu->regs.memptr = cpu->regs.pc;
+        cpu->regs.main.flags.y = cpu->regs.pc & (1<<13);
+        cpu->regs.main.flags.x = cpu->regs.pc & (1<<11);
         // de:1 x5
         cpu_memory_stall(cpu, cpu->regs.main.de-increment, 5);
     }
@@ -620,10 +622,46 @@ static void inx(Z80_t *cpu, int8_t increment)
 /* INIR/INDR */
 static void inxr(Z80_t *cpu, int8_t increment)
 {
-    inx(cpu, increment);
+    cpu->cycles += 4;
+    cpu->regs.pc++;
+    cpu_read(cpu, MAKE16(cpu->regs.r, cpu->regs.i)); // ir:1
+    cpu->cycles += 1;
+
+    cpu->regs.memptr = cpu->regs.main.bc + increment;
+
+    cpu->regs.main.b = dec8(cpu, cpu->regs.main.b);
+
+    uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
+    cpu->cycles += 4;
+    cpu_write(cpu, cpu->regs.main.hl, value);
+    cpu->cycles += 3;
+    cpu->regs.main.hl += increment;
+
+    uint16_t k = ((cpu->regs.main.c + increment) & 255) + value;
+    cpu->regs.main.flags.h = k > 255;
+    cpu->regs.main.flags.c = k > 255;
+    cpu->regs.main.flags.pv = get_parity((k & 7) ^ cpu->regs.main.b);
+    cpu->regs.main.flags.n = value & (1<<7);
+    cpu->regs.q = true;
 
     if (cpu->regs.main.b != 0) {
         cpu->regs.pc -= 2;
+        cpu->regs.memptr = cpu->regs.pc;
+        // https://github.com/hoglet67/Z80Decoder/wiki/Undocumented-Flags#inxr--otxr-interrupted
+        // wtf is dis bruv 😂😂😂
+        cpu->regs.main.flags.y = cpu->regs.pc & (1<<13);
+        cpu->regs.main.flags.x = cpu->regs.pc & (1<<11);
+        if (cpu->regs.main.flags.c) {
+            if (value & 0x80) {
+                cpu->regs.main.flags.pv ^= get_parity((cpu->regs.main.b - 1) & 7) ^ 1;
+                cpu->regs.main.flags.h = !(cpu->regs.main.b & 0xf);
+            } else {
+                cpu->regs.main.flags.pv ^= get_parity((cpu->regs.main.b + 1) & 7) ^ 1;
+                cpu->regs.main.flags.h = (cpu->regs.main.b & 0xf) == 0xf;
+            }
+        } else {
+            cpu->regs.main.flags.pv ^= get_parity(cpu->regs.main.b & 7) ^ 1;
+        }
         // hl:1 x5
         cpu_memory_stall(cpu, cpu->regs.main.hl-increment, 5);
     }
@@ -1621,6 +1659,8 @@ static void in_r_c(Z80_t *cpu, uint8_t *dest)
     if (dest) *dest = value; 
     cpu->cycles += 4;
 
+    cpu->regs.main.f &= ~MASK_FLAG_XY;
+    cpu->regs.main.f |= (value & MASK_FLAG_XY);
     cpu->regs.main.flags.s = value & (1<<7);
     cpu->regs.main.flags.z = !value;
     cpu->regs.main.flags.h = 0;
