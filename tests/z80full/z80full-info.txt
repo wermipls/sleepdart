@@ -1,0 +1,2 @@
+Based on version 1.2a .tap from https://github.com/raxoft/z80test
+Converted to .szx using Spectaculator 8.0
