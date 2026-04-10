@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     argparser_add_arg(parser, "--test", 0, ARG_STRING, 0, "perform an automated regression test");
     argparser_add_arg(parser, "--headless", 0, ARG_STORE_TRUE, 0, "run without a graphics backend");
 
-    dlog(LOG_INFO, 
+    dlog(LOG_INFO,
         SLEEPDART_NAME " version " SLEEPDART_VERSION ", built on " __DATE__ "\n");
 
     if (argparser_parse(parser, argc, argv)) {
@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
     if (!argparser_get(parser, "headless")) {
         int err = video_sdl_init(
             "third (sixth) iteration of sleepdart, the",
-            BUFFER_WIDTH, BUFFER_HEIGHT, 
+            BUFFER_WIDTH, BUFFER_HEIGHT,
             scale);
-    
+
         if (err) {
             dlog(LOG_ERR, "Failed to initialize video backend!");
             return 1;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     if (argparser_get(parser, "fullscreen")) {
         video_sdl_toggle_window_mode();
     }
-    
+
     int limit_fps;
     if (config_get_int(&g_config, "limit-fps", &limit_fps) == 0) {
         video_sdl_set_fps_limit(limit_fps);

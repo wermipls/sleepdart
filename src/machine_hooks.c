@@ -42,7 +42,7 @@ static void putc_zx(uint8_t ch, FILE *f)
     case 0x8D: s = "▟"; break;
     case 0x8E: s = "▙"; break;
     case 0x8F: s = "█"; break;
-    
+
     default:
         if (ch < 0x20 || ch >= 0x80) return;
         putc(ch, f);

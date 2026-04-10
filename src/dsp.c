@@ -5,7 +5,7 @@
 
 double dsp_normalize_freq(double freq, double sr)
 {
-    return freq * 2. * M_PI / sr; 
+    return freq * 2. * M_PI / sr;
 }
 
 double dsp_derive_1pole_factor(double freq)

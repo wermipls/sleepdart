@@ -12,13 +12,13 @@ struct Z80RegsMain {
             // #CLEANCODE #KISS
             union {
                 uint8_t f;
-                struct { 
+                struct {
                     bool c  : 1;
                     bool n  : 1;
                     bool pv : 1;
                     bool x  : 1;
                     bool h  : 1;
-                    bool y  : 1; 
+                    bool y  : 1;
                     bool z  : 1;
                     bool s  : 1;
                 } flags;

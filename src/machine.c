@@ -78,7 +78,7 @@ void machine_deinit(Machine_t *machine)
     }
 }
 
-void machine_reset() 
+void machine_reset()
 {
     if (m_cur == NULL) return;
     m_cur->reset_pending = true;
@@ -150,7 +150,7 @@ void machine_process_events()
 void machine_open_file(const char *path)
 {
     if (path == NULL) return;
-    
+
     strncpy(file_open_path, path, sizeof(file_open_path)-1);
     file_open_path[sizeof(file_open_path)-1] = 0;
     file_open = true;
@@ -159,7 +159,7 @@ void machine_open_file(const char *path)
 void machine_save_file(const char *path)
 {
     if (path == NULL) return;
-    
+
     strncpy(file_save_path, path, sizeof(file_save_path)-1);
     file_save_path[sizeof(file_save_path)-1] = 0;
     file_save = true;

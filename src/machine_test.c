@@ -294,7 +294,7 @@ int machine_test_open(const char *path)
         test.docflags  = XXH64_createState();
         XXH64_reset(test.docflags, 0);
     }
-    if (test.test_registers) { 
+    if (test.test_registers) {
         test.registers = XXH64_createState();
         XXH64_reset(test.registers, 0);
     }
@@ -337,7 +337,7 @@ int machine_test_open(const char *path)
             }
             str = NULL;
         }
-        
+
         if (!frames_defined) {
             dlog(LOG_ERRSILENT, "Screenshot scope enabled but no frames specified");
             return -1;
@@ -546,7 +546,7 @@ static void finish_screenshot()
         }
 
         free(exp_screenshot.data);
-    } 
+    }
 }
 
 static void test_finish(struct Machine *m) {
@@ -573,7 +573,7 @@ static void test_finish(struct Machine *m) {
 
     machine_test_close();
 
-    // FIXME: exit() kinda really hacky.. 
+    // FIXME: exit() kinda really hacky..
     // considering there's a bunch of stuff that doesnt really get deinit'd
     // and the fact cpu errors aren't handled at all...
     if (test_passed) {

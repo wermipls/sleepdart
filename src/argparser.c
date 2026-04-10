@@ -94,7 +94,7 @@ bool arg_requires_parameter(struct Argument *arg)
 
 void *arg_parse_parameter(struct Argument *arg, char *param)
 {
-    switch (arg->type) 
+    switch (arg->type)
     {
     case ARG_STRING: ;
         size_t len = strlen(param) + 1;

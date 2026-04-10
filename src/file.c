@@ -178,7 +178,7 @@ char *file_path_append(char *dst, const char *a, const char *b)
         dst[len_a] = '/';
         strncpy(&dst[len_a+1], b, len_b + 1);
     }
-    
+
 #ifdef _WIN32
     char *dp = dst;
     while (*dp != 0) {

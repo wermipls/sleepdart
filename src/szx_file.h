@@ -33,7 +33,7 @@ struct SZXHeader
   uint8_t flags;
 };
 
-struct SZXBlockHeader 
+struct SZXBlockHeader
 {
     uint32_t id;
     uint32_t size;

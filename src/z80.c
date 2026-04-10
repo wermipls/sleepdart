@@ -525,7 +525,7 @@ static void cpx(Z80_t *cpu, int8_t increment)
     cpu->regs.pc++;
     uint8_t value = cpu_read(cpu, cpu->regs.main.hl);
     cpu->cycles += 3;
-    
+
     // hl:1 x5
     cpu_memory_stall(cpu, cpu->regs.main.hl, 5);
 
@@ -537,7 +537,7 @@ static void cpx(Z80_t *cpu, int8_t increment)
     alo(cpu, value, 7);
     uint8_t n = cpu->regs.main.a - value - cpu->regs.main.flags.h;
     cpu->regs.main.flags.y = n & (1<<1);
-    cpu->regs.main.flags.x = n & (1<<3); 
+    cpu->regs.main.flags.x = n & (1<<3);
     cpu->regs.main.flags.pv = !(!cpu->regs.main.bc);
     cpu->regs.main.flags.c = c;
     cpu->regs.q = true;
@@ -808,7 +808,7 @@ static inline uint8_t adc8(Z80_t *cpu, uint8_t value)
     uint8_t result = a + value + cpu->regs.main.flags.c;
     cpu->regs.main.flags.pv = flag_overflow_8(a, value, cpu->regs.main.flags.c, false);
     cpu->regs.main.flags.h = (a ^ result ^ value) & 0x10;
-    cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value + 
+    cpu->regs.main.flags.c = ((uint16_t)a + (uint16_t)value +
                               cpu->regs.main.flags.c) > 255;
     cpu->regs.main.flags.n = 0;
     return result;
@@ -1656,7 +1656,7 @@ static void in_r_c(Z80_t *cpu, uint8_t *dest)
     cpu->regs.pc++;
     cpu->regs.memptr = cpu->regs.main.bc+1; // FIXME: dunno about correctness
     uint8_t value = cpu_in(cpu, cpu->regs.main.bc);
-    if (dest) *dest = value; 
+    if (dest) *dest = value;
     cpu->cycles += 4;
 
     cpu->regs.main.f &= ~MASK_FLAG_XY;
@@ -1667,7 +1667,7 @@ static void in_r_c(Z80_t *cpu, uint8_t *dest)
     cpu->regs.main.flags.pv = get_parity(value);
     cpu->regs.main.flags.n = 0;
     cpu->regs.q = true;
-} 
+}
 
 static void in_a_na(Z80_t *cpu)
 {
@@ -1681,7 +1681,7 @@ static void in_a_na(Z80_t *cpu)
     uint8_t value = cpu_in(cpu, addr);
     cpu->regs.main.a = value;
     cpu->cycles += 4;
-} 
+}
 
 
 /* CPU Control Group */
@@ -1868,7 +1868,7 @@ static void do_ed(Z80_t *cpu)
     }
 }
 
-/* For bit instructions, I've decided to handle partial decoding 
+/* For bit instructions, I've decided to handle partial decoding
  * for simplicity, as the opcode table is quite orthogonal. */
 static void do_cb(Z80_t *cpu)
 {
@@ -1893,7 +1893,7 @@ static void do_cb(Z80_t *cpu)
     uint8_t bit_type = (op >> 3) & 7;
 
     if (reg == 6) { // (hl)
-        switch (op_partial) 
+        switch (op_partial)
         {
             case 0x00: sro_rra(cpu, cpu->regs.main.hl, bit_type); break;
             case 0x01: bit_rra(cpu, cpu->regs.main.hl, bit_type); break;
@@ -1903,7 +1903,7 @@ static void do_cb(Z80_t *cpu)
     } else { // bcdehla
         uint8_t *regptr = regs[reg];
 
-        switch (op_partial) 
+        switch (op_partial)
         {
             case 0x00: sro_r(cpu, regptr,  bit_type); break;
             case 0x01: bit_r(cpu, *regptr, bit_type); break;
@@ -1933,7 +1933,7 @@ static void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     cpu->regs.pc++;
     int8_t d = (int8_t)cpu_read(cpu, cpu->regs.pc);
     uint16_t addr = *ii + d;
-    cpu->regs.memptr = addr; 
+    cpu->regs.memptr = addr;
 
     cpu->cycles += 3;
     cpu->regs.pc++;
@@ -1954,7 +1954,7 @@ static void do_ddfd_cb(Z80_t *cpu, uint16_t *ii)
     }
 }
 
-/* FD/DD are basically "instructions" that tell the CPU 
+/* FD/DD are basically "instructions" that tell the CPU
  * "use IY/IX instead of HL for the next instruction".
  * there's some funky behavior associated with that i Do Not wanna emulate rn.
  * i also don't bother implementing illegal/duplicate opcodes */
@@ -2329,7 +2329,7 @@ static void do_ddfd(Z80_t *cpu, bool is_iy)
 
         static const char ix_op[] = "DD";
         static const char iy_op[] = "FD";
-        const char *prefix = is_iy ? iy_op : ix_op; 
+        const char *prefix = is_iy ? iy_op : ix_op;
 
         dlog(LOG_ERR, "unimplemented opcode %s %02X at %04X", prefix, op, cpu->regs.pc);
         cpu->error = 1;
@@ -2769,7 +2769,7 @@ int cpu_do_cycles(Z80_t *cpu)
         cpu->cycles += 4;
     } else {
         cpu->last_ei = false;
-        switch (cpu->prefix_state) 
+        switch (cpu->prefix_state)
         {
         case STATE_DD: do_ddfd(cpu, false); break;
         case STATE_FD: do_ddfd(cpu, true); break;

@@ -1,19 +1,19 @@
 // Code from https://github.com/Photosounder/rouziclib
 //
 // MIT License
-// 
+//
 // Copyright (c) 2022 Michel Rouzic
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -302,7 +302,7 @@ uint16_t *utf8_to_utf16(const char *utf8, uint16_t *utf16)
 
     if (utf16 == NULL) {
         utf16 = calloc(strlen_utf8_to_utf16(utf8) + 1, sizeof(uint16_t));
-        if (utf16 == NULL) return NULL; 
+        if (utf16 == NULL) return NULL;
     }
 
     for (i = 0, j = 0, c = 1; c; i++) {
@@ -324,7 +324,7 @@ char *utf16_to_utf8(const uint16_t *utf16, char *utf8)
 
     if (utf8 == NULL) {
         utf8 = calloc(strlen_utf16_to_utf8(utf16) + 1, sizeof(char));
-        if (utf8 == NULL) return NULL; 
+        if (utf8 == NULL) return NULL;
     }
 
     for (i = 0, j = 0, c = 1; c; i++) {

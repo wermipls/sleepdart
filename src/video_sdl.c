@@ -201,7 +201,7 @@ int video_sdl_init(const char *title, int width, int height, int scale)
         renderer, buffer_width, buffer_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     texture = SDL_CreateTexture(
-        renderer, 
+        renderer,
         SDL_PIXELFORMAT_RGB24,
         SDL_TEXTUREACCESS_STREAMING,
         buffer_width, buffer_height);
@@ -224,7 +224,7 @@ int video_sdl_init(const char *title, int width, int height, int scale)
         sdl_log_error("Failed to get HWND of the window");
     }
 #endif
-    
+
     return 0;
 }
 
@@ -237,7 +237,7 @@ int video_sdl_draw_rgb24_buffer(void *pixeldata, size_t bytes)
     }
 
     void *pixels;
-    int pitch; 
+    int pitch;
 
     static uint64_t ticks_last = 0;
     uint64_t ticks = SDL_GetTicks();

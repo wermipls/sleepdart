@@ -156,12 +156,12 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 {
     switch (umsg)
     {
-    case WM_COMMAND: 
-        switch(LOWORD(wparam)) 
-        { 
-        case ID_HELP_ABOUT: 
+    case WM_COMMAND:
+        switch(LOWORD(wparam))
+        {
+        case ID_HELP_ABOUT:
             MessageBoxA(
-                hwnd, 
+                hwnd,
                 SLEEPDART_NAME " version " SLEEPDART_VERSION "\n"
                 "Compiled on " __DATE__ "\n\n"
                 SLEEPDART_DESCRIPTION "\n\n"
@@ -191,7 +191,7 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
             break;
         case ID_FILE_QUIT:
             on_file_quit();
-            return TRUE; 
+            return TRUE;
             break;
         case ID_OPTIONS_LIMITFPS:
             video_sdl_set_fps_limit(!video_sdl_get_fps_limit());

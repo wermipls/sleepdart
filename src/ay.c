@@ -27,7 +27,7 @@ AY_t *ay_init(struct Machine *ctx, int sample_rate, double clock)
         return NULL;
     }
 
-    ay->samples_ratio = (double)ctx->timing.clock_hz / (double)sample_rate; 
+    ay->samples_ratio = (double)ctx->timing.clock_hz / (double)sample_rate;
     ay->samples_frame = (double)ctx->timing.t_frame / ay->samples_ratio;
 
     ay->buf_len = ay->samples_frame * 2;

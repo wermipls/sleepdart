@@ -72,9 +72,9 @@ void ula_init(struct Machine *ctx)
     timing = ctx->timing;
     mem = &ctx->memory;
 
-    first_border_cycle = timing.t_firstpx 
-                       - timing.t_scanline * (BUFFER_HEIGHT - 192) / 2 
-                       - timing.t_eightpx * (BUFFER_WIDTH - 256) / 8 / 2; 
+    first_border_cycle = timing.t_firstpx
+                       - timing.t_scanline * (BUFFER_HEIGHT - 192) / 2
+                       - timing.t_eightpx * (BUFFER_WIDTH - 256) / 8 / 2;
 
     for (size_t i = 0; i < ULA_WRITES_SIZE; i++) {
         writes_border[i] = (struct WriteBorder){ .cycle = -1 };
@@ -190,7 +190,7 @@ static inline void ula_fill_border_8x1(RGB24_t *buf)
 
 static inline int get_cycle_buf_pos(uint64_t cycle)
 {
-    if (cycle < first_border_cycle) 
+    if (cycle < first_border_cycle)
         return -1;
 
     cycle -= first_border_cycle;
@@ -198,7 +198,7 @@ static inline int get_cycle_buf_pos(uint64_t cycle)
     int x = (cycle % timing.t_scanline) * 2;
     int y = cycle / timing.t_scanline;
 
-    if (x > BUFFER_WIDTH) 
+    if (x > BUFFER_WIDTH)
         x = BUFFER_WIDTH;
 
     int result = y * BUFFER_WIDTH + x;

@@ -29,7 +29,7 @@ struct SNA
 int sna_state_load(char *path, Machine_t *m)
 {
     // .sna is yet another format that you can't quite distinguish
-    // by its contents alone. A 48K snapshot is typically 
+    // by its contents alone. A 48K snapshot is typically
     // 49179 bytes though, sometimes 49280 due to padding
     // (seems +3DOS in particular rounds up the sizes to 128 bytes).
     int64_t file_size = file_get_size(path);

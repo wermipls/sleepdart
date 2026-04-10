@@ -24,7 +24,7 @@ void memory_init(Memory_t *mem)
     }
 }
 
-/* Loads a 16K ROM into the beginning of memory space. 
+/* Loads a 16K ROM into the beginning of memory space.
  * Returns zero on success, non-zero otherwise. */
 int memory_load_rom_16k(Memory_t *mem, char path[])
 {
@@ -39,12 +39,12 @@ int memory_load_rom_16k(Memory_t *mem, char path[])
     return 0;
 }
 
-/* Performs a memory bus write. 
+/* Performs a memory bus write.
  * Returns the amount of extra cycles stalled due to ULA memory contention. */
 uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
-    if (addr < 0x4000) { 
-        // 0x0000 - 0x3FFF -> ROM 
+    if (addr < 0x4000) {
+        // 0x0000 - 0x3FFF -> ROM
         // no-op for now
     } else if (addr < 0x5B00) {
         ctx->memory.bus[addr] = value;
@@ -63,7 +63,7 @@ uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
     return 0;
 }
 
-/* Performs a memory bus read. 
+/* Performs a memory bus read.
  * Returns the amount of extra cycles stalled due to ULA memory contention. */
 uint8_t memory_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 {
@@ -71,7 +71,7 @@ uint8_t memory_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
     if (addr >= 0x4000 && addr < 0x8000) {
         return ula_get_contention_cycles(ctx->cpu.cycles);
     }
-    return 0; 
+    return 0;
 }
 
 /* Returns a byte on the memory bus from a given address.

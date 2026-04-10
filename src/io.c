@@ -17,7 +17,7 @@ uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
 
     uint8_t pattern = ((addr >= 0x4000 && addr < 0x8000) << 1) | (addr & 1);
     uint8_t contention = 0;
-    switch (pattern) 
+    switch (pattern)
     {
     case 0: // bit reset and no "contended memory"
         cycle += 1;
@@ -64,7 +64,7 @@ uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
     return io_handle_contention(addr, ctx->cpu.cycles);
 }
 
-/* Performs a port read. 
+/* Performs a port read.
  * Returns the amount of extra cycles stalled due to ULA contention. */
 uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 {
@@ -87,7 +87,7 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
             }
         }
     } else if (addr == 0xFFFD || addr == 0xBFFD) {
-        *dest = ay_read_data(ctx->ay); 
+        *dest = ay_read_data(ctx->ay);
     } else {
         // floating bus.
         // the byte spat out will be either whatever ULA is reading, or 0xFF.

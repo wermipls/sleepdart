@@ -33,7 +33,7 @@ bool szx_is_valid_file(char *path)
 
 void szx_free(SZX_t *szx) {
     if (szx == NULL) return;
-    
+
     if (szx->block != NULL) {
         for (size_t i = 0; i < szx->blocks; i++) {
             if (szx->block[i].data == NULL) {
@@ -102,7 +102,7 @@ SZX_t *szx_load_file(char *path)
         fclose(f);
         return NULL;
     }
-    
+
     fseek(f, sizeof(header), SEEK_SET);
 
     size_t current_block = 0;

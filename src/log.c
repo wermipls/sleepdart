@@ -47,7 +47,7 @@ void dlog(enum LogLevel l, char fmt[], ...)
 
     // console output
     fprintf(stderr, "%s%s\n", prefix, msg);
-    
+
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     if (l == LOG_ERR && !force_errsilent) {
         wchar_t *str = utf8_to_utf16(msg, NULL);

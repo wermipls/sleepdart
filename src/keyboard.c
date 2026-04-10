@@ -84,4 +84,3 @@ uint8_t keyboard_read(uint16_t addr)
 
     return result;
 }
-

@@ -17,25 +17,25 @@
  *         // can be accessed like a normal C array
  *         vec[i] = i;
  *     }
- * 
+ *
  *     while (i < 16) {
  *         // can also manipulate elements using special macros
  *         // vector will resize automagically if there's not enough space
  *         vector_add(vec, i);
  *         i++;
  *     }
- * 
+ *
  *     for (i = 0; i < vector_len(vec); i++) {
  *        printf("%d ", vec[i]);
  *     }
- * 
+ *
  *     vector_free(vec);
- * 
- * The code snippet above should print out a sequence of numbers from 0 to 15. 
- * 
+ *
+ * The code snippet above should print out a sequence of numbers from 0 to 15.
+ *
  * This code is inspired by a very similar library, based on similar principles:
  * https://github.com/Mashpoe/c-vector
- * 
+ *
  * I found it, looked at the API and thought "OK so this should be possible",
  * then wrote my own implementation without looking at its code. */
 

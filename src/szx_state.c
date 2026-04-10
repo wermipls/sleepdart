@@ -263,7 +263,7 @@ int szx_state_load(SZX_t *szx, struct Machine *m)
 SZX_t *szx_state_save(struct Machine *m)
 {
     SZX_t *szx = malloc(sizeof(SZX_t));
-    
+
     if (szx == NULL) {
         return NULL;
     }

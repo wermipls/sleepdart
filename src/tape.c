@@ -113,7 +113,7 @@ Tape_t *tape_load_from_tap(char *path)
 
         bytes = fread(block.data, 1, block.bytes, f);
         if (bytes != block.bytes) {
-            dlog(LOG_ERRSILENT, "Expected to read %d bytes, got %d", 
+            dlog(LOG_ERRSILENT, "Expected to read %d bytes, got %d",
                                 block.bytes, bytes);
             free(block.data);
             goto error_free_fclose;
@@ -220,7 +220,7 @@ static inline int advance_block_section(TapePlayer_t *p)
 {
     struct TapeBlock *block = &p->tape->blocks[p->tape_block];
 
-    switch (p->tape_block_section) 
+    switch (p->tape_block_section)
     {
     case TPSTATE_PILOT:
         p->tape_block_section = TPSTATE_SYNC1;
@@ -267,13 +267,13 @@ int render_buffer_block_section(TapePlayer_t *p) {
     int32_t datalo_pulselen = 855;
     int32_t datahi_pulselen = 1710;
 
-    switch (p->tape_block_section) 
+    switch (p->tape_block_section)
     {
     case TPSTATE_PILOT:
         while (p->tape_section_pos < p->tape_section_len) {
             if (p->buffer_pos < p->buffer_size) {
                 int is_low = p->tape_section_pos & 1;
-                p->buffer[p->buffer_pos] = is_low ? -pilot_pulselen 
+                p->buffer[p->buffer_pos] = is_low ? -pilot_pulselen
                                                   :  pilot_pulselen;
                 p->tape_section_pos++;
                 p->buffer_pos++;
@@ -407,7 +407,7 @@ void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
 
 uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
     if (player == NULL) return 0;
-    
+
     if (player->paused || player->finished || player->error) {
         return 0;
     }

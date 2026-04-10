@@ -25,7 +25,7 @@ enum TPBlockSection {
 };
 
 /* The tape and tape player structures are intended to be opaque objects,
- * not to be manipulated directly. There are many intricacies to how a tape 
+ * not to be manipulated directly. There are many intricacies to how a tape
  * can be stored or played, and the fields aren't really set in stone. */
 
 typedef struct Tape
@@ -43,7 +43,7 @@ typedef struct TapePlayer {
     // state of the buffer
     uint64_t buffer_start_cycle;    // absolute cycle the buffer is starting on
     uint64_t buffer_length_cycles;  // length of the current buffer data in cycles
-    size_t buffer_pos;              // pulse buffer index 
+    size_t buffer_pos;              // pulse buffer index
     uint64_t buffer_pos_cycles;     // position in cycles relative to current buffer index
 
     // state of the processed tape
@@ -72,7 +72,7 @@ Tape_t *tape_load_from_tap(char *path);
 void tape_free(Tape_t *tape);
 
 /* Initializes a tape player from the provided tape object.
- * Returns a pointer on success, 0 otherwise. 
+ * Returns a pointer on success, 0 otherwise.
  * User is expected to call tape_player_close() when done using the object. */
 TapePlayer_t *tape_player_from_tape(Tape_t *tape);
 
