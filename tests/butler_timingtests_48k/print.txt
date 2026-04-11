@@ -1,0 +1,405 @@
+Timing 48k Spectrum
+
+Test 0 {Uncontended}
+Early/Late Timing
+
+TYPE1 (Early) timings detected.
+
+Test 1 {Uncontended}
+JR; INC BC; LD BC,(nn);LD (nn),BC
+R=43  loop=1201  sp=56806  Pass
+---------------------------
+
+Test 1 {Contended}
+JR; INC BC; LD BC,(nn);LD (nn),BC
+R=74  loop=1014  sp=23296  Pass
+---------------------------
+
+Test 2 {Uncontended}
+INC dd; DEC dd
+R=116  loop=657  sp=56797  Pass
+---------------------------
+
+Test 2 {Contended}
+INC dd; DEC dd
+R=67  loop=571  sp=23301  Pass
+---------------------------
+
+Test 3 {Uncontended}
+NOP; LD r,r; INC r; DEC r
+R=61  loop=491  sp=56810  Pass
+---------------------------
+
+Test 3 {Contended}
+NOP; LD r,r; INC r; DEC r
+R=50  loop=405  sp=23316  Pass
+---------------------------
+
+Test 4 {Uncontended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,r & A,(HL)
+R=3  loop=201  sp=56806  Pass
+---------------------------
+
+Test 4 {Contended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,r & A,(HL)
+R=88  loop=169  sp=23358  Pass
+---------------------------
+
+Test 5 {Uncontended}
+EXX; EX AF,AF'; EX DE,HL
+R=85  loop=849  sp=56802  Pass
+---------------------------
+
+Test 5 {Contended}
+EXX; EX AF,AF'; EX DE,HL
+R=64  loop=709  sp=23310  Pass
+---------------------------
+
+Test 6 {Uncontended}
+; DAA; CPL; CCF; SCF
+R=74  loop=941  sp=56801  Pass
+---------------------------
+
+Test 6 {Contended}
+; DAA; CPL; CCF; SCF
+R=48  loop=785  sp=23296  Pass
+---------------------------
+
+Test 7 {Uncontended}
+PUSH dd; POP dd;EX (SP),HL
+R=100  loop=412  sp=56801  Pass
+---------------------------
+
+Test 7 {Contended}
+PUSH dd; POP dd;EX (SP),HL
+R=64  loop=350  sp=48059  Pass
+---------------------------
+
+Test 8 {Uncontended}
+RLA; RAA; RLCA; RRCA; RLD; RRD
+R=38  loop=633  sp=56801  Pass
+---------------------------
+
+Test 8 {Contended}
+RLA; RAA; RLCA; RRCA; RLD; RRD
+R=120  loop=511  sp=23296  Pass
+---------------------------
+
+Test 9 {Uncontended}
+LD HL,nn; LD HL,(nn); LD (nn),HL; LD (HL),n
+R=66  loop=633  sp=56801  Pass
+---------------------------
+
+Test 9 {Contended}
+LD HL,nn; LD HL,(nn); LD (nn),HL; LD (HL),n
+R=63  loop=531  sp=23305  Pass
+---------------------------
+
+Test 10 {Uncontended}
+PUSH; POP; CALL; JP cc; [ALL FLAGS RESET]
+R=108  loop=93  sp=56838  Pass
+---------------------------
+
+Test 10 {Contended}
+PUSH; POP; CALL; JP cc; [ALL FLAGS RESET]
+R=124  loop=84  sp=23334  Pass
+---------------------------
+
+Test 11 {Uncontended}
+PUSH; POP; CALL; JP cc; [ALL FLAGS SET]
+R=35  loop=119  sp=56802  Pass
+---------------------------
+
+Test 11 {Contended}
+PUSH; POP; CALL; JP cc; [ALL FLAGS SET]
+R=74  loop=106  sp=53256  Pass
+---------------------------
+
+Test 12 {Uncontended}
+RLC/RRC/RL/RR/SLA/SRA/SRL r & (HL)
+R=82  loop=124  sp=56832  Pass
+---------------------------
+
+Test 12 {Contended}
+RLC/RRC/RL/RR/SLA/SRA/SRL r & (HL)
+R=121  loop=103  sp=23309  Pass
+---------------------------
+
+Test 13 {Uncontended}
+BIT b,r
+R=117  loop=138  sp=56874  Pass
+---------------------------
+
+Test 13 {Contended}
+BIT b,r
+R=95  loop=114  sp=23367  Pass
+---------------------------
+
+Test 14 {Uncontended}
+SET b,r; RES b,r
+R=23  loop=375  sp=56814  Pass
+---------------------------
+
+Test 14 {Contended}
+SET b,r; RES b,r
+R=13  loop=310  sp=23301  Pass
+---------------------------
+
+Test 15 {Uncontended}
+IM 0 1 2; LD A,I; LD I,A; LD R,A; LD A,R
+R=55  loop=553  sp=56818  Pass
+---------------------------
+
+Test 15 {Contended}
+IM 0 1 2; LD A,I; LD I,A; LD R,A; LD A,R
+R=29  loop=462  sp=23321  Pass
+---------------------------
+
+Test 16 {Uncontended}
+LD SP,HL; ADD HL,dd; ADC HL,dd; SBC HL,dd
+R=53  loop=280  sp=56823  Pass
+---------------------------
+
+Test 16 {Contended}
+LD SP,HL; ADD HL,dd; ADC HL,dd; SBC HL,dd
+R=94  loop=242  sp=23313  Pass
+---------------------------
+
+Test 17 {Uncontended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,0-3
+R=47  loop=247  sp=56870  Pass
+---------------------------
+
+Test 17 {Contended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,0-3
+R=12  loop=199  sp=23363  Pass
+---------------------------
+
+Test 18 {Uncontended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,4-7
+R=47  loop=247  sp=56870  Pass
+---------------------------
+
+Test 18 {Contended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,4-7
+R=12  loop=199  sp=23363  Pass
+---------------------------
+
+Test 19 {Uncontended}
+LD r,n; LD rr,nn;LD A,(nn);LD (nn),A;LD dd,(nn);LD (nn),dd
+R=40  loop=215  sp=56820  Pass
+---------------------------
+
+Test 19 {Contended}
+LD r,n; LD rr,nn;LD A,(nn);LD (nn),A;LD dd,(nn);LD (nn),dd
+R=119  loop=178  sp=23367  Pass
+---------------------------
+
+Test 20 {Uncontended}
+LD r,(ss); LD (ss),r
+R=61  loop=298  sp=56825  Pass
+---------------------------
+
+Test 20 {Contended}
+LD r,(ss); LD (ss),r
+R=59  loop=258  sp=23334  Pass
+---------------------------
+
+Test 21 {Uncontended}
+PUSH ii;POP ii; LD (ii+n),r; LD (ii+n),n
+R=91  loop=153  sp=56860  Pass
+---------------------------
+
+Test 21 {Contended}
+PUSH ii;POP ii; LD (ii+n),r; LD (ii+n),n
+R=103  loop=123  sp=23320  Pass
+---------------------------
+
+Test 22 {Uncontended}
+LD A,(ii+n); LD r,(ii+n)
+R=113  loop=211  sp=56809  Pass
+---------------------------
+
+Test 22 {Contended}
+LD A,(ii+n); LD r,(ii+n)
+R=53  loop=171  sp=23338  Pass
+---------------------------
+
+Test 23 {Uncontended}
+LD A,(IX+n); LD r,(IX+n); BIT (IX+n);RES (iX+n);SET (IX+n)
+R=75  loop=108  sp=56892  Pass
+---------------------------
+
+Test 23 {Contended}
+LD A,(IX+n); LD r,(IX+n); BIT (IX+n);RES (iX+n);SET (IX+n)
+R=29  loop=90  sp=23411  Pass
+---------------------------
+
+Test 24 {Uncontended}
+LD A,(IY+n); LD r,(IY+n);BIT (IY+n);RES (IY+n);SET (IY+n)
+R=75  loop=108  sp=56892  Pass
+---------------------------
+
+Test 24 {Contended}
+LD A,(IY+n); LD r,(IY+n);BIT (IY+n);RES (IY+n);SET (IY+n)
+R=29  loop=90  sp=23411  Pass
+---------------------------
+
+Test 25 {Uncontended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,(IX+n)
+R=83  loop=179  sp=56838  Pass
+---------------------------
+
+Test 25 {Contended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,(IX+n)
+R=89  loop=143  sp=23309  Pass
+---------------------------
+
+Test 26 {Uncontended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,(IX+n)
+R=93  loop=171  sp=56850  Pass
+---------------------------
+
+Test 26 {Contended}
+(ADD/ADC/SUB/SBC/AND/XOR/OR/CP) A,(IX+n)
+R=85  loop=144  sp=23337  Pass
+---------------------------
+
+Test 27 {Uncontended}
+BIT (HL);RES (HL);SET (HL);INC (HL);DEC (HL)
+R=107  loop=164  sp=56829  Pass
+---------------------------
+
+Test 27 {Contended}
+BIT (HL);RES (HL);SET (HL);INC (HL);DEC (HL)
+R=66  loop=143  sp=23332  Pass
+---------------------------
+
+Test 28 {Uncontended}
+RET; RET cc; RETI; RETN
+R=32  loop=57  sp=56894  Pass
+---------------------------
+
+Test 28 {Contended}
+RET; RET cc; RETI; RETN
+R=20  loop=52  sp=23335  Pass
+---------------------------
+
+Test 29 {Uncontended}
+CALL CC,n; JR cc,n; DJNZ
+R=55  loop=117  sp=56802  Pass
+---------------------------
+
+Test 29 {Contended}
+CALL CC,n; JR cc,n; DJNZ
+R=33  loop=98  sp=0  Pass
+---------------------------
+
+Test 30 {Uncontended}
+LDI; LDIR; LDD; LDDR
+R=59  loop=201  sp=56806  Pass
+---------------------------
+
+Test 30 {Contended}
+LDI; LDIR; LDD; LDDR
+R=117  loop=168  sp=23357  Pass
+---------------------------
+
+Test 31 {Uncontended}
+CPI; CPIR; CPD; CPDR
+R=42  loop=203  sp=56801  Pass
+---------------------------
+
+Test 31 {Contended}
+CPI; CPIR; CPD; CPDR
+R=72  loop=174  sp=23325  Pass
+---------------------------
+
+Test 32 {Uncontended}
+INI; INIR; IND; INDR
+R=93  loop=221  sp=56844  Pass
+---------------------------
+
+Test 32 {Contended}
+INI; INIR; IND; INDR
+R=105  loop=192  sp=23305  Pass
+---------------------------
+
+Test 33 {Uncontended}
+OUTI; OTIR; OUTD; OTDR
+R=91  loop=221  sp=56844  Pass
+---------------------------
+
+Test 33 {Contended}
+OUTI; OTIR; OUTD; OTDR
+R=111  loop=192  sp=23315  Pass
+---------------------------
+
+Test 34 {Uncontended}
+RST 18
+R=46  loop=455  sp=56807  Pass
+---------------------------
+
+Test 34 {Contended}
+RST 18
+R=124  loop=418  sp=23306  Pass
+---------------------------
+
+Test 35 {Uncontended}
+IN A,(n); OUT (n),A; IN r,(C); OUT (C),r
+R=40  loop=267  sp=56797  Pass
+---------------------------
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+
+Test 35 {Contended}
+IN A,(n); OUT (n),A; IN r,(C); OUT (C),r [CLS]
+R=54  loop=237  sp=23300  Pass
+---------------------------
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+
+Test 36 {Contended}
+IN A,(n); OUT (n),A; IN r,(C); OUT (C),r [13]
+R=49  loop=237  sp=23337  Pass
+---------------------------
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+ZXSPECTRUMZXSPECTRUMZXSPECTRUMZX
+
+Test 37 {Contended}
+IN A,(n); OUT (n),A; IN r,(C); OUT (C),r [21]
+R=124  loop=236  sp=23321  Pass
+---------------------------
+All Tests Complete 100% Pass
+Press any Key.
