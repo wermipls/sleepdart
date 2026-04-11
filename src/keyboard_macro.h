@@ -16,6 +16,8 @@ typedef struct KeyboardMacro
     int value;
 } KeyboardMacro_t;
 
+void keyboard_macro_init();
 void keyboard_macro_play(const KeyboardMacro_t *macro, size_t len);
+void keyboard_macro_play_tapeload();
 void keyboard_macro_process();
 uint8_t keyboard_macro_get(int address);

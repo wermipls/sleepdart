@@ -62,6 +62,8 @@ int machine_init(Machine_t *machine, enum MachineType type)
     // FIXME: hack
     ula_init(machine);
 
+    keyboard_macro_init();
+
     return 0;
 }
 
