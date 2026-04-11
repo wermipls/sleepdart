@@ -36,6 +36,8 @@ typedef struct Machine {
     AY_t *ay;
     Beeper_t beeper;
 
+    uint8_t port_fe;
+
     uint64_t frames;
     bool reset_pending;
 } Machine_t;

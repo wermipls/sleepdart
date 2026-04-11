@@ -405,7 +405,7 @@ void tape_player_advance_cycles(TapePlayer_t *p, uint64_t cycles)
     p->position += cycles;
 }
 
-uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
+int tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
     if (player == NULL) return 0;
 
     if (player->paused || player->finished || player->error) {
@@ -425,7 +425,7 @@ uint8_t tape_player_get_next_sample(TapePlayer_t *player, uint64_t cycles) {
         if (pulse == 0) {
             player->finished = true;
         }
-        return 0;
+        return -1;
     }
 }
 

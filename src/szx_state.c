@@ -215,7 +215,7 @@ int szx_save_block_specregs(struct SZXBlock *b, Machine_t *m)
     SZXSpecRegs_t *r = (SZXSpecRegs_t *)b->data;
 
     r->border = ula_get_border();
-    // FIXME: cant get last fe val :(
+    r->fe = m->port_fe;
 
     return 0;
 }

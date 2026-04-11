@@ -49,6 +49,7 @@ uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
 uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
     if (!(addr & 1)) {
+        ctx->port_fe = value;
         ula_set_border(value, ctx->cpu.cycles);
         beeper_write(&ctx->beeper, !(!(value & (1<<4))), ctx->cpu.cycles);
     }
@@ -73,6 +74,12 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
     if (!(addr & 1)) {
         *dest = keyboard_read(addr) & ~(1<<6);
 
+        if (0) { // Issue 3
+            *dest |= !!(ctx->port_fe & (1<<4)) << 6;
+        } else { // Issue 2
+            *dest |= !!(ctx->port_fe & ((1<<4) | (1<<3))) << 6;
+        }
+
         if (ctx->player != NULL) {
             uint64_t delta;
 
@@ -83,9 +90,11 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
             last_tape_read = ctx->cpu.cycles;
             last_tape_read_frame = ctx->frames;
 
-            uint8_t tape = tape_player_get_next_sample(ctx->player, delta);
-            if (tape) {
+            int tape = tape_player_get_next_sample(ctx->player, delta);
+            if (tape > 0) {
                 *dest |= (1<<6);
+            } else if (tape < 0) {
+                *dest &= ~(1<<6);
             }
         }
     } else if (addr == 0xFFFD || addr == 0xBFFD) {
