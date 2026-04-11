@@ -344,6 +344,12 @@ int machine_test_open(const char *path)
         }
     }
 
+    // we must enforce a specific palette, otherwise screenshot tests may fail.
+    palette_set_by_name("default.raw");
+
+    // ensure savestate (if any) is loaded before setting macro.
+    machine_process_events();
+
     char *macro = config_get_str(&testcfg, "macro");
     if (macro) {
         char *macro_path = file_path_append(NULL, path, macro);
@@ -365,9 +371,6 @@ int machine_test_open(const char *path)
 
     test_running = true;
     video_sdl_set_fps_limit(false);
-
-    // we must enforce a specific palette, otherwise screenshot tests may fail.
-    palette_set_by_name("default.raw");
 
     return 0;
 }
