@@ -1,0 +1,2 @@
+Version v3 from https://github.com/redcode/Z80/wiki/HALT2INT
+Distributed under GPL, see COPYING in src directory for details.
