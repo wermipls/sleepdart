@@ -6,7 +6,10 @@ static SDL_AudioStream *stream = NULL;
 
 void audio_sdl_init(int sample_rate)
 {
-    SDL_Init(SDL_INIT_AUDIO);
+    if (!SDL_Init(SDL_INIT_AUDIO)) {
+        dlog(LOG_ERR, "Failed to initialize the audio subsystem: %s", SDL_GetError());
+        return;
+    }
 
     SDL_AudioSpec spec = { 0 };
     spec.channels = 2;
