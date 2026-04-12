@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include "file.h"
 
+// some sanity checks to avoid memory exhaustion with malformed files.
+#define MAX_BLOCK_SIZE (1024*256)
+#define MAX_BLOCK_COUNT 256
+
 #define U32_FROM_STR(str) (*((uint32_t *)(str)))
 
 const char expected_magic[4] = "ZXST";
@@ -68,6 +72,11 @@ SZX_t *szx_load_file(char *path)
     size_t block_count = 0;
 
     while (!feof(f)) {
+        if (block_count > MAX_BLOCK_COUNT) {
+            fclose(f);
+            return NULL;
+        }
+
         struct SZXBlockHeader block_header;
         bytes = fread(&block_header, 1, sizeof(block_header), f);
         if (bytes < sizeof(block_header)) {
@@ -90,6 +99,7 @@ SZX_t *szx_load_file(char *path)
 
     SZX_t *szx = calloc(sizeof(SZX_t), 1);
     if (szx == NULL) {
+        fclose(f);
         return NULL;
     }
 
@@ -114,11 +124,19 @@ SZX_t *szx_load_file(char *path)
             if (feof(f) && bytes == 0) {
                 break;
             }
+            szx_free(szx);
             fclose(f);
             return NULL;
         }
 
         if (block_header.size == 0) {
+            szx_free(szx);
+            fclose(f);
+            return NULL;
+        }
+
+        if (block_header.size > MAX_BLOCK_SIZE) {
+            szx_free(szx);
             fclose(f);
             return NULL;
         }
