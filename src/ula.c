@@ -63,7 +63,7 @@ void ula_reset_screen_dirty()
     screen_write_index = 0;
 
     for (size_t i = 0; i < sizeof(screen_dirty); i++) {
-        screen_dirty[i] = mem->bus[0x4000 + i];
+        screen_dirty[i] = mem->ram[0x4000*5 + i];
     }
 }
 
@@ -126,9 +126,12 @@ uint8_t ula_get_border()
     return border;
 }
 
-void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr)
+void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr, bool screen2)
 {
-    struct WriteScreen w = {.cycle = cycle, .value = value, .address = addr-0x4000};
+    struct WriteScreen w = {.cycle = cycle, .value = value, .address = addr};
+    if (screen2) {
+        // fixme
+    }
     writes_screen[screen_write_index] = w;
     if (screen_write_index < ULA_WRITES_SIZE-2) screen_write_index++;
 }

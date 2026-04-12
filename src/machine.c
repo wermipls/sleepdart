@@ -49,7 +49,7 @@ int machine_init(Machine_t *machine, enum MachineType type)
     machine->timing = machine_timing_zx48k;
 
     memory_init(&machine->memory);
-    memory_load_rom_16k(&machine->memory, "rom/48.rom");
+    memory_load_rom(&machine->memory, "rom/48.rom");
 
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);

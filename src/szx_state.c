@@ -20,18 +20,9 @@ int szx_load_block_rampage(struct SZXBlock *b, Machine_t *m)
 
     uint8_t *dest;
 
-    switch (page->page_no)
-    {
-    case 5:
-        dest = &m->memory.bus[0x4000];
-        break;
-    case 2:
-        dest = &m->memory.bus[0x8000];
-        break;
-    case 0:
-        dest = &m->memory.bus[0xC000];
-        break;
-    default:
+    if (page->page_no < 8) {
+        dest = &m->memory.ram[0x4000 * page->page_no];
+    } else {
         return 0;
     }
 
@@ -63,19 +54,10 @@ int szx_save_block_rampage(struct SZXBlock *b, Machine_t *m, int page_no)
 
     page->page_no = page_no;
     uint8_t *src;
-    switch (page_no)
-    {
-    case 5:
-        src = &m->memory.bus[0x4000];
-        break;
-    case 2:
-        src = &m->memory.bus[0x8000];
-        break;
-    case 0:
-        src = &m->memory.bus[0xC000];
-        break;
-    default:
-        return -2;
+    if (page_no < 8) {
+        src = &m->memory.ram[0x4000 * page->page_no];
+    } else {
+        return 0;
     }
 
     memcpy(page->data, src, 0x4000);

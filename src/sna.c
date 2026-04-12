@@ -65,7 +65,9 @@ int sna_state_load(char *path, Machine_t *m)
     machine_init(m, MACHINE_ZX48K);
     ay_reset(m->ay);
 
-    memcpy(m->memory.bus+0x4000, sna->ram, 0xC000);
+    memcpy(m->memory.ram+0x4000*5, sna->ram, 0x4000);
+    memcpy(m->memory.ram+0x4000*2, sna->ram+0x4000, 0x4000);
+    memcpy(m->memory.ram+0x4000*0, sna->ram+0x8000, 0x4000);
     ula_reset_screen_dirty();
     ula_set_border(sna->border & 7, 0);
 
@@ -92,8 +94,8 @@ int sna_state_load(char *path, Machine_t *m)
     // Note that 48K snapshot does not store the PC anywhere directly,
     // and typically reti is required to start the execution.
     // Instead, I'll just push the stack around manually.
-    uint8_t l = memory_bus_peek(m->memory.bus, m->cpu.regs.sp++);
-    uint8_t h = memory_bus_peek(m->memory.bus, m->cpu.regs.sp++);
+    uint8_t l = memory_bus_peek(&m->memory, m->cpu.regs.sp++);
+    uint8_t h = memory_bus_peek(&m->memory, m->cpu.regs.sp++);
     m->cpu.regs.pc = (h << 8) | l;
 
     free(sna);

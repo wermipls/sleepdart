@@ -120,10 +120,10 @@ uint8_t io_port_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
 
                 int x_offset = (cyc_x / 8) * 2;
                 switch (cyc_x & 7) {
-                    case 0: *dest = memory_bus_peek(ctx->memory.bus, pix_offset + x_offset); break;
-                    case 1: *dest = memory_bus_peek(ctx->memory.bus, attrib_offset + x_offset); break;
-                    case 2: *dest = memory_bus_peek(ctx->memory.bus, pix_offset + x_offset + 1); break;
-                    case 3: *dest = memory_bus_peek(ctx->memory.bus, attrib_offset+ x_offset + 1); break;
+                    case 0: *dest = memory_bus_peek(&ctx->memory, pix_offset + x_offset); break;
+                    case 1: *dest = memory_bus_peek(&ctx->memory, attrib_offset + x_offset); break;
+                    case 2: *dest = memory_bus_peek(&ctx->memory, pix_offset + x_offset + 1); break;
+                    case 3: *dest = memory_bus_peek(&ctx->memory, attrib_offset+ x_offset + 1); break;
                 }
             }
         }
