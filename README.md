@@ -41,8 +41,8 @@ meson compile -C build
 sleepdart is licensed under [0-clause BSD](LICENSE).
 
 The program makes use of several third-party libraries, in part or in whole:
-- **[ayumi](https://github.com/true-grue/ayumi)**, (MIT, see `ayumi/LICENSE`)
-- **[Convenient Containers (CC)](https://github.com/JacksonAllan/CC)**, (MIT, see `external/cc.h`)
+- **[ayumi](https://github.com/true-grue/ayumi)** (MIT, see `ayumi/LICENSE`)
+- **[Convenient Containers (CC)](https://github.com/JacksonAllan/CC)** (MIT, see `external/cc.h`)
 - **[PhysicsFS](https://icculus.org/physfs/)** (zlib)
 - **[rouziclib](https://github.com/Photosounder/rouziclib)** (MIT, see `src/unicode.c`)
 - **[SDL3](https://libsdl.org/)** (zlib)
