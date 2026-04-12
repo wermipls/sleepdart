@@ -10,6 +10,10 @@
 
 int szx_load_block_rampage(struct SZXBlock *b, Machine_t *m)
 {
+    if (b->header.size < sizeof(SZXRAMPage_t)) {
+        return -1;
+    }
+
     SZXRAMPage_t *page = (SZXRAMPage_t *)b->data;
 
     int is_compressed = page->flags & SZX_RF_COMPRESSED;
@@ -81,6 +85,10 @@ int szx_save_block_rampage(struct SZXBlock *b, Machine_t *m, int page_no)
 
 int szx_load_block_z80regs(struct SZXBlock *b, Machine_t *m)
 {
+    if (b->header.size < sizeof(SZXZ80Regs_t)) {
+        return -1;
+    }
+
     SZXZ80Regs_t *r = (SZXZ80Regs_t *)b->data;
     m->cpu.regs.main.af = r->af;
     m->cpu.regs.main.bc = r->bc;
@@ -156,6 +164,10 @@ int szx_save_block_z80regs(struct SZXBlock *b, Machine_t *m)
 
 int szx_load_block_ay(struct SZXBlock *b, Machine_t *m)
 {
+    if (b->header.size < sizeof(SZXAYBlock_t)) {
+        return -1;
+    }
+
     SZXAYBlock_t *a = (SZXAYBlock_t *)b->data;
 
     for (int i = 0; i < 16; i++) {
@@ -194,6 +206,10 @@ int szx_save_block_ay(struct SZXBlock *b, Machine_t *m)
 
 int szx_load_block_specregs(struct SZXBlock *b, Machine_t *m)
 {
+    if (b->header.size < sizeof(SZXSpecRegs_t)) {
+        return -1;
+    }
+
     SZXSpecRegs_t *r = (SZXSpecRegs_t *)b->data;
 
     io_port_write(m, 0xfe, r->fe);
