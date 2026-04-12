@@ -35,3 +35,21 @@ pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-b
 meson setup build # add "-Dbuildtype=debug" for a debug build
 meson compile -C build
 ```
+
+## License
+
+sleepdart is licensed under [0-clause BSD](LICENSE).
+
+The program makes use of several third-party libraries, in part or in whole:
+- **[ayumi](https://github.com/true-grue/ayumi)**, (MIT, see `ayumi/LICENSE`)
+- **[Convenient Containers (CC)](https://github.com/JacksonAllan/CC)**, (MIT, see `external/cc.h`)
+- **[PhysicsFS](https://icculus.org/physfs/)** (zlib)
+- **[rouziclib](https://github.com/Photosounder/rouziclib)** (MIT, see `src/unicode.c`)
+- **[SDL3](https://libsdl.org/)** (zlib)
+- **[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)** (public domain or MIT, see `external/stb_image.h`)
+- **[stb_image_write](https://github.com/nothings/stb/blob/master/stb_image_write.h)** (public domain or MIT, see `external/stb_image_write.h`)
+- **[xxHash](https://xxhash.com/)** (2-clause BSD)
+
+This emulator bundles the unmodified ZX Spectrum ROMs. Amstrad have kindly given their permission to redistribute the Spectrum ROMs, as long as the original copyright notices are unchanged; see [Cliff Lawson's post on Usenet](https://groups.google.com/g/comp.sys.amstrad.8bit/c/HtpBU2Bzv_U/m/HhNDSU3MksAJ).
+
+Binaries in the `tests` directory are subject to their own distribution terms, some of them unspecified; look at text files in the respective test directories for any licensing information.
