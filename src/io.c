@@ -48,21 +48,31 @@ uint8_t io_handle_contention(uint16_t addr, uint64_t cycle)
  * Returns the amount of extra cycles stalled due to ULA contention. */
 uint8_t io_port_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
+    uint8_t contention = io_handle_contention(addr, ctx->cpu.cycles);
+
     if (!(addr & 1)) {
         ctx->port_fe = value;
-        ula_set_border(value, ctx->cpu.cycles);
+        ula_set_border(value, ctx->cpu.cycles + contention);
         beeper_write(&ctx->beeper, !(!(value & (1<<4))), ctx->cpu.cycles);
     }
 
     if (addr == 0xFFFD) {
         ay_write_address(ctx->ay, value);
-    }
-
+    } 
+    
     if (addr == 0xBFFD) {
         ay_write_data(ctx->ay, value);
     }
 
-    return io_handle_contention(addr, ctx->cpu.cycles);
+    if (ctx->type == MACHINE_ZX128K && (addr & 0x8002) == 0x0000) {
+        // bank switch.
+        ctx->memory.bank_c000 = ctx->memory.ram + 0x4000 * (value & 7);
+        ctx->memory.bank_0000 = ctx->memory.rom + 0x4000 * ((value >> 4) & 1);
+        ula_set_screen(ctx->cpu.cycles + contention, value & (1<<3));
+        // fixme: paging_disabled = (value >> 5) & 1;
+    }
+
+    return contention;
 }
 
 /* Performs a port read.

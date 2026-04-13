@@ -47,6 +47,8 @@ struct WriteScreen writes_screen[ULA_WRITES_SIZE];
 size_t screen_write_index = 0;
 
 uint8_t screen_dirty[0x1B00];
+uint8_t screen2_dirty[0x1B00];
+bool is_secondary;
 
 uint8_t contention_pattern[] = {6, 5, 4, 3, 2, 1, 0, 0};
 
@@ -64,6 +66,9 @@ void ula_reset_screen_dirty()
 
     for (size_t i = 0; i < sizeof(screen_dirty); i++) {
         screen_dirty[i] = mem->ram[0x4000*5 + i];
+    }
+    for (size_t i = 0; i < sizeof(screen2_dirty); i++) {
+        screen2_dirty[i] = mem->ram[0x4000*7 + i];
     }
 }
 
@@ -83,6 +88,8 @@ void ula_init(struct Machine *ctx)
     for (size_t i = 0; i < BUFFER_LEN; i++) {
         ula_buffer[i] = (RGB24_t){ .r = 0, .g = 0, .b = 0 };
     }
+
+    is_secondary = false;
 
     ula_reset_screen_dirty();
 }
@@ -126,11 +133,18 @@ uint8_t ula_get_border()
     return border;
 }
 
+void ula_set_screen(uint64_t cycle, bool secondary)
+{
+    struct WriteScreen w = {.cycle = cycle, .value = secondary, .address = -1};
+    writes_screen[screen_write_index] = w;
+    if (screen_write_index < ULA_WRITES_SIZE-2) screen_write_index++;
+}
+
 void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr, bool screen2)
 {
     struct WriteScreen w = {.cycle = cycle, .value = value, .address = addr};
     if (screen2) {
-        // fixme
+        w.address |= 0x2000;
     }
     writes_screen[screen_write_index] = w;
     if (screen_write_index < ULA_WRITES_SIZE-2) screen_write_index++;
@@ -138,7 +152,7 @@ void ula_write_screen(uint64_t cycle, uint8_t value, uint64_t addr, bool screen2
 
 static inline uint8_t ula_get_screen_byte(uint16_t offset)
 {
-    return screen_dirty[offset];
+    return is_secondary ? screen2_dirty[offset] : screen_dirty[offset];
 }
 
 static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
@@ -150,7 +164,15 @@ static inline void ula_process_screen_8x1(uint8_t x, uint8_t y, RGB24_t *buf)
         if (cycle < w.cycle) {
             break;
         }
-        screen_dirty[w.address] = w.value;
+        bool write_secondary = w.address & 0x2000;
+        bool set_screen = w.address < 0;
+        if (set_screen) {
+            is_secondary = w.value;
+        } else if (write_secondary) {
+            screen2_dirty[w.address & 0x1fff] = w.value;
+        } else {
+            screen_dirty[w.address] = w.value;
+        }
         screen_write_index++;
         w = writes_screen[screen_write_index];
     }

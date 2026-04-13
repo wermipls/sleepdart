@@ -30,6 +30,17 @@ const struct MachineTiming machine_timing_zx48k = {
     .t_int_hold = 32,
 };
 
+const struct MachineTiming machine_timing_zx128k = {
+    .clock_hz = 3546900,
+
+    .t_firstpx = 14361,
+    .t_scanline = 228,
+    .t_screen = 128,
+    .t_frame = 228 * 311,
+    .t_eightpx = 4,
+    .t_int_hold = 35,
+};
+
 void machine_set_current(Machine_t *machine)
 {
     m_cur = machine;
@@ -41,15 +52,16 @@ int machine_init(Machine_t *machine, enum MachineType type)
         return -1;
     }
 
-    if (type != MACHINE_ZX48K) {
-        return -2;
-    }
-
     machine->type = type;
-    machine->timing = machine_timing_zx48k;
 
     memory_init(&machine->memory);
-    memory_load_rom(&machine->memory, "rom/48.rom");
+    if (type == MACHINE_ZX128K) {
+        machine->timing = machine_timing_zx128k;
+        memory_load_rom(&machine->memory, "rom/128.rom");
+    } else {
+        machine->timing = machine_timing_zx48k;
+        memory_load_rom(&machine->memory, "rom/48.rom");
+    }
 
     machine->cpu.ctx = machine;
     cpu_init(&machine->cpu);
@@ -137,6 +149,12 @@ void machine_process_events()
     if (m_cur->reset_pending) {
         cpu_init(&m_cur->cpu);
         ay_reset(m_cur->ay);
+        // fixme
+        m_cur->memory.bank_0000 = m_cur->memory.rom;
+        m_cur->memory.bank_4000 = &m_cur->memory.ram[0x4000 * 5];
+        m_cur->memory.bank_8000 = &m_cur->memory.ram[0x4000 * 2];
+        m_cur->memory.bank_c000 = &m_cur->memory.ram[0x4000 * 0];
+
         m_cur->reset_pending = false;
     }
 

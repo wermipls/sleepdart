@@ -10,6 +10,7 @@
 enum MachineType
 {
     MACHINE_ZX48K,
+    MACHINE_ZX128K,
 };
 
 struct MachineTiming

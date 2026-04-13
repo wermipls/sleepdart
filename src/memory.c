@@ -46,9 +46,9 @@ int memory_load_rom(Memory_t *mem, char path[])
 uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 {
     uint8_t addr_hi = addr >> 14;
-    uint16_t addr_lo = addr &= 0x3fff;
+    uint16_t addr_lo = addr & 0x3fff;
     uint8_t *page = ctx->memory.bank[addr_hi];
-    int page_idx = (page - ctx->memory.ram) / 0x4000; // ugly.
+    int page_idx = (int)(page - ctx->memory.ram) / 0x4000; // ugly.
 
     // assume ROM is located before RAM.
     if (page < ctx->memory.ram) {
@@ -57,7 +57,7 @@ uint8_t memory_write(struct Machine *ctx, uint16_t addr, uint8_t value)
 
     page[addr_lo] = value;
     int contention = (page_idx >= 0 && page_idx & 1) ? ula_get_contention_cycles(ctx->cpu.cycles) : 0;
-    if (((page_idx & 13) == 5) && (addr_lo < 0x1B00)) {
+    if (page_idx >= 0 && ((page_idx & 13) == 5) && (addr_lo < 0x1B00)) {
         ula_write_screen(ctx->cpu.cycles + contention, value, addr_lo, page_idx & 2);
     }
     return contention;
@@ -70,7 +70,7 @@ uint8_t memory_read(struct Machine *ctx, uint16_t addr, uint8_t *dest)
     uint8_t addr_hi = addr >> 14;
     uint16_t addr_lo = addr &= 0x3fff;
     uint8_t *page = ctx->memory.bank[addr_hi];
-    int page_idx = (page - ctx->memory.ram) / 0x4000; // ugly.
+    int page_idx = (int)(page - ctx->memory.ram) / 0x4000; // ugly.
 
     if (page) {
         *dest = page[addr_lo];

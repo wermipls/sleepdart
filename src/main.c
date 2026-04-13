@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
     Machine_t m = { 0 };
 
-    machine_init(&m, MACHINE_ZX48K);
+    machine_init(&m, MACHINE_ZX128K); // fixme
     machine_set_current(&m);
 
     video_sdl_set_fps((double)m.timing.clock_hz / (double)m.timing.t_frame);

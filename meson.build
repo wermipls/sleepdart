@@ -32,6 +32,7 @@ sleepdart_info = vcs_tag(
 pack_assets = find_program('pack_assets.py')
 asset_files = [
   'rom/48.rom',
+  'rom/128.rom',
   'palettes/default.raw',
   'palettes/loni.raw',
   'palettes/sleepdart.raw',
