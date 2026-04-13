@@ -103,7 +103,6 @@ typedef struct Z80 {
     bool halted;
     bool last_ei;
 
-    int error;
     struct Machine *ctx;
 } Z80_t;
 

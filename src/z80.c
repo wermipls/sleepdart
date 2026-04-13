@@ -1,10 +1,6 @@
 #include "z80.h"
 #include "machine.h"
 #include "io.h"
-#include "log.h"
-#include <assert.h>
-
-#include <stdio.h>
 
 /* helpers */
 
@@ -21,28 +17,6 @@
 #define MAKE16(L, H)    (L | (H << 8))
 #define LOW8(HL)        (HL & 255)
 #define HIGH8(HL)       (HL >> 8)
-
-static void print_regs(Z80_t *cpu)
-{
-    uint8_t *bus = cpu->ctx->memory.bus;
-
-    dlog(LOG_INFO, "cycles: %d", cpu->cycles);
-    dlog(LOG_INFO, "  %02X %02X %02X %02X %02X",
-                   memory_bus_peek(bus, cpu->regs.pc-2),
-                   memory_bus_peek(bus, cpu->regs.pc-1),
-                   memory_bus_peek(bus, cpu->regs.pc),
-                   memory_bus_peek(bus, cpu->regs.pc+1),
-                   memory_bus_peek(bus, cpu->regs.pc+2));
-    dlog(LOG_INFO, "        ^ PC");
-    dlog(LOG_INFO, "  PC  %04X, SP  %04X, IX  %04X, IY  %04X",
-                   cpu->regs.pc, cpu->regs.sp, cpu->regs.ix, cpu->regs.iy);
-    dlog(LOG_INFO, "  AF  %04X, BC  %04X, DE  %04X, HL  %04X",
-                   cpu->regs.main.af, cpu->regs.main.bc,
-                   cpu->regs.main.de, cpu->regs.main.hl);
-    dlog(LOG_INFO, "  AF` %04X, BC` %04X, DE` %04X, HL` %04X",
-                   cpu->regs.alt.af, cpu->regs.alt.bc,
-                   cpu->regs.alt.de, cpu->regs.alt.hl);
-}
 
 static inline uint8_t cpu_read(Z80_t *cpu, uint16_t addr)
 {
@@ -900,8 +874,7 @@ static inline void alo(Z80_t *cpu, uint8_t value, const uint8_t op)
         result = sub8(cpu, cpu->regs.main.a, value);
         break;
     default:
-        result = 0;
-        cpu->error = true;
+        __builtin_unreachable();
     }
 
     uint8_t xy = (op == 7) ? value : result;
@@ -1749,7 +1722,6 @@ void cpu_init(Z80_t *cpu)
     cpu->regs.im = 0;
     cpu->regs.pc = 0;
 
-    cpu->error = 0;
     cpu->halted = 0;
     cpu->last_ei = 0;
     cpu->interrupt_pending = false;
@@ -2323,16 +2295,6 @@ static void do_ddfd(Z80_t *cpu, bool is_iy)
 
     // misc instructions
     case 0xED: do_ed(cpu); break;
-
-    default:
-        print_regs(cpu);
-
-        static const char ix_op[] = "DD";
-        static const char iy_op[] = "FD";
-        const char *prefix = is_iy ? iy_op : ix_op;
-
-        dlog(LOG_ERR, "unimplemented opcode %s %02X at %04X", prefix, op, cpu->regs.pc);
-        cpu->error = 1;
     }
 }
 
@@ -2679,11 +2641,6 @@ static void do_opcode(Z80_t *cpu)
     // IY/IX prefix
     case 0xDD: ddfd(cpu, false); break;
     case 0xFD: ddfd(cpu, true); break;
-
-    default:
-        print_regs(cpu);
-        dlog(LOG_ERR, "unimplemented opcode %02X at %04X", op, cpu->regs.pc);
-        cpu->error = 1;
     }
 }
 

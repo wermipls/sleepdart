@@ -196,7 +196,7 @@ void machine_toggle_tape_playback()
 
 int machine_do_cycles()
 {
-    while (!m_cur->cpu.error) {
+    while (m_cur->cpu.cycles < m_cur->timing.t_frame) {
         if (m_cur->cpu.cycles < m_cur->timing.t_int_hold) {
             cpu_fire_interrupt(&m_cur->cpu);
         }
@@ -205,34 +205,30 @@ int machine_do_cycles()
         machine_test_iterate(m_cur);
 
         cpu_do_cycles(&m_cur->cpu);
-
-        if (m_cur->cpu.cycles >= m_cur->timing.t_frame) {
-            m_cur->cpu.cycles -= m_cur->timing.t_frame;
-            m_cur->frames++;
-
-            ay_process_frame(m_cur->ay);
-            beeper_process_frame(&m_cur->beeper);
-            dsp_mix_buffers_mono_to_stereo(m_cur->ay->buf, m_cur->beeper.buf, m_cur->ay->buf_len);
-
-            audio_sdl_queue(m_cur->ay->buf, m_cur->ay->buf_len * sizeof(float));
-
-            ula_draw_frame();
-
-            video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
-
-            keyboard_macro_process();
-
-            input_sdl_copy_old_state();
-            int quit = input_sdl_update();
-            if (quit) return -2;
-
-            hotkeys_process();
-            machine_process_events();
-
-            machine_test_iterate_frame(m_cur);
-            return 0;
-        }
     }
 
-    return -1;
+    m_cur->cpu.cycles -= m_cur->timing.t_frame;
+    m_cur->frames++;
+
+    ay_process_frame(m_cur->ay);
+    beeper_process_frame(&m_cur->beeper);
+    dsp_mix_buffers_mono_to_stereo(m_cur->ay->buf, m_cur->beeper.buf, m_cur->ay->buf_len);
+
+    audio_sdl_queue(m_cur->ay->buf, m_cur->ay->buf_len * sizeof(float));
+
+    ula_draw_frame();
+
+    video_sdl_draw_rgb24_buffer(ula_buffer, sizeof(ula_buffer));
+
+    keyboard_macro_process();
+
+    input_sdl_copy_old_state();
+    int quit = input_sdl_update();
+    if (quit) return -2;
+
+    hotkeys_process();
+    machine_process_events();
+
+    machine_test_iterate_frame(m_cur);
+    return 0;
 }
