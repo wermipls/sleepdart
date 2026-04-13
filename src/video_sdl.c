@@ -28,7 +28,7 @@ char title_buf[256];
 
 bool fullscreen = false;
 bool limit_fps = true;
-double target_ticks_frame = 0;
+double target_ns_frame = 0;
 
 void video_sdl_set_fps_limit(bool is_enabled)
 {
@@ -45,7 +45,7 @@ bool video_sdl_get_fps_limit()
 
 void video_sdl_set_fps(double fps)
 {
-    target_ticks_frame = 1000.0 / fps;
+    target_ns_frame = 1000000000.0 / fps;
 }
 
 void video_sdl_set_scale(int scale)
@@ -95,13 +95,13 @@ void sdl_set_window_title_fps()
     if (!window) return;
 
     static struct Frametime h[5] = { 0 };
-    static const uint16_t update_interval = 1000;
-    static uint16_t frames = 0;
+    static const uint64_t update_interval = 500 * 1000 * 1000;
+    static uint64_t frames = 0;
     static uint64_t ticks_old = 0;
-    uint64_t ticks = SDL_GetTicks();
+    uint64_t ticks = SDL_GetTicksNS();
 
     frames++;
-    uint16_t time = ticks - ticks_old;
+    uint64_t time = ticks - ticks_old;
     if (time >= update_interval) {
         struct Frametime hnew;
         hnew.frames = frames;
@@ -115,14 +115,14 @@ void sdl_set_window_title_fps()
         }
         h[i-1] = hnew;
 
-        float ftotal = 0;
-        float ttotal = 0;
+        double ftotal = 0;
+        double ttotal = 0;
         for (i = 0; i < sizeof(h) / sizeof(struct Frametime); i++) {
             ftotal += h[i].frames * powf(2, i+1);
             ttotal += h[i].time   * powf(2, i+1);
         }
 
-        float fps = ftotal / (ttotal / 1000.0f);
+        double fps = (ftotal / ttotal) * 1000000000.0;
         snprintf(title_buf, sizeof(title_buf), "%s [%.2f FPS]", title_base, fps);
         SDL_SetWindowTitle(window, title_buf);
     }
@@ -135,8 +135,8 @@ void sdl_synchronize_fps()
 
     static uint64_t ticks_next = 0;
     static double error = 0;
-    int ticks_frame_flr = floor(target_ticks_frame);
-    uint64_t ticks = SDL_GetTicks();
+    uint64_t ticks_frame_flr = floor(target_ns_frame);
+    uint64_t ticks = SDL_GetTicksNS();
 
     if (!limit_fps || (ticks_next < ticks - ticks_frame_flr - 1)) {
         ticks_next = ticks;
@@ -144,11 +144,11 @@ void sdl_synchronize_fps()
     }
 
     if (ticks_next > ticks) {
-        int delay = ticks_next - ticks;
-        SDL_Delay(delay);
+        uint64_t delay = ticks_next - ticks;
+        SDL_DelayPrecise(delay);
     }
 
-    error += target_ticks_frame - (double)ticks_frame_flr;
+    error += target_ns_frame - (double)ticks_frame_flr;
     ticks_next += ticks_frame_flr;
     if (error >= 1) {
         error -= 1;
