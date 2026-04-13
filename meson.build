@@ -1,7 +1,7 @@
 project('sleepdart', 'c', default_options: ['buildtype=release', 'default_library=static'])
 
 release_args = ['-flto', '-fwhole-program']
-if get_option('buildtype') == 'release'
+if get_option('buildtype') == 'release' or get_option('buildtype') == 'debugoptimized'
   add_project_arguments(release_args, language: 'c')
   add_project_link_arguments(release_args, language: 'c')
 endif
