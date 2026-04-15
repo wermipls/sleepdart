@@ -328,15 +328,36 @@ void ayumi_process(struct ayumi* ay) {
 void ayumi_process_fast(struct ayumi* ay) {
   double l = 0;
   double r = 0;
+  double y1;
+  double* c_left = ay->interpolator_left.c;
+  double* y_left = ay->interpolator_left.y;
+  double* c_right = ay->interpolator_right.c;
+  double* y_right = ay->interpolator_right.y;
 
   for (int i = 0; i < DECIMATE_FACTOR; i++) {
     ay->x += ay->step;
     if (ay->x >= 1) {
       ay->x -= 1;
+      y_left[0] = y_left[1];
+      y_left[1] = y_left[2];
+      y_left[2] = y_left[3];
+      y_right[0] = y_right[1];
+      y_right[1] = y_right[2];
+      y_right[2] = y_right[3];
       update_mixer(ay);
+      y_left[3] = ay->left;
+      y_right[3] = ay->right;
+      y1 = y_left[2] - y_left[0];
+      c_left[0] = 0.5 * y_left[1] + 0.25 * (y_left[0] + y_left[2]);
+      c_left[1] = 0.5 * y1;
+      c_left[2] = 0.25 * (y_left[3] - y_left[1] - y1);
+      y1 = y_right[2] - y_right[0];
+      c_right[0] = 0.5 * y_right[1] + 0.25 * (y_right[0] + y_right[2]);
+      c_right[1] = 0.5 * y1;
+      c_right[2] = 0.25 * (y_right[3] - y_right[1] - y1);
     }
-    l += ay->left;
-    r += ay->right;
+    l += (c_left[2] * ay->x + c_left[1]) * ay->x + c_left[0];
+    r += (c_right[2] * ay->x + c_right[1]) * ay->x + c_right[0];
   }
   ay->left = l / (double)DECIMATE_FACTOR;
   ay->right = r / (double)DECIMATE_FACTOR;
