@@ -9,4 +9,4 @@ enum LogLevel
 };
 
 void log_force_errsilent();
-void dlog(enum LogLevel l, char fmt[], ...);
+void dlog(enum LogLevel l, const char *fmt, ...);

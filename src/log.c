@@ -19,7 +19,7 @@ void log_force_errsilent()
     force_errsilent = 1;
 }
 
-void dlog(enum LogLevel l, char fmt[], ...)
+void dlog(enum LogLevel l, const char *fmt, ...)
 {
     const char *prefix;
 
