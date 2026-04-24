@@ -23,10 +23,6 @@ stop-value=42
 
 # Determines the test scope, i.e. what emulator state is being validated.
 #
-# Scopes like "registers" or "allflags" put the state through a hash function
-# on each iteration, meaning the test will fail on even the slightest deviation.
-# This can be a good or bad thing depending on circumstances. Use carefully.
-#
 # The "print" scope hooks into the ROM character print routine, then compares
 # the text output with the expected one. This is a very useful option for running
 # various test programs which print out the results, such as Patrik Rak's Z80 tests.
@@ -34,7 +30,7 @@ stop-value=42
 # The "screenshot" scope creates screenshots on frames listed in "screenshot-frames"
 # field, then compares screen contents to expected result. This is useful for 
 # e.g. ULA tests, or tests that do not use the ROM character print routine.
-scope=docflags allflags registers cycles print screenshot
+scope=print screenshot
 screenshot-frames=6 7 2137
 
 # Specifies a macro file to be used.

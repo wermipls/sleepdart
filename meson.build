@@ -48,7 +48,6 @@ cc = meson.get_compiler('c')
 deps = [
   dependency('zlib', static: true),
   dependency('sdl3', static: true),
-  dependency('libxxhash', static: true),
   dependency('physfs', static: true),
   cc.find_library('m', required: false),
 ]

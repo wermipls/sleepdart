@@ -30,7 +30,7 @@ git clone --recursive https://github.com/wermipls/sleepdart
 ### Windows (MSYS2 MinGW 64-bit)
 
 ```sh
-pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-sdl3 zlib mingw-w64-x86_64-xxhash
+pacman -S git mingw-w64-x86_64-meson mingw-w64-x86_64-pkgconf mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc mingw-w64-x86_64-sdl3 zlib
 
 meson setup build # add "-Dbuildtype=debug" for a debug build
 meson compile -C build
@@ -48,7 +48,6 @@ The program makes use of several third-party libraries, in part or in whole:
 - **[SDL3](https://libsdl.org/)** (zlib)
 - **[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)** (public domain or MIT, see `external/stb_image.h`)
 - **[stb_image_write](https://github.com/nothings/stb/blob/master/stb_image_write.h)** (public domain or MIT, see `external/stb_image_write.h`)
-- **[xxHash](https://xxhash.com/)** (2-clause BSD)
 
 This emulator bundles the unmodified ZX Spectrum ROMs. Amstrad have kindly given their permission to redistribute the Spectrum ROMs, as long as the original copyright notices are unchanged; see [Cliff Lawson's post on Usenet](https://groups.google.com/g/comp.sys.amstrad.8bit/c/HtpBU2Bzv_U/m/HhNDSU3MksAJ).
 

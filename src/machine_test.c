@@ -44,9 +44,6 @@ unsigned char *stbiw_custom_compress(unsigned char *data, int data_len, int *out
 #define STBIW_ZLIB_COMPRESS stbiw_custom_compress
 #include "../external/stb_image_write.h"
 
-#define XXH_INLINE_ALL
-#include <xxhash.h>
-
 enum StopCondition
 {
     STOP_BREAKPOINT,
@@ -74,10 +71,6 @@ struct MachineTest
     bool test_cycles;
     bool test_print;
     bool test_screenshot;
-    XXH64_state_t *docflags;
-    XXH64_state_t *allflags;
-    XXH64_state_t *registers;
-    XXH64_state_t *cycles;
     FILE *print;
     cc_map(uint64_t, struct Screenshot) screenshots;
     cc_set(uint64_t) screenshot_frames;
@@ -180,19 +173,7 @@ int machine_test_open(const char *path)
         char *str = scope;
         bool scope_defined = false;
         while ((token = strtok_r(str, " ", &last)) != NULL) {
-            if (strcmp("docflags", token) == 0) {
-                test.test_docflags = true;
-                scope_defined = true;
-            } else if (strcmp("allflags", token) == 0) {
-                test.test_allflags = true;
-                scope_defined = true;
-            } else if (strcmp("registers", token) == 0) {
-                test.test_registers = true;
-                scope_defined = true;
-            } else if (strcmp("cycles", token) == 0) {
-                test.test_cycles = true;
-                scope_defined = true;
-            } else if (strcmp("print", token) == 0) {
+            if (strcmp("print", token) == 0) {
                 test.test_print = true;
                 scope_defined = true;
             } else if (strcmp("screenshot", token) == 0) {
@@ -212,22 +193,6 @@ int machine_test_open(const char *path)
         free(scope);
     }
 
-    if (test.test_allflags) {
-        test.allflags = XXH64_createState();
-        XXH64_reset(test.allflags, 0);
-    }
-    if (test.test_docflags) {
-        test.docflags  = XXH64_createState();
-        XXH64_reset(test.docflags, 0);
-    }
-    if (test.test_registers) {
-        test.registers = XXH64_createState();
-        XXH64_reset(test.registers, 0);
-    }
-    if (test.test_cycles) {
-        test.cycles = XXH64_createState();
-        XXH64_reset(test.cycles, 0);
-    }
     if (test.test_print) {
         char *print_path = file_path_append(NULL, path, "print.txt.tmp");
         if (!print_path) {
@@ -313,45 +278,6 @@ static int test_condition(struct Machine *m)
     }
 
     return 0;
-}
-
-static void finish_hash(XXH64_state_t *s, const char *name)
-{
-    if (s == NULL) return;
-
-    XXH64_hash_t hash = XXH64_digest(s);
-    dlog(LOG_INFO, "%s hash: %016llx", name, hash);
-    uint64_t expected;
-    char *hash_path = file_path_append(NULL, test.dir, name);
-    FILE *f = fopen_utf8(hash_path, "rb");
-    if (f == NULL) {
-        dlog(LOG_WARN, "Failed to open hash file \"%s\", attempting to create", name);
-        f = fopen_utf8(hash_path, "wb");
-        if (f == NULL) {
-            dlog(LOG_ERRSILENT, "Failed to open hash file \"%s\" for write!", name);
-            free(hash_path);
-            return;
-        }
-
-        fwrite(&hash, sizeof(hash), 1, f);
-        fclose(f);
-        free(hash_path);
-        return;
-    }
-
-    free(hash_path);
-
-    size_t size = fread(&expected, sizeof(expected), 1, f);
-    if (!size) {
-        dlog(LOG_ERRSILENT, "Failed to read hash file \"%s\"!", name);
-        fclose(f);
-        return;
-    }
-
-    if (hash != expected) {
-        dlog(LOG_INFO, "FAIL, expected: %016llx", expected);
-        test_passed = false;
-    }
 }
 
 static void finish_print()
@@ -478,19 +404,8 @@ static void finish_screenshot()
     }
 }
 
-static void test_finish(struct Machine *m) {
-    if (test.docflags) {
-        finish_hash(test.docflags, "docflags");
-    }
-    if (test.allflags) {
-        finish_hash(test.allflags, "allflags");
-    }
-    if (test.cycles) {
-        finish_hash(test.cycles, "cycles");
-    }
-    if (test.registers) {
-        finish_hash(test.registers, "registers");
-    }
+static void test_finish(struct Machine *m)
+{
     if (test.print) {
         finish_print();
     }
@@ -517,29 +432,6 @@ static void test_finish(struct Machine *m) {
 void machine_test_iterate(struct Machine *m)
 {
     if (!test_running) return;
-
-    if (test.cycles) {
-        XXH64_update(test.cycles, &m->cpu.cycles, sizeof(m->cpu.cycles));
-    }
-    if (test.docflags) {
-        uint8_t f = ~((1<<3) | (1<<5)) & m->cpu.regs.main.f;
-        XXH64_update(test.docflags, &f, 1);
-    }
-    if (test.allflags) {
-        uint8_t f = m->cpu.regs.main.f;
-        XXH64_update(test.allflags, &f, 1);
-    }
-    if (test.registers) {
-        XXH64_update(test.registers, &m->cpu.regs.main.a, 1);
-        XXH64_update(test.registers, &m->cpu.regs.main.bc, 6);
-
-        XXH64_update(test.registers, &m->cpu.regs.alt.a, 1);
-        XXH64_update(test.registers, &m->cpu.regs.alt.bc, 6);
-
-        XXH64_update(test.registers, &m->cpu.regs.ix, 10);
-
-        XXH64_update(test.registers, &m->cpu.regs.im, 1);
-    }
 
     if (test_condition(m)) {
         test_finish(m);
