@@ -12,23 +12,7 @@ enum ArgumentType
     ARG_HELP,
 };
 
-struct Argument
-{
-    char name[50];
-    char name_short;
-    enum ArgumentType type;
-    bool optional;
-    bool positional;
-    const char *help;
-    void *result;
-};
-
-typedef struct ArgParser {
-    struct Argument *args;
-    int positional_no;
-    int positional_req;
-    const char *name;
-} ArgParser_t;
+typedef struct ArgParser ArgParser_t;
 
 ArgParser_t *argparser_create(const char *name);
 void argparser_free(ArgParser_t *parser);

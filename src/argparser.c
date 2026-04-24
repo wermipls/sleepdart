@@ -7,6 +7,24 @@
 #include "log.h"
 #include "parser_helpers.h"
 
+struct ArgParser {
+    struct Argument *args;
+    int positional_no;
+    int positional_req;
+    const char *name;
+};
+
+struct Argument
+{
+    char name[50];
+    char name_short;
+    enum ArgumentType type;
+    bool optional;
+    bool positional;
+    const char *help;
+    void *result;
+};
+
 ArgParser_t *argparser_create(const char *name)
 {
     if (name == NULL) {
