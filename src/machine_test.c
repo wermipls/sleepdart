@@ -103,81 +103,6 @@ static bool test_running = false;
 static bool test_passed = true;
 static struct MachineTest test = { 0 };
 
-static KeyboardMacro_t *parse_macro(const char *path)
-{
-    FILE *f = fopen_utf8(path, "r");
-    if (f == NULL) {
-        return NULL;
-    }
-
-    KeyboardMacro_t *macro = vector_create();
-    if (macro == NULL) {
-        fclose(f);
-        return NULL;
-    }
-
-    int line_no = 0;
-    char *line;
-    while ((line = file_read_line(f)) != NULL) {
-        line_no++;
-        char *last;
-        char *pframe = strtok_r(line, " ", &last);
-        if (pframe == NULL) {
-            goto cleanup;
-        }
-
-        char *pcmd = strtok_r(NULL, " ", &last);
-        if (pcmd == NULL) {
-            goto cleanup;
-        }
-
-        char *pvalue = strtok_r(NULL, " ", &last);
-        if (pvalue == NULL) {
-            goto cleanup;
-        }
-
-        KeyboardMacro_t m;
-
-        if (strcmp("key", pcmd) == 0) {
-            m.cmd = KBMACRO_KEY;
-        } else if (strcmp("goto", pcmd) == 0) {
-            m.cmd = KBMACRO_GOTO;
-        } else {
-            dlog(LOG_WARN, "Unknown macro cmd on line %d", line_no);
-            goto cleanup;
-        }
-
-        int *frame = parse_int(pframe);
-        if (frame == NULL) {
-            dlog(LOG_WARN, "Failed to parse macro frame on line %d", line_no);
-            goto cleanup;
-        }
-        m.frame = *frame;
-        free(frame);
-
-        int *value = parse_int(pvalue);
-        if (value == NULL) {
-            dlog(LOG_WARN, "Failed to parse macro value on line %d", line_no);
-            goto cleanup;
-        }
-        m.value = *value;
-        free(value);
-
-        vector_add(macro, m);
-    cleanup:
-        free(line);
-    }
-
-    fclose(f);
-
-    if (vector_len(macro) == 0) {
-        vector_free(macro);
-        return NULL;
-    }
-
-    return macro;
-}
-
 int machine_test_open(const char *path)
 {
     cc_init(&test.screenshot_frames);
@@ -359,7 +284,7 @@ int machine_test_open(const char *path)
             return -1;
         }
 
-        test.macro = parse_macro(macro_path);
+        test.macro = keyboard_macro_parse(macro_path);
         if (test.macro == NULL) {
             dlog(LOG_WARN, "Failed to parse macro file \"%s\"", macro_path);
             free(macro_path);
