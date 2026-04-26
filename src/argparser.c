@@ -22,7 +22,11 @@ struct Argument
     bool optional;
     bool positional;
     const char *help;
-    void *result;
+    const void *result;
+    union {
+        int param_int;
+        float param_float;
+    };
 };
 
 ArgParser_t *argparser_create(const char *name)
@@ -52,11 +56,6 @@ ArgParser_t *argparser_create(const char *name)
 void argparser_free(ArgParser_t *parser) {
     if (parser) {
         if (parser->args) {
-            for (size_t i = 0; i < vector_len(parser->args); i++) {
-                if (parser->args[i].result) {
-                    free(parser->args[i].result);
-                }
-            }
             vector_free(parser->args);
         }
         free(parser);
@@ -110,26 +109,19 @@ bool arg_requires_parameter(struct Argument *arg)
     }
 }
 
-void *arg_parse_parameter(struct Argument *arg, char *param)
+static const void *arg_parse_parameter(struct Argument *arg, const char *param)
 {
     switch (arg->type)
     {
-    case ARG_STRING: ;
-        size_t len = strlen(param) + 1;
-        char *s = malloc(len);
-        if (!s) break;
-        memcpy(s, param, len);
-        s[len-1] = 0;
-        return s;
+    case ARG_STRING:
+        return param;
     case ARG_INT:
-        return parse_int(param);
-    case ARG_FLOAT: ;
-        return parse_float(param);
-    case ARG_STORE_TRUE: ;
-        bool *st = malloc(sizeof(bool));
-        if (!st) break;
-        *st = true;
-        return st;
+        return parse_int(param, &arg->param_int) ? &arg->param_int : NULL;
+    case ARG_FLOAT:
+        return parse_float(param, &arg->param_float) ? &arg->param_float : NULL;
+    case ARG_STORE_TRUE:
+        arg->param_int = true;
+        return &arg->param_int;
     default:
         return NULL;
     }
@@ -364,7 +356,7 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
     return 0;
 }
 
-void *argparser_get(ArgParser_t *parser, const char *arg)
+const void *argparser_get(ArgParser_t *parser, const char *arg)
 {
     if (arg == NULL) {
         return NULL;

@@ -20,4 +20,4 @@ void argparser_add_arg(
     ArgParser_t *parser, const char *name, char name_short,
     enum ArgumentType type, bool force_optional, const char *help);
 int argparser_parse(ArgParser_t *parser, int argc, char *argv[]);
-void *argparser_get(ArgParser_t *parser, const char *arg);
+const void *argparser_get(ArgParser_t *parser, const char *arg);

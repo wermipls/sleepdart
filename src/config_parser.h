@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
 
 enum CfgType
 {
@@ -13,7 +14,12 @@ struct CfgField
 {
     const char *key;
     enum CfgType type;
-    void *value;
+    bool has_value;
+    union {
+        char *value_str;
+        int value_int;
+        float value_float;
+    };
 };
 
 typedef struct CfgData

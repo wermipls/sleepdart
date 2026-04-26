@@ -1,9 +1,9 @@
 #pragma once
 
-/* returns a pointer to parsed value on success, NULL on fail.
- * user is expected to free the resulting pointer */
-int *parse_int(char *str);
+#include <stdbool.h>
 
-/* returns a pointer to parsed value on success, NULL on fail.
- * user is expected to free the resulting pointer */
-float *parse_float(char *str);
+/* returns true on success. parsed value is written to dst. */
+bool parse_int(const char *str, int *dst);
+
+/* returns true on success. parsed value is written to dst. */
+bool parse_float(const char *str, float *dst);

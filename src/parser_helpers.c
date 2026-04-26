@@ -1,54 +1,45 @@
 #include "parser_helpers.h"
+#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include "log.h"
 
-int *parse_int(char *str)
+bool parse_int(const char *str, int *dst)
 {
+    _Static_assert(sizeof(int) == sizeof(long), "int and long should be same size.");
+
     char *end;
+    errno = 0;
     long value = strtol(str, &end, 0);
     if (end == str || (*end != 0 && *end != ' ')) {
         dlog(LOG_ERRSILENT, "Failed to parse \"%s\" as an integer", str);
-        return NULL;
+        return false;
     }
 
     if (errno == ERANGE) {
         dlog(LOG_ERRSILENT, "Integer \"%s\" is out of range", str);
-        return NULL;
+        return false;
     }
 
-    int *i = malloc(sizeof(i));
-    if (!i) {
-        dlog(LOG_ERRSILENT, "%s: malloc fail", __func__);
-        return NULL;
-    }
-
-    // FIXME: long -> int cast
-    // long and int are both same size on gcc x86_64-w64-mingw32 but yea...
-    *i = value;
-    return i;
+    *dst = value;
+    return true;
 }
 
-float *parse_float(char *str)
+bool parse_float(const char *str, float *dst)
 {
     char *end;
+    errno = 0;
     float value = strtof(str, &end);
     if (end == str || (*end != 0 && *end != ' ')) {
         dlog(LOG_ERRSILENT, "Failed to parse \"%s\" as a floating point value", str);
-        return NULL;
+        return false;
     }
 
     if (errno == ERANGE) {
         dlog(LOG_ERRSILENT, "Float \"%s\" is out of range", str);
-        return NULL;
+        return false;
     }
 
-    float *i = malloc(sizeof(i));
-    if (!i) {
-        dlog(LOG_ERRSILENT, "%s: malloc fail", __func__);
-        return NULL;
-    }
-
-    *i = value;
-    return i;
+    *dst = value;
+    return true;
 }

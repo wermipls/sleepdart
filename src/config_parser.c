@@ -54,34 +54,34 @@ static void config_process_keyvalue(CfgData_t *cfg, char *key, char *value, int 
     int i = config_find_index(cfg, key);
     if (i < 0) {
         dlog(LOG_WARN, "%s: unknown key \"%s\" on line %d, ignoring", __func__, key, line);
-        goto keyval_cleanup;
     }
 
     struct CfgField *e = &cfg->data[i];
     switch (e->type)
     {
-    case CFG_STR:
-        if (e->value) free(e->value);
-        e->value = value;
-        free(key);
-        return;
+    case CFG_STR: ;
+        size_t sz = strlen(value) + 1;
+        char *v_new = realloc(e->value_str, sz);
+        if (!v_new) {
+            break;
+        }
+        memcpy(v_new, value, sz);
+        e->value_str = v_new;
+        e->has_value = true;
+        break;
     case CFG_INT: ;
-        int *val_i = parse_int(value);
-        if (val_i == NULL) goto keyval_cleanup;
-        if (e->value) free(e->value);
-        e->value = val_i;
+        if (!parse_int(value, &e->value_int)) {
+            break;
+        }
+        e->has_value = true;
         break;
     case CFG_FLOAT: ;
-        float *val_f = parse_float(value);
-        if (val_f == NULL) goto keyval_cleanup;
-        if (e->value) free(e->value);
-        e->value = val_f;
+        if (!parse_float(value, &e->value_float)) {
+            break;
+        }
+        e->has_value = true;
         break;
     }
-
-keyval_cleanup:
-    free(key);
-    free(value);
 }
 
 int config_load_file(CfgData_t *cfg, char *path)
@@ -129,6 +129,8 @@ int config_load_file(CfgData_t *cfg, char *path)
         }
 
         config_process_keyvalue(cfg, key, value, line_no);
+        free(key);
+        free(value);
         free(line);
     }
 
@@ -147,20 +149,20 @@ int config_save_file(CfgData_t *cfg, char *path)
 
     for (size_t i = 0; i < cfg->len; i++) {
         struct CfgField *e = &cfg->data[i];
-        if (e->value == NULL) {
+        if (!e->has_value) {
             continue;
         }
 
         switch (e->type)
         {
         case CFG_STR:
-            fprintf(f, "%s = %s\n", e->key, (char *)e->value);
+            fprintf(f, "%s = %s\n", e->key, e->value_str);
             break;
         case CFG_INT:
-            fprintf(f, "%s = %d\n", e->key, *(int *)e->value);
+            fprintf(f, "%s = %d\n", e->key, e->value_int);
             break;
         case CFG_FLOAT:
-            fprintf(f, "%s = %.*g\n", e->key, FLT_DECIMAL_DIG, *(float *)e->value);
+            fprintf(f, "%s = %.*g\n", e->key, FLT_DECIMAL_DIG, e->value_float);
             break;
         }
     }
@@ -177,20 +179,20 @@ char *config_get_str(CfgData_t *cfg, const char *key)
     }
 
     struct CfgField *e = &cfg->data[i];
-    if (e->value == NULL) {
+    if (!e->has_value) {
         return NULL;
     }
 
     SDL_assert_release(e->type == CFG_STR);
 
-    size_t len = strlen(e->value) + 1;
+    size_t sz = strlen(e->value_str) + 1;
 
-    char *str = malloc(len);
+    char *str = malloc(sz);
     if (str == NULL) {
         return NULL;
     }
 
-    memcpy(str, e->value, len);
+    memcpy(str, e->value_str, sz);
 
     return str;
 }
@@ -203,13 +205,13 @@ int config_get_int(CfgData_t *cfg, const char *key, int *dest)
     }
 
     struct CfgField *e = &cfg->data[i];
-    if (e->value == NULL) {
+    if (!e->has_value) {
         return -2;
     }
 
     SDL_assert_release(e->type == CFG_INT);
 
-    *dest = *(int *)e->value;
+    *dest = e->value_int;
     return 0;
 }
 
@@ -221,13 +223,13 @@ int config_get_float(CfgData_t *cfg, const char *key, float *dest)
     }
 
     struct CfgField *e = &cfg->data[i];
-    if (e->value == NULL) {
+    if (!e->has_value) {
         return -2;
     }
 
     SDL_assert_release(e->type == CFG_FLOAT);
 
-    *dest = *(float *)e->value;
+    *dest = e->value_float;
     return 0;
 }
 
@@ -243,21 +245,23 @@ void config_set_str(CfgData_t *cfg, const char *key, const char *value)
     }
 
 
-    size_t len = strlen(value) + 1;
+    size_t sz = strlen(value) + 1;
 
     struct CfgField *e = &cfg->data[i];
     SDL_assert_release(e->type == CFG_STR);
 
-    if (e->value != NULL) {
-        free(e->value);
+    if (e->has_value) {
+        free(e->value_str);
     }
 
-    e->value = malloc(len);
-    if (e->value == NULL) {
+    e->value_str = malloc(sz);
+    if (e->value_str == NULL) {
+        e->has_value = false;
         return;
     }
 
-    memcpy(e->value, value, len);
+    e->has_value = true;
+    memcpy(e->value_str, value, sz);
 }
 
 void config_set_int(CfgData_t *cfg, const char *key, int value)
@@ -270,14 +274,8 @@ void config_set_int(CfgData_t *cfg, const char *key, int value)
     struct CfgField *e = &cfg->data[i];
     SDL_assert_release(e->type == CFG_INT);
 
-    if (e->value == NULL) {
-        e->value = malloc(sizeof(int));
-        if (e->value == NULL) {
-            return;
-        }
-    }
-
-    *(int *)e->value = value;
+    e->value_int = value;
+    e->has_value = true;
 }
 
 void config_set_float(CfgData_t *cfg, const char *key, float value)
@@ -290,12 +288,6 @@ void config_set_float(CfgData_t *cfg, const char *key, float value)
     struct CfgField *e = &cfg->data[i];
     SDL_assert_release(e->type == CFG_FLOAT);
 
-    if (e->value == NULL) {
-        e->value = malloc(sizeof(float));
-        if (e->value == NULL) {
-            return;
-        }
-    }
-
-    *(float *)e->value = value;
+    e->value_float = value;
+    e->has_value = true;
 }

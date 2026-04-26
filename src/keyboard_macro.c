@@ -167,21 +167,15 @@ KeyboardMacro_t *keyboard_macro_parse(const char *path)
             goto cleanup;
         }
 
-        int *frame = parse_int(pframe);
-        if (frame == NULL) {
+        if (!parse_int(pframe, &m.frame)) {
             dlog(LOG_WARN, "Failed to parse macro frame on line %d", line_no);
             goto cleanup;
         }
-        m.frame = *frame;
-        free(frame);
 
-        int *value = parse_int(pvalue);
-        if (value == NULL) {
+        if (!parse_int(pvalue, &m.value)) {
             dlog(LOG_WARN, "Failed to parse macro value on line %d", line_no);
             goto cleanup;
         }
-        m.value = *value;
-        free(value);
 
         vector_add(macro, m);
     cleanup:
