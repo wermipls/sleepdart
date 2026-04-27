@@ -50,13 +50,13 @@ void dlog(enum LogLevel l, const char *fmt, ...)
 
 #if defined(_WIN32) && defined(PLATFORM_WIN32)
     if (l == LOG_ERR && !force_errsilent) {
-        wchar_t *str = utf8_to_utf16(msg, NULL);
+        wchar_t *str = utf8_to_utf16(msg);
         if (str == NULL) {
-            free(msg);
+            SDL_free(msg);
             return;
         }
         MessageBoxW(GetActiveWindow(), str, L"Error", MB_OK | MB_ICONERROR);
-        free(str);
+        SDL_free(str);
     }
 #endif
     SDL_free(msg);

@@ -316,12 +316,12 @@ FILE *fopen_utf8_win32(const char *path, const wchar_t *mode)
     wchar_t *wpath;
     FILE *file;
 
-    wpath = utf8_to_utf16(path, NULL);
+    wpath = utf8_to_utf16(path);
     if (wpath == NULL)
         return NULL;
 
     file = _wfopen(wpath, mode);
-    free(wpath);
+    SDL_free(wpath);
     return file;
 }
 #endif

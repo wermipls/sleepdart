@@ -113,12 +113,12 @@ void on_file_open(HWND hwnd)
         return;
     }
 
-    char *str = utf16_to_utf8(ofn.lpstrFile, NULL);
+    char *str = utf16_to_utf8(ofn.lpstrFile);
     if (str == NULL) {
         return;
     }
     machine_open_file(str);
-    free(str);
+    SDL_free(str);
 }
 
 void on_file_save(HWND hwnd)
@@ -144,12 +144,12 @@ void on_file_save(HWND hwnd)
         return;
     }
 
-    char *str = utf16_to_utf8(ofn.lpstrFile, NULL);
+    char *str = utf16_to_utf8(ofn.lpstrFile);
     if (str == NULL) {
         return;
     }
     machine_save_file(str);
-    free(str);
+    SDL_free(str);
 }
 
 LRESULT CALLBACK wnd_proc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
