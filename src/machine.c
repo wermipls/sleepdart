@@ -116,8 +116,8 @@ void machine_process_events()
             }
             break;
         case FTYPE_SNA:
-            if (sna_state_load(file_open_path, m_cur)) {
-                dlog(LOG_ERR, "Failed to open .sna file \"%s\"", file_open_path);
+            if (!sna_state_load(file_open_path, m_cur)) {
+                dlog(LOG_ERR, "Failed to open .sna file \"%s\": %s", file_open_path, SDL_GetError());
             }
             break;
         default:
