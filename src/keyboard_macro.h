@@ -3,22 +3,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum KeyMacroCmd
-{
-    KBMACRO_KEY,
-    KBMACRO_GOTO,
-};
-
-typedef struct KeyboardMacro
-{
-    int frame;
-    enum KeyMacroCmd cmd;
-    int value;
-} KeyboardMacro_t;
+typedef struct KeyboardMacro KeyboardMacro_t;
 
 void keyboard_macro_init();
-void keyboard_macro_play(const KeyboardMacro_t *macro, size_t len);
+void keyboard_macro_play(const KeyboardMacro_t *macro);
 void keyboard_macro_play_tapeload();
 void keyboard_macro_process();
 uint8_t keyboard_macro_get(int address);
 KeyboardMacro_t *keyboard_macro_parse(const char *path);
+void keyboard_macro_free(KeyboardMacro_t *macro);

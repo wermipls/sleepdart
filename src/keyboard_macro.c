@@ -1,14 +1,32 @@
 #include "keyboard_macro.h"
 #include "file.h"
-#include "vector.h"
 #include "log.h"
 #include "parser_helpers.h"
+#define CC_NO_SHORT_NAMES
+#include "../external/cc.h"
+
+enum KeyMacroCmd
+{
+    KBMACRO_KEY,
+    KBMACRO_GOTO,
+};
+
+struct KeyboardMacroOp {
+    int frame;
+    enum KeyMacroCmd cmd;
+    int value;
+};
+
+struct KeyboardMacro {
+    const struct KeyboardMacroOp *ops;
+    size_t len;
+    cc_vec(struct KeyboardMacroOp) vec;
+};
 
 struct MacroState {
-    const KeyboardMacro_t *current;
+    const KeyboardMacro_t *macro;
     int frame;
     int index;
-    int macro_len;
     uint8_t state[8];
 };
 
@@ -20,7 +38,7 @@ enum MacroType {
 
 static struct MacroState macro_state[MACRO_ENUM_LAST] = {0};
 
-const KeyboardMacro_t macro_tapeload[6] = {
+const struct KeyboardMacroOp macro_tapeload_ops[6] = {
     { 10, KBMACRO_KEY, 33 }, // LOAD
     { 15, KBMACRO_KEY, 36 }, // SYM SHFT
     { 15, KBMACRO_KEY, 25 }, // "
@@ -29,45 +47,48 @@ const KeyboardMacro_t macro_tapeload[6] = {
     { 25, KBMACRO_KEY, 30 }, // ENTER
 };
 
+const KeyboardMacro_t macro_tapeload = {
+    .ops = macro_tapeload_ops,
+    .len = sizeof(macro_tapeload_ops) / sizeof(*macro_tapeload_ops),
+};
+
 void keyboard_macro_init()
 {
     for (int i = 0; i < MACRO_ENUM_LAST; i++) {
         struct MacroState *p = &macro_state[i];
-        p->current = 0;
+        p->macro = 0;
         for (int i = 0; i < 8; i++) {
             p->state[i] = 0xFF;
         }
     }
 }
 
-static void keyboard_macro_play_internal(struct MacroState *p, const KeyboardMacro_t *macro, size_t len)
+static void keyboard_macro_play_internal(struct MacroState *p, const KeyboardMacro_t *macro)
 {
-    p->current = macro;
+    p->macro = macro;
     p->frame = 0;
     p->index = 0;
-    p->macro_len = len;
     for (int i = 0; i < 8; i++) {
         p->state[i] = 0xFF;
     }
 }
 
-void keyboard_macro_play(const KeyboardMacro_t *macro, size_t len)
+void keyboard_macro_play(const KeyboardMacro_t *macro)
 {
-    keyboard_macro_play_internal(&macro_state[MACRO_NORMAL], macro, len);
+    keyboard_macro_play_internal(&macro_state[MACRO_NORMAL], macro);
 }
 
 void keyboard_macro_play_tapeload()
 {
     keyboard_macro_play_internal(
         &macro_state[MACRO_TAPE],
-        macro_tapeload,
-        sizeof(macro_tapeload) / sizeof(KeyboardMacro_t)
+        &macro_tapeload
     );
 }
 
 static inline void keyboard_macro_process_single(struct MacroState *p)
 {
-    if (p->current == NULL) {
+    if (p->macro == NULL) {
         return;
     }
 
@@ -75,36 +96,36 @@ static inline void keyboard_macro_process_single(struct MacroState *p)
         p->state[i] = 0xFF;
     }
 
-    if (p->index >= p->macro_len) {
-        p->current = NULL;
+    if (p->index >= p->macro->len) {
+        p->macro = NULL;
         return;
     }
 
     p->frame++;
 
-    while (p->current[p->index].frame < p->frame) {
+    while (p->macro->ops[p->index].frame < p->frame) {
         p->index++;
-        if (p->index >= p->macro_len) {
+        if (p->index >= p->macro->len) {
             return;
         }
     }
 
-    while (p->current[p->index].frame == p->frame) {
-        switch (p->current[p->index].cmd)
+    while (p->macro->ops[p->index].frame == p->frame) {
+        switch (p->macro->ops[p->index].cmd)
         {
         case KBMACRO_GOTO:
-            p->frame = p->current[p->index].value - 1;
+            p->frame = p->macro->ops[p->index].value - 1;
             p->index = 0;
             return;
         case KBMACRO_KEY: ;
-            int addr = (p->current[p->index].value / 5) & 7;
-            int bit = p->current[p->index].value % 5;
+            int addr = (p->macro->ops[p->index].value / 5) & 7;
+            int bit = p->macro->ops[p->index].value % 5;
             p->state[addr] &= ~(1<<bit);
             break;
         }
 
         p->index++;
-        if (p->index >= p->macro_len) {
+        if (p->index >= p->macro->len) {
             return;
         }
     }
@@ -130,11 +151,8 @@ KeyboardMacro_t *keyboard_macro_parse(const char *path)
         return NULL;
     }
 
-    KeyboardMacro_t *macro = vector_create();
-    if (macro == NULL) {
-        fclose(f);
-        return NULL;
-    }
+    cc_vec(struct KeyboardMacroOp) ops;
+    cc_init(&ops);
 
     int line_no = 0;
     char *line;
@@ -156,7 +174,7 @@ KeyboardMacro_t *keyboard_macro_parse(const char *path)
             goto cleanup;
         }
 
-        KeyboardMacro_t m;
+        struct KeyboardMacroOp m;
 
         if (strcmp("key", pcmd) == 0) {
             m.cmd = KBMACRO_KEY;
@@ -177,17 +195,35 @@ KeyboardMacro_t *keyboard_macro_parse(const char *path)
             goto cleanup;
         }
 
-        vector_add(macro, m);
+        cc_push(&ops, m);
     cleanup:
         free(line);
     }
 
     fclose(f);
 
-    if (vector_len(macro) == 0) {
-        vector_free(macro);
+    if (cc_size(&ops) == 0) {
+        cc_cleanup(&ops);
         return NULL;
     }
 
+    KeyboardMacro_t *macro = malloc(sizeof(KeyboardMacro_t));
+    if (!macro) {
+        cc_cleanup(&ops);
+        return NULL;
+    }
+
+    macro->ops = cc_first(&ops);
+    macro->len = cc_size(&ops);
+    macro->vec = ops;
+
     return macro;
+}
+
+void keyboard_macro_free(KeyboardMacro_t *macro)
+{
+    if (!macro) return;
+
+    cc_cleanup(&macro->vec);
+    free(macro);
 }

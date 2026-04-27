@@ -3,12 +3,16 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "vector.h"
 #include "log.h"
 #include "parser_helpers.h"
+#define CC_NO_SHORT_NAMES
+#include "../external/cc.h"
+
+// fixme: eventually we should just use dynamic strings instead of this.
+#define ARG_NAME_LEN 50
 
 struct ArgParser {
-    struct Argument *args;
+    cc_vec(struct Argument) args;
     int positional_no;
     int positional_req;
     const char *name;
@@ -16,7 +20,7 @@ struct ArgParser {
 
 struct Argument
 {
-    char name[50];
+    char name[ARG_NAME_LEN];
     char name_short;
     enum ArgumentType type;
     bool optional;
@@ -40,12 +44,7 @@ ArgParser_t *argparser_create(const char *name)
         return NULL;
     }
 
-    parser->args = vector_create();
-    if (parser->args == NULL) {
-        free(parser);
-        return NULL;
-    }
-
+    cc_init(&parser->args);
     parser->name = name;
 
     argparser_add_arg(parser, "--help", 'h', ARG_HELP, 0, "prints this help message");
@@ -55,17 +54,15 @@ ArgParser_t *argparser_create(const char *name)
 
 void argparser_free(ArgParser_t *parser) {
     if (parser) {
-        if (parser->args) {
-            vector_free(parser->args);
-        }
+        cc_cleanup(&parser->args);
         free(parser);
     }
 }
 
 int args_get_index_by_name(ArgParser_t *parser, const char *name)
 {
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        int result = strncmp(parser->args[i].name, name, sizeof(parser->args->name));
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        int result = strncmp(cc_get(&parser->args, i)->name, name, ARG_NAME_LEN);
         if (result == 0) {
             return i;
         }
@@ -80,8 +77,8 @@ int args_get_index_by_char(ArgParser_t *parser, const char name)
         return -1;
     }
 
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        if (parser->args[i].name_short == name) {
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        if (cc_get(&parser->args, i)->name_short == name) {
             return i;
         }
     }
@@ -91,8 +88,8 @@ int args_get_index_by_char(ArgParser_t *parser, const char name)
 
 int args_get_index_positional(ArgParser_t *parser, int start_i)
 {
-    for (size_t i = start_i; i < vector_len(parser->args); i++) {
-        if (parser->args[i].positional == true) {
+    for (size_t i = start_i; i < cc_size(&parser->args); i++) {
+        if (cc_get(&parser->args, i)->positional) {
             return i;
         }
     }
@@ -138,8 +135,8 @@ void argparser_print_help(ArgParser_t *parser)
     // - extremely redundant code
 
     fprintf(stderr, "usage: %s ", parser->name);
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        struct Argument *arg = &parser->args[i];
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        struct Argument *arg = cc_get(&parser->args, i);
         if (arg->positional) {
             continue;
         } else if (arg->optional) {
@@ -163,16 +160,16 @@ void argparser_print_help(ArgParser_t *parser)
         }
     }
 
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        struct Argument *arg = &parser->args[i];
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        struct Argument *arg = cc_get(&parser->args, i);
         if (arg->positional) {
             fprintf(stderr, "%s ", arg->name);
         }
     }
 
     fprintf(stderr, "\n\npositional arguments:\n");
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        struct Argument *arg = &parser->args[i];
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        struct Argument *arg = cc_get(&parser->args, i);
         if (arg->positional) {
             char buf[100];
             snprintf(buf, sizeof(buf), "  %s", arg->name);
@@ -182,8 +179,8 @@ void argparser_print_help(ArgParser_t *parser)
     }
 
     fprintf(stderr, "\noptions:\n");
-    for (size_t i = 0; i < vector_len(parser->args); i++) {
-        struct Argument *arg = &parser->args[i];
+    for (size_t i = 0; i < cc_size(&parser->args); i++) {
+        struct Argument *arg = cc_get(&parser->args, i);
         if (arg->positional) {
             continue;
         } else if (arg->optional) {
@@ -282,7 +279,7 @@ void argparser_add_arg(
         parser->positional_req += !arg.optional;
     }
 
-    vector_add(parser->args, arg);
+    cc_push(&parser->args, arg);
 }
 
 int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
@@ -308,7 +305,7 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
         }
 
         if (arg_idx >= 0) {
-            struct Argument *arg = &parser->args[arg_idx];
+            struct Argument *arg = cc_get(&parser->args, arg_idx);
 
             if (arg->type == ARG_HELP) {
                 argparser_print_help(parser);
@@ -340,7 +337,7 @@ int argparser_parse(ArgParser_t *parser, int argc, char *argv[])
         }
 
         if (arg_idx >= 0) {
-            struct Argument *arg = &parser->args[arg_idx];
+            struct Argument *arg = cc_get(&parser->args, arg_idx);
             arg->result = arg_parse_parameter(arg, argv[i]);
             positional_handled += 1;
             positional_last_idx = arg_idx;
@@ -376,6 +373,6 @@ const void *argparser_get(ArgParser_t *parser, const char *arg)
     if (idx < 0) {
         return NULL;
     } else {
-        return parser->args[idx].result;
+        return cc_get(&parser->args, idx)->result;
     }
 }

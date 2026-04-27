@@ -9,7 +9,6 @@
 #include "log.h"
 #include "keyboard_macro.h"
 #include "parser_helpers.h"
-#include "vector.h"
 #include "video_sdl.h"
 #include <zlib.h>
 
@@ -256,7 +255,7 @@ int machine_test_open(const char *path)
             free(macro_path);
             return -8;
         }
-        keyboard_macro_play(test.macro, vector_len(test.macro));
+        keyboard_macro_play(test.macro);
         free(macro_path);
     }
 
@@ -463,7 +462,7 @@ void machine_test_close()
     }
 
     if (test.macro) {
-        vector_free(test.macro);
+        keyboard_macro_free(test.macro);
         test.macro = NULL;
     }
 

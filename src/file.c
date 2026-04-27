@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <SDL3/SDL_filesystem.h>
 #include "szx_file.h"
-#include "vector.h"
 #include "log.h"
 #include <physfs.h>
 #include "sleepdart_info.h"
@@ -189,64 +188,6 @@ char *file_path_append(char *dst, const char *a, const char *b)
     }
 #endif
     return dst;
-}
-
-void file_free_list(char **list)
-{
-    if (list == NULL) {
-        return;
-    }
-
-    for (size_t i = 0; i < vector_len(list); i++) {
-        if (list[i] != NULL) {
-            free(list[i]);
-        }
-    }
-
-    vector_free(list);
-}
-
-static SDL_EnumerationResult list_directory_files_cb(void *userdata, const char *dirname, const char *fname)
-{
-    char ***pvec = userdata;
-    char **files = *pvec;
-
-    char *fullpath = file_path_append(NULL, dirname, fname);
-    if (!fullpath) {
-        return SDL_ENUM_FAILURE;
-    }
-
-    if (!file_is_regular_file(fullpath)) {
-        free(fullpath);
-        return SDL_ENUM_CONTINUE;
-    }
-
-    free(fullpath);
-
-    size_t len_fname = strlen(fname);
-    char *p = malloc(len_fname+1);
-    if (!p) {
-        return SDL_ENUM_FAILURE;
-    }
-    strncpy(p, fname, len_fname+1);
-    vector_add(files, p);
-    // vector ptr may have changed because of reallocation.
-    *pvec = files;
-
-    return SDL_ENUM_CONTINUE;
-}
-
-char **file_list_directory_files(char *path)
-{
-    char **files = vector_create();
-    if (!SDL_EnumerateDirectory(path, list_directory_files_cb, &files)) {
-        dlog(LOG_ERRSILENT, "failed to enumerate files in directory: %s", SDL_GetError());
-        vector_free(files);
-        return NULL;
-    }
-
-    vector_add(files, NULL);
-    return files;
 }
 
 enum FileType file_detect_type(char *path)

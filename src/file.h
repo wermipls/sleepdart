@@ -25,8 +25,6 @@ const char *file_get_prefdir();
  * `dst` and `a` can be the same pointer. */
 char *file_path_append(char *dst, const char *a, const char *b);
 
-void file_free_list(char **list);
-char **file_list_directory_files(char *path);
 enum FileType file_detect_type(char *path);
 char *file_read_line(FILE *f);
 
