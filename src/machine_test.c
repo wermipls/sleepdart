@@ -154,6 +154,7 @@ int machine_test_open(const char *path)
         if (strcmp(condition, condition_str[i]) == 0) {
             test.stop_condition = i;
             match = true;
+            break;
         }
     }
 
