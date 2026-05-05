@@ -4,6 +4,12 @@
 
 /* helpers */
 
+#ifdef _MSC_VER
+    #define UNREACHABLE() __assume(0)
+#else
+    #define UNREACHABLE() __builtin_unreachable()
+#endif
+
 #define SF  (1<<7)
 #define ZF  (1<<6)
 #define XF  (1<<5)
@@ -874,7 +880,7 @@ static inline void alo(Z80_t *cpu, uint8_t value, const uint8_t op)
         result = sub8(cpu, cpu->regs.main.a, value);
         break;
     default:
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     uint8_t xy = (op == 7) ? value : result;
