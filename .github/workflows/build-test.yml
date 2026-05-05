@@ -27,7 +27,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: sleepdart-linux
-        path: sleepdart
+        path: build/sleepdart
     - name: run tests
       run: |
         meson test -C build -v
@@ -55,7 +55,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: sleepdart-windows
-        path: sleepdart.exe
+        path: build/sleepdart.exe
     - name: run tests
       run: |
         meson test -C build -v
