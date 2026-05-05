@@ -69,22 +69,6 @@ int64_t file_get_size(const char *path)
     return s.st_size;
 }
 
-int file_is_regular_file(char *path)
-{
-    if (path == NULL) return -1;
-
-    struct stat s;
-    if (stat(path, &s)) {
-        return -2;
-    }
-
-    if (S_ISREG(s.st_mode)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool file_is_directory_separator(char c)
 {
 #ifdef _WIN32
@@ -97,23 +81,19 @@ bool file_is_directory_separator(char c)
 
 /* returns a pointer to the file extension in the path (w/o the dot),
  * or NULL if there is no valid extension present or on an error */
-char *file_get_extension(char *path)
+const char *file_get_extension(const char *path)
 {
     if (path == NULL) {
         return NULL;
     }
 
-    if (!file_is_regular_file(path)) {
-        return NULL;
-    }
-
-    char *p = path;
+    const char *p = path;
     while (*p != 0) {
         p++;
     }
 
     p--;
-    char *last = p;
+    const char *last = p;
 
     while (*p != '.') {
         if (file_is_directory_separator(*p)) {
@@ -191,9 +171,9 @@ char *file_path_append(char *dst, const char *a, const char *b)
     return dst;
 }
 
-enum FileType file_detect_type(char *path)
+enum FileType file_detect_type(const char *path)
 {
-    char *ext = file_get_extension(path);
+    const char *ext = file_get_extension(path);
 
     if (ext != NULL) {
         // .tap files aren't reliably possible to detect by binary data alone

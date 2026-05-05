@@ -12,7 +12,7 @@
 
 const char expected_magic[4] = "ZXST";
 
-bool szx_is_valid_file(char *path)
+bool szx_is_valid_file(const char *path)
 {
     FILE *f = fopen_utf8(path, "rb");
     if (f == NULL) {

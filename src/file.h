@@ -15,7 +15,7 @@ enum FileType {
 bool file_init(const char *argv0);
 bool file_exists(const char *path);
 int64_t file_get_size(const char *path);
-char *file_get_extension(char *path);
+const char *file_get_extension(const char *path);
 const char *file_get_basedir();
 const char *file_get_prefdir();
 
@@ -25,7 +25,7 @@ const char *file_get_prefdir();
  * `dst` and `a` can be the same pointer. */
 char *file_path_append(char *dst, const char *a, const char *b);
 
-enum FileType file_detect_type(char *path);
+enum FileType file_detect_type(const char *path);
 char *file_read_line(FILE *f);
 
 #ifdef _WIN32

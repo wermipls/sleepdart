@@ -51,7 +51,7 @@ typedef struct SZX {
     struct SZXBlock *block;
 } SZX_t;
 
-bool szx_is_valid_file(char *path);
+bool szx_is_valid_file(const char *path);
 SZX_t *szx_load_file(char *path);
 int szx_save_file(SZX_t *szx, char *path);
 void szx_free(SZX_t *szx);

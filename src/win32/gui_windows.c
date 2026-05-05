@@ -61,7 +61,7 @@ void menu_palette_init()
     size_t i = 0;
     while (list[i] != NULL && i <= ID_PALETTE_BASE_END-ID_PALETTE_BASE) {
         char *path = list[i];
-        char *ext = file_get_extension(path);
+        const char *ext = file_get_extension(path);
         char path_noext[256];
         if (ext) {
             size_t len = ext - path;
