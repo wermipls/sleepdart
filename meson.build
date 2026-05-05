@@ -1,13 +1,31 @@
-project('sleepdart', 'c', default_options: ['buildtype=release', 'default_library=static'])
+project('sleepdart', 'c', default_options: [
+  'buildtype=release',
+  'default_library=static',
+  'c_std=gnu11',
+])
 
-release_args = ['-flto', '-fwhole-program']
-if get_option('buildtype') == 'release' or get_option('buildtype') == 'debugoptimized'
-  add_project_arguments(release_args, language: 'c')
-  add_project_link_arguments(release_args, language: 'c')
-endif
+clang = meson.get_compiler('c').get_id() == 'clang'
+gcc = meson.get_compiler('c').get_id() == 'gcc'
+msvc = meson.get_compiler('c').get_id() == 'msvc'
 
 extra_src = []
 extra_obj = []
+
+release_args = []
+
+if clang
+  release_args += '-flto=thin'
+endif
+
+if gcc
+  release_args += '-flto'
+  release_args += '-fwhole-program'
+endif
+
+if get_option('buildtype') == 'release'
+  add_global_arguments(release_args, language: ['c', 'cpp'])
+  add_global_link_arguments(release_args, language: ['c', 'cpp'])
+endif
 
 if target_machine.system() == 'windows'
   winmod = import('windows')
@@ -16,6 +34,12 @@ if target_machine.system() == 'windows'
     winmod.compile_resources('src/win32/resource.rc')
   ]
   add_project_arguments('-DPLATFORM_WIN32', language: 'c')
+
+  if clang or gcc
+    add_project_link_arguments(['-static', '-static-libgcc', '-static-libstdc++'], language: ['c', 'cpp'])
+    add_global_arguments('-gcodeview', language: ['c', 'cpp'])
+    add_global_link_arguments('-Wl,--pdb=', language: ['c', 'cpp'])
+  endif
 endif
 
 git = find_program('git')
@@ -51,8 +75,6 @@ deps = [
   dependency('physfs', static: true),
   cc.find_library('m', required: false),
 ]
-
-add_project_link_arguments('-lstdc++', language: 'c')
 
 exe = executable(
   'sleepdart',
