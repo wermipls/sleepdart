@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <SDL3/SDL_main.h>
 #include "log.h"
 #include "machine.h"
 #include "machine_test.h"
