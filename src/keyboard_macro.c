@@ -5,6 +5,10 @@
 #define CC_NO_SHORT_NAMES
 #include "../external/cc.h"
 
+#ifdef _MSC_VER
+    #define strtok_r strtok_s
+#endif
+
 enum KeyMacroCmd
 {
     KBMACRO_KEY,

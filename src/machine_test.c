@@ -43,6 +43,10 @@ unsigned char *stbiw_custom_compress(unsigned char *data, int data_len, int *out
 #define STBIW_ZLIB_COMPRESS stbiw_custom_compress
 #include "../external/stb_image_write.h"
 
+#ifdef _MSC_VER
+    #define strtok_r strtok_s
+#endif
+
 enum StopCondition
 {
     STOP_BREAKPOINT,
