@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_stdinc.h>
 #include "szx_file.h"
 #include "log.h"
 #include <physfs.h>
@@ -195,19 +196,13 @@ enum FileType file_detect_type(char *path)
     char *ext = file_get_extension(path);
 
     if (ext != NULL) {
-        // detect by extension
-        size_t len = strlen(ext);
-        char ext_lower[len+1];
-        for (size_t i = 0; i < len; i++) {
-            ext_lower[i] = tolower(ext[i]);
-        }
-
         // .tap files aren't reliably possible to detect by binary data alone
-        if (strncmp(ext_lower, "tap", 3) == 0) {
+        if (SDL_strncasecmp(ext, "tap", 3) == 0) {
             return FTYPE_TAP;
         }
 
-        if (strncmp(ext_lower, "sna", 3) == 0) {
+        // ditto.
+        if (SDL_strncasecmp(ext, "sna", 3) == 0) {
             return FTYPE_SNA;
         }
     }
