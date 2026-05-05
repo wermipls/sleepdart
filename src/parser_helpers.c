@@ -1,13 +1,11 @@
 #include "parser_helpers.h"
-#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "log.h"
 
 bool parse_int(const char *str, int *dst)
 {
-    _Static_assert(sizeof(int) == sizeof(long), "int and long should be same size.");
-
     char *end;
     errno = 0;
     long value = strtol(str, &end, 0);
@@ -16,7 +14,7 @@ bool parse_int(const char *str, int *dst)
         return false;
     }
 
-    if (errno == ERANGE) {
+    if (errno == ERANGE || value > INT_MAX || value < INT_MIN) {
         dlog(LOG_ERRSILENT, "Integer \"%s\" is out of range", str);
         return false;
     }
