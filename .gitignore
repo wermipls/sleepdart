@@ -7,6 +7,7 @@
 /*.zip
 /tests/_*
 
-# exclude downloaded wraps, but keep the .wrap files.
+# exclude downloaded wraps, but keep the .wrap files and packagefiles dir.
 /subprojects/*
 !/subprojects/*.wrap
+!/subprojects/packagefiles/
