@@ -94,12 +94,25 @@ exe = executable(
   win_subsystem: 'windows',
 )
 
-# a lil hacky...
-dest = meson.project_source_root()
-custom_target(
-  'finalize',
-  depends: exe,
-  input: exe,
-  output: 'fake',
-  command: ['cp', '@INPUT@', dest],
-  build_by_default : true)
+tests = [
+  '48k_nec_contention',
+  'butler_timingtests_48k',
+  'floatspy',
+  'halt2int',
+  'timingtest',
+  'ula48simple',
+  'z80ccf',
+  'z80doc',
+  'z80full',
+  'z80memptr',
+]
+
+foreach t : tests
+  test(
+    t,
+    exe,
+    workdir: meson.current_source_dir(),
+    args: ['--headless', '--test', 'tests/' + t],
+    env: ['SDL_VIDEODRIVER=dummy', 'SLEEPDART_ERRSILENT=1']
+  )
+endforeach

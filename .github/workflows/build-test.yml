@@ -30,9 +30,7 @@ jobs:
         path: sleepdart
     - name: run tests
       run: |
-        echo "limit-fps=0" > ./config.ini
-        SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
-        ./run_tests.sh
+        meson test -C build -v
 
   windows:
     runs-on: windows-latest
@@ -60,7 +58,4 @@ jobs:
         path: sleepdart.exe
     - name: run tests
       run: |
-        echo "limit-fps=0" > ./config.ini
-        SDL_VIDEODRIVER=dummy ; export SDL_VIDEODRIVER
-        SLEEPDART_ERRSILENT=1 ; export SLEEPDART_ERRSILENT
-        ./run_tests.sh
+        meson test -C build -v
