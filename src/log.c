@@ -41,9 +41,13 @@ void dlog(enum LogLevel l, const char *fmt, ...)
     va_start(argv, fmt);
 
     char *msg;
-    SDL_vasprintf(&msg, fmt, argv);
+    int bytes = SDL_vasprintf(&msg, fmt, argv);
 
     va_end(argv);
+
+    if (bytes < 0) {
+        return;
+    }
 
     // console output
     fprintf(stderr, "%s%s\n", prefix, msg);
