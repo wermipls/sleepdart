@@ -232,6 +232,8 @@ int machine_test_open(const char *path)
             str = NULL;
         }
 
+        free(frames_str);
+
         if (!frames_defined) {
             dlog(LOG_ERRSILENT, "Screenshot scope enabled but no frames specified");
             return -1;
