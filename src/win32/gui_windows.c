@@ -1,7 +1,7 @@
 #include "gui_windows.h"
 #include "resource.h"
 #include <SDL3/SDL.h>
-#include "../sleepdart_info.h"
+#include "sleepdart_info.h"
 #include "../video_sdl.h"
 #include "../machine.h"
 #include "../palette.h"

@@ -1,5 +1,5 @@
 #include "audio_sdl.h"
-#include "src/log.h"
+#include "log.h"
 #include <SDL3/SDL.h>
 
 static SDL_AudioStream *stream = NULL;
